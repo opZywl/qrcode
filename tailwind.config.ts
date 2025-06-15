@@ -1,7 +1,6 @@
+import type { Config } from 'tailwindcss';
 
-import type {Config} from 'tailwindcss';
-
-export default {
+const config: Config = {
   darkMode: ['class'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,6 +8,13 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    screens: {
+      xs: '360px',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+    },
     extend: {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
@@ -74,28 +80,32 @@ export default {
       },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
         'text-glow-footer': {
-          '0%, 100%': { textShadow: '0 0 3px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8), 0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5)' },
-          '50%': { textShadow: '0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8), 0 0 12px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5)' },
+          '0%, 100%': {
+            textShadow:
+                '0 0 3px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8), ' +
+                '0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5)',
+          },
+          '50%': {
+            textShadow:
+                '0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8), ' +
+                '0 0 12px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5)',
+          },
         },
         'text-glow-primary': {
-          '0%, 100%': { textShadow: '0 0 4px hsl(var(--primary) / 0.7), 0 0 8px hsl(var(--primary) / 0.5)' },
-          '50%': { textShadow: '0 0 8px hsl(var(--primary) / 0.7), 0 0 16px hsl(var(--primary) / 0.5)' },
+          '0%, 100%': {
+            textShadow: '0 0 4px hsl(var(--primary) / 0.7), 0 0 8px hsl(var(--primary) / 0.5)',
+          },
+          '50%': {
+            textShadow: '0 0 8px hsl(var(--primary) / 0.7), 0 0 16px hsl(var(--primary) / 0.5)',
+          },
         },
       },
       animation: {
@@ -108,10 +118,10 @@ export default {
         'outline-primary': '0 0 0 2px hsl(var(--primary) / 0.5)',
         'green-glow': '0 0 8px rgba(72,187,120,0.5), 0 0 15px rgba(72,187,120,0.3)',
         'primary-glow': '0 0 8px hsl(var(--primary) / 0.6), 0 0 15px hsl(var(--primary) / 0.4)',
-      }
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],
-} satisfies Config;
+};
 
-    
+export default config satisfies Config;
