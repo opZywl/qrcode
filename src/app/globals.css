@@ -1,0 +1,199 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary-hue: 204;
+    --primary-saturation: 70%;
+    --primary-lightness: 53%;
+    --primary-foreground-hsl: 0 0% 100%;
+
+    --accent-hue: 204;
+    --accent-saturation: 70%;
+    --accent-lightness: 53%;
+    --accent-foreground-hsl: 0 0% 100%;
+
+    --ring-hue: 204;
+    --ring-saturation: 70%;
+    --ring-lightness: 53%;
+
+    --default-primary-color: hsl(var(--primary-hue) var(--primary-saturation) var(--primary-lightness));
+    --default-accent-color: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness));
+    --default-ring-color: hsl(var(--ring-hue) var(--ring-saturation) var(--ring-lightness));
+
+    --dynamic-primary-color: var(--default-primary-color);
+    --dynamic-accent-color: var(--default-accent-color);
+    --dynamic-ring-color: var(--default-ring-color);
+
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: var(--dynamic-primary-color);
+    --primary-foreground: hsl(var(--primary-foreground-hsl));
+
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 20%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: var(--dynamic-accent-color);
+    --accent-foreground: hsl(var(--accent-foreground-hsl));
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 85%;
+    --input: 0 0% 92%;
+    --ring: var(--dynamic-ring-color);
+
+    --chart-1: hsl(var(--primary-hue) var(--primary-saturation) 50%);
+    --chart-2: hsl(var(--primary-hue) calc(var(--primary-saturation) - 10%) 45%);
+    --chart-3: hsl(var(--primary-hue) calc(var(--primary-saturation) + 10%) 55%);
+    --chart-4: hsl(var(--primary-hue) calc(var(--primary-saturation) - 5%) 60%);
+    --chart-5: hsl(var(--primary-hue) calc(var(--primary-saturation) + 5%) 55%);
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: var(--dynamic-primary-color);
+    --sidebar-primary-foreground: hsl(var(--primary-foreground-hsl));
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: var(--dynamic-ring-color);
+
+    --footer-glow-hue: 200;
+    --footer-glow-saturation: 100%;
+    --footer-glow-lightness: 70%;
+  }
+
+  .dark {
+    --primary-lightness: 65%;
+    --accent-lightness: 65%;
+    --ring-lightness: 65%;
+
+    --default-primary-color: hsl(var(--primary-hue) var(--primary-saturation) var(--primary-lightness));
+    --default-accent-color: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness));
+    --default-ring-color: hsl(var(--ring-hue) var(--ring-saturation) var(--ring-lightness));
+
+    --dynamic-primary-color: var(--dynamic-primary-color, var(--default-primary-color));
+    --dynamic-accent-color: var(--dynamic-accent-color, var(--default-accent-color));
+    --dynamic-ring-color: var(--dynamic-ring-color, var(--default-ring-color));
+
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 14%;
+    --input: 0 0% 10%;
+
+    --chart-1: hsl(var(--primary-hue) var(--primary-saturation) 61%);
+    --chart-2: hsl(var(--primary-hue) calc(var(--primary-saturation) - 12%) 39%);
+    --chart-3: hsl(var(--primary-hue) calc(var(--primary-saturation) - 33%) 24%);
+    --chart-4: hsl(var(--primary-hue) calc(var(--primary-saturation) + 4%) 66%);
+    --chart-5: hsl(var(--primary-hue) calc(var(--primary-saturation) + 17%) 67%);
+
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 14%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Custom Scrollbar Styles for WebKit browsers */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background) / 0.5); /* Slightly transparent background color */
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27272a; /* Dark gray for the thumb, nearly black */
+    border-radius: 10px;
+    border: 3px solid transparent; /* Creates padding around thumb */
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #000000; /* Black on hover */
+  }
+
+  /* Custom Scrollbar Styles for Firefox */
+  /* For Firefox, we use scrollbar-color and scrollbar-width */
+  /* This is less customizable than WebKit's pseudo-elements */
+  html {
+    scrollbar-width: thin; /* "auto" or "thin" */
+    scrollbar-color: #27272a hsl(var(--background) / 0.5); /* thumb track */
+  }
+
+  /* Dark mode specific scrollbar for Firefox if needed, though usually it inherits well */
+  .dark html {
+     scrollbar-color: #27272a hsl(var(--background) / 0.5); /* thumb track */
+  }
+
+}
+
+@layer utilities {
+  .animate-text-glow-footer {
+    animation: text-glow-footer 2.5s ease-in-out infinite;
+  }
+   .animate-text-glow-primary {
+    animation: text-glow-primary 2.5s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes text-glow-footer {
+  0%, 100% {
+    text-shadow: 0 0 3px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8),
+                 0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5);
+  }
+  50% {
+    text-shadow: 0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8),
+                 0 0 12px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5);
+  }
+}
+
+@keyframes text-glow-primary {
+  0%, 100% {
+    text-shadow: 0 0 4px hsl(var(--primary) / 0.7), 0 0 8px hsl(var(--primary) / 0.5);
+  }
+  50% {
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.7), 0 0 16px hsl(var(--primary) / 0.5);
+  }
+}
+    
+
+    
