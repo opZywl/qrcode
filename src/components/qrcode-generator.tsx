@@ -1681,208 +1681,403 @@ export default function QRCodeGenerator({
       </div>
   );
 
-  const renderMobileLayout = () => (
-      <div className="flex flex-col h-screen bg-background">
-        <div className="flex-grow flex flex-col items-center justify-center p-2 space-y-3">
-          <div className="flex items-center justify-center text-center pt-2">
-            <ScanQrCode className="w-7 h-7 text-primary mr-1.5 animate-text-glow-primary" />
-            <h1 className="text-xl font-headline font-semibold text-primary animate-text-glow-primary">
-              {t('qrCodeMinimal.title')}
-            </h1>
-          </div>
-          {qrValue ? (
-              <div className="p-3 border border-dashed border-primary/50 rounded-lg bg-card flex flex-col items-center space-y-3 w-full max-w-xs">
-                <div className="mb-1 p-1 border rounded-md bg-muted w-full text-center">
-                  <Label className="text-[10px] text-muted-foreground">{t('encodedContent.label')}</Label>
-                  <p className="text-xs font-mono break-all text-foreground" title={qrValue}>{qrValue}</p>
-                </div>
-                <div
-                    className="qr-code-outer-wrapper"
-                    style={getQrWrapperStyle()}
-                >
-                  <div
-                      ref={qrCanvasRef}
-                      className="qr-code-canvas-wrapper"
-                      style={qrCanvasWrapperStyle}
-                  >
-                    <QRCodeCanvas
-                        value={qrValue} size={displaySize}
-                        fgColor={fgColor}
-                        bgColor={qrCanvasActualBgColor}
-                        level={errorCorrectionLevel} margin={quietZone}
-                        includeMargin={true}
-                        imageSettings={logoActuallyActive ? { src: logoDataUri, height: displaySize * logoSizeRatio, width: displaySize * logoSizeRatio, excavate: excavateLogo } : undefined}
-                        style={{maxWidth: '100%', height: 'auto', display: 'block'}}
-                    />
-                  </div>
-                  {frameActuallyActive && (selectedFrameType === 'textBottom' || selectedFrameType === 'scanMeBottom' || selectedFrameType === 'roundedBorderTextBottom') && (
-                      <div className="frame-text-area text-center font-bold text-xs"
-                           style={{ color: fgColor, backgroundColor: useActualBackground ? 'transparent' : bgColor, padding: '4px 0', marginTop: '4px', height: `${FRAME_TEXT_AREA_HEIGHT/1.5}px`, lineHeight: `${(FRAME_TEXT_AREA_HEIGHT -10)/1.5}px`, boxSizing: 'border-box', width: '100%' }}>
-                        {textForFrame}
-                      </div>
-                  )}
-                </div>
-                <div className="w-full space-y-2 pt-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full text-sm h-9"><Download className="w-4 h-4 mr-2" /> {t('downloadQrCode.button')}</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-[calc(100vw-4rem)]">
-                      <DropdownMenuItem onClick={() => handleDownloadQRCode('png')}><ImageIcon className="w-4 h-4 mr-2" /> PNG</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownloadQRCode('svg')}><FileJson className="w-4 h-4 mr-2" /> SVG</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button onClick={handleCopyQRCodeImage} variant="outline" className="w-full text-sm h-9"><ClipboardCopy className="w-4 h-4 mr-2" />{t('copyImage.button')}</Button>
-                  <Button onClick={handleShareQRCode} variant="outline" className="w-full text-sm h-9"><Share2 className="w-4 h-4 mr-2" />{t('shareQrCode.button')}</Button>
-                </div>
-              </div>
-          ) : (
-              <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-lg bg-muted h-64 w-full max-w-xs">
-                <ScanQrCode className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">{t('mobile.noQrGenerated.title')}</p>
-                <p className="text-xs text-muted-foreground">{t('mobile.noQrGenerated.description')}</p>
-              </div>
-          )}
-        </div>
+  const renderMobileLayout = () => {
+    const contentTypes: { value: QRContentType; Icon: React.FC; labelKey: string }[] = [
+      { value: 'url',      Icon: LinkIcon,           labelKey: 'contentTypes.url.tab' },
+      { value: 'wifi',     Icon: Wifi,               labelKey: 'contentTypes.wifi.tab' },
+      { value: 'whatsapp', Icon: MessageSquareText,  labelKey: 'contentTypes.whatsapp.tab' },
+      { value: 'phone',    Icon: Phone,              labelKey: 'contentTypes.phone.tab' },
+      { value: 'vcard',    Icon: User,               labelKey: 'contentTypes.vcard.tab' },
+      { value: 'vevent',   Icon: CalendarDays,       labelKey: 'contentTypes.vevent.tab' },
+      { value: 'email',    Icon: Mail,               labelKey: 'contentTypes.email.tab' },
+      { value: 'sms',      Icon: MessageSquare,      labelKey: 'contentTypes.sms.tab' },
+      { value: 'geo',      Icon: MapPin,             labelKey: 'contentTypes.geo.tab' },
+    ];
 
-        <Sheet open={isControlsSheetOpen} onOpenChange={setIsControlsSheetOpen}>
-          <SheetTrigger asChild>
-            <Button
-                className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm py-3 text-base shadow-lg z-50 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-            >
-              <Edit3 className="w-5 h-5 mr-2 animate-text-glow-primary" /> {t('mobile.editOrNewLabel')}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0 bg-background">
-            <SheetHeader className="p-4 border-b bg-background sticky top-0 z-10 shrink-0">
-              <div className="flex justify-between items-center">
-                <SheetTitle className="flex items-center text-lg text-foreground text-left">
-                  <Settings className="w-5 h-5 mr-2 text-primary animate-text-glow-primary shrink-0" /> <span className="truncate">{t('mobile.controlsPanel.title')}</span>
-                </SheetTitle>
-                <SheetClose asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7"><X className="h-4 w-4" /></Button>
-                </SheetClose>
-              </div>
-            </SheetHeader>
-            <ScrollArea className="flex-grow">
-              <div className="space-y-4 p-4 pb-6">
-                <Tabs value={activeContentType} onValueChange={(value) => handleContentTypeChange(value as QRContentType)} className="w-full">
-                  <ScrollArea className="w-full whitespace-nowrap pb-2">
-                    <TabsList className="inline-flex w-auto p-1 bg-muted rounded-md">
-                      <TabsTrigger value="url" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><LinkIcon className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.url.tab')}</TabsTrigger>
-                      <TabsTrigger value="wifi" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Wifi className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.wifi.tab')}</TabsTrigger>
-                      <TabsTrigger value="whatsapp" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MessageSquareText className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.whatsapp.tab')}</TabsTrigger>
-                      <TabsTrigger value="phone" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Phone className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.phone.tab')}</TabsTrigger>
-                      <TabsTrigger value="vcard" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><User className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.vcard.tab')}</TabsTrigger>
-                      <TabsTrigger value="vevent" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><CalendarDays className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.vevent.tab')}</TabsTrigger>
-                      <TabsTrigger value="email" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Mail className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.email.tab')}</TabsTrigger>
-                      <TabsTrigger value="sms" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MessageSquare className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.sms.tab')}</TabsTrigger>
-                      <TabsTrigger value="geo" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MapPin className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.geo.tab')}</TabsTrigger>
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" className="h-2" />
-                  </ScrollArea>
-                  <TabsContent value={activeContentType} className="mt-4">
-                    {renderCurrentForm(true)}
-                  </TabsContent>
-                </Tabs>
-
-                <Accordion type="multiple" className="w-full space-y-2" value={mobileAccordionValue} onValueChange={setMobileAccordionValue}>
-                  <AccordionItem value="appearance" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
-                          <Palette className="w-4 h-4 text-primary animate-text-glow-primary" />
-                        </div>
-                        <span className="text-foreground">{t('customizeAppearance.title')}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1"><Label htmlFor="fg-color-mobile" className="text-sm font-medium text-foreground">{t('foregroundColor.label')}</Label><Input id="fg-color-mobile" type="color" value={fgColor} onChange={(e) => setFgColor(e.target.value)} className="w-full h-9 p-1"/></div>
-                        <div className="space-y-1"><Label htmlFor="bg-color-mobile" className="text-sm font-medium text-foreground">{t('backgroundColor.label')}</Label><Input id="bg-color-mobile" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-9 p-1" disabled={(mobileAccordionValue.includes("background") && !!backgroundImage) || (mobileAccordionValue.includes("frame") && selectedFrameType !== 'none')}/></div>
-                      </div>
-                      {( (mobileAccordionValue.includes("background") && !!backgroundImage) || (mobileAccordionValue.includes("frame") && selectedFrameType !== 'none') ) && <p className="text-xs text-muted-foreground px-1">{t('backgroundColorDisabledHint')}</p>}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center mb-1">
-                          <Label htmlFor="size-slider-mobile" className="text-sm font-medium text-foreground">{t('sizePx.label')}</Label>
-                          <span className="text-sm text-foreground">{size}px</span>
-                        </div>
-                        <Slider id="size-slider-mobile" min={50} max={1000} step={1} value={[size]} onValueChange={(value) => setSize(value[0])} />
-                      </div>
-                      <div className="space-y-2"><Label htmlFor="error-correction-mobile" className="text-sm font-medium text-foreground">{t('errorCorrection.label')}</Label>
-                        <Select onValueChange={(value) => setErrorCorrectionLevel(value as ErrorCorrectionLevel)} value={errorCorrectionLevel}>
-                          <SelectTrigger id="error-correction-mobile" className="text-sm h-9"><SelectValue placeholder={t('errorCorrection.label')} /></SelectTrigger>
-                          <SelectContent><SelectItem value="L" className="text-sm">{t('errorCorrection.levelL')}</SelectItem><SelectItem value="M" className="text-sm">{t('errorCorrection.levelM')}</SelectItem><SelectItem value="Q" className="text-sm">{t('errorCorrection.levelQ')}</SelectItem><SelectItem value="H" className="text-sm">{t('errorCorrection.levelH')}</SelectItem></SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2"><Label htmlFor="quiet-zone-mobile" className="text-sm font-medium text-foreground">{t('quietZone.label')}</Label><Input id="quiet-zone-mobile" type="number" min="0" max="40" value={quietZone} onChange={(e) => setQuietZone(Number(e.target.value))} placeholder={t('quietZone.placeholder')} className="h-9"/></div>
-                      <Button variant="ghost" size="sm" onClick={resetAppearanceCustomization} className="text-xs w-full justify-start text-muted-foreground mt-2 h-9"><RefreshCw className="w-3 h-3 mr-1" /> {t('reset.button')}</Button>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="background" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
-                          <ImageIcon className="w-4 h-4 text-primary animate-text-glow-primary" />
-                        </div>
-                        <span className="text-foreground">{t('customizeQrBackground.title')}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
-                      <div className="space-y-1"><Label htmlFor="bg-image-upload-mobile" className="text-sm font-medium text-foreground">{t('uploadBackgroundImage.label')}</Label><Input id="bg-image-upload-mobile" type="file" accept="image/*" ref={backgroundImageInputRef} onChange={handleBackgroundImageUpload} className="file:text-xs h-9 text-xs" /></div>
-                      {backgroundImage && (<div className="flex flex-col items-start gap-2"><img src={backgroundImage} alt={t('backgroundImagePreview.alt')} className="h-16 w-16 object-cover border rounded shadow" /><Button variant="outline" size="sm" onClick={removeBackgroundImageFile} className="text-destructive text-sm h-9"><Trash2 className="w-4 h-4 mr-1" /> {t('removeBackgroundImage.button')}</Button></div>)}
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="logo" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
-                          <ImagePlus className="w-4 h-4 text-primary animate-text-glow-primary" />
-                        </div>
-                        <span className="text-foreground">{t('customizeLogo.title')}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
-                      <div className="space-y-1"><Label htmlFor="logo-upload-mobile" className="text-sm font-medium text-foreground">{t('uploadLogo.label')}</Label><Input id="logo-upload-mobile" type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoUpload} className="file:text-xs h-9 text-xs"/>{logoDataUri && <img src={logoDataUri} alt="Logo preview" className="mt-2 h-12 w-12 object-contain border rounded" />}</div>
-                      <div className="space-y-1"><Label htmlFor="logo-size-ratio-mobile" className="text-sm font-medium text-foreground">{t('logoSizeRatio.label')}</Label><Input id="logo-size-ratio-mobile" type="number" min="0.05" max="0.4" step="0.01" value={logoSizeRatio} onChange={(e) => setLogoSizeRatio(parseFloat(e.target.value))} disabled={!logoDataUri} className="h-9" /></div>
-                      <div className="flex items-center space-x-2 p-1"><Checkbox id="excavate-logo-mobile" checked={excavateLogo} onCheckedChange={(checked) => setExcavateLogo(checked as boolean)} disabled={!logoDataUri} /><Label htmlFor="excavate-logo-mobile" className="text-sm font-medium text-foreground">{t('cutoutAreaBehindLogo.label')}</Label></div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="frame" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
-                          <Frame className="w-4 h-4 text-primary animate-text-glow-primary" />
-                        </div>
-                        <span className="text-foreground">{t('customizeFrame.title')}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
-                      <div className="space-y-1"><Label htmlFor="frame-type-mobile" className="text-sm font-medium text-foreground">{t('frameType.label')}</Label>
-                        <Select value={selectedFrameType} onValueChange={(value) => setSelectedFrameType(value as FrameType)}>
-                          <SelectTrigger id="frame-type-mobile" className="text-sm h-9"><SelectValue placeholder={t('frameType.placeholder')} /></SelectTrigger>
-                          <SelectContent><SelectItem value="none" className="text-sm">{t('frameType.none')}</SelectItem><SelectItem value="simpleBorder" className="text-sm">{t('frameType.simpleBorder')}</SelectItem><SelectItem value="textBottom" className="text-sm">{t('frameType.textBottom')}</SelectItem><SelectItem value="scanMeBottom" className="text-sm">{t('frameType.scanMeBottom')}</SelectItem><SelectItem value="roundedBorderTextBottom" className="text-sm">{t('frameType.roundedBorderTextBottom')}</SelectItem></SelectContent>
-                        </Select>
-                      </div>
-                      {(selectedFrameType === 'textBottom' || selectedFrameType === 'roundedBorderTextBottom') && (<div className="space-y-1"><Label htmlFor="frame-text-mobile" className="text-sm font-medium text-foreground">{t('frameText.label')}</Label><Input id="frame-text-mobile" type="text" value={frameText} onChange={(e) => setFrameText(e.target.value)} placeholder={t('frameText.placeholder')} className="h-9"/></div>)}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-            </ScrollArea>
-            <div className="p-4 border-t sticky bottom-0 bg-background z-20 shrink-0">
-              <Button onClick={handleGenerateQRCode} disabled={isLoading} className="w-full transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-base py-3">
-                {isLoading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <ScanQrCode className="w-5 h-5 mr-2 animate-text-glow-primary" />}
-                {t('generateQrCode.button')}
-              </Button>
+    return (
+        <div className="flex flex-col h-screen bg-background">
+          {/* Cabeçalho */}
+          <div className="flex-grow flex flex-col items-center justify-center p-2 space-y-3">
+            <div className="flex items-center justify-center pt-2">
+              <ScanQrCode className="w-7 h-7 text-primary mr-1.5 animate-text-glow-primary" />
+              <h1 className="text-xl font-headline font-semibold text-primary animate-text-glow-primary">
+                {t('qrCodeMinimal.title')}
+              </h1>
             </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-  );
+
+            {/* Preview do QR gerado ou placeholder */}
+            {qrValue ? (
+                <div className="p-3 border border-dashed border-primary/50 rounded-lg bg-card flex flex-col items-center space-y-3 w-full max-w-xs">
+                  <div className="mb-1 p-1 border rounded-md bg-muted w-full text-center">
+                    <Label className="text-[10px] text-muted-foreground">
+                      {t('encodedContent.label')}
+                    </Label>
+                    <p
+                        className="text-xs font-mono break-all text-foreground"
+                        title={qrValue}
+                    >
+                      {qrValue}
+                    </p>
+                  </div>
+                  <div className="qr-code-outer-wrapper" style={getQrWrapperStyle()}>
+                    <div
+                        ref={qrCanvasRef}
+                        className="qr-code-canvas-wrapper"
+                        style={qrCanvasWrapperStyle}
+                    >
+                      <QRCodeCanvas
+                          value={qrValue}
+                          size={displaySize}
+                          fgColor={fgColor}
+                          bgColor={qrCanvasActualBgColor}
+                          level={errorCorrectionLevel}
+                          margin={quietZone}
+                          includeMargin
+                          imageSettings={
+                            logoActuallyActive
+                                ? {
+                                  src: logoDataUri,
+                                  height: displaySize * logoSizeRatio,
+                                  width: displaySize * logoSizeRatio,
+                                  excavate: excavateLogo,
+                                }
+                                : undefined
+                          }
+                          style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                      />
+                    </div>
+                    {frameActuallyActive &&
+                        (selectedFrameType === 'textBottom' ||
+                            selectedFrameType === 'scanMeBottom' ||
+                            selectedFrameType === 'roundedBorderTextBottom') && (
+                            <div
+                                className="frame-text-area text-center font-bold text-xs"
+                                style={{
+                                  color: fgColor,
+                                  backgroundColor: useActualBackground ? 'transparent' : bgColor,
+                                  padding: '4px 0',
+                                  marginTop: '4px',
+                                  height: `${FRAME_TEXT_AREA_HEIGHT / 1.5}px`,
+                                  lineHeight: `${(FRAME_TEXT_AREA_HEIGHT - 10) / 1.5}px`,
+                                  boxSizing: 'border-box',
+                                  width: '100%',
+                                }}
+                            >
+                              {textForFrame}
+                            </div>
+                        )}
+                  </div>
+                  <div className="w-full space-y-2 pt-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full text-sm h-9">
+                          <Download className="w-4 h-4 mr-2" /> {t('downloadQrCode.button')}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="w-[calc(100vw-4rem)]">
+                        <DropdownMenuItem onClick={() => handleDownloadQRCode('png')}>
+                          <ImageIcon className="w-4 h-4 mr-2" /> PNG
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownloadQRCode('svg')}>
+                          <FileJson className="w-4 h-4 mr-2" /> SVG
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button onClick={handleCopyQRCodeImage} variant="outline" className="w-full text-sm h-9">
+                      <ClipboardCopy className="w-4 h-4 mr-2" /> {t('copyImage.button')}
+                    </Button>
+                    <Button onClick={handleShareQRCode} variant="outline" className="w-full text-sm h-9">
+                      <Share2 className="w-4 h-4 mr-2" /> {t('shareQrCode.button')}
+                    </Button>
+                  </div>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-lg bg-muted h-64 w-full max-w-xs">
+                  <ScanQrCode className="w-16 h-16 text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground">{t('mobile.noQrGenerated.title')}</p>
+                  <p className="text-xs text-muted-foreground">{t('mobile.noQrGenerated.description')}</p>
+                </div>
+            )}
+          </div>
+
+          {/* Sheet de controles */}
+          <Sheet open={isControlsSheetOpen} onOpenChange={setIsControlsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm py-3 text-base shadow-lg z-50 transition-transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400">
+                <Edit3 className="w-5 h-5 mr-2 animate-text-glow-primary" />
+                {t('mobile.editOrNewLabel')}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0 bg-background">
+              <SheetHeader className="p-4 border-b bg-background sticky top-0 z-10">
+                <div className="flex justify-between items-center">
+                  <SheetTitle className="flex items-center text-lg text-foreground">
+                    <Settings className="w-5 h-5 mr-2 text-primary animate-text-glow-primary" />
+                    {t('mobile.controlsPanel.title')}
+                  </SheetTitle>
+                  <SheetClose asChild>
+                    <Button variant="ghost" size="icon">
+                      <X />
+                    </Button>
+                  </SheetClose>
+                </div>
+              </SheetHeader>
+
+              <ScrollArea className="flex-grow">
+                <div className="p-4 space-y-4 pb-6">
+                  {/* 1. Grid de seleção de tipo */}
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {contentTypes.map(({ value, Icon, labelKey }) => (
+                        <button
+                            key={value}
+                            onClick={() => handleContentTypeChange(value)}
+                            className={`
+                      flex flex-col items-center justify-center p-2 rounded-lg
+                      ${activeContentType === value
+                                ? 'ring-2 ring-primary'
+                                : 'bg-muted hover:bg-muted/80'}
+                    `}
+                        >
+                          <Icon
+                              className={`w-6 h-6 mb-1 ${
+                                  activeContentType === value
+                                      ? 'text-primary'
+                                      : 'text-muted-foreground'
+                              }`}
+                          />
+                          <span className="text-[10px] text-center">{t(labelKey)}</span>
+                        </button>
+                    ))}
+                  </div>
+
+                  {/* 2. Formulário dinâmico */}
+                  {renderCurrentForm(true)}
+
+                  {/* 3. Personalização */}
+                  <Accordion type="multiple" className="space-y-2">
+                    {/* Appearance */}
+                    <AccordionItem value="appearance" className="bg-muted/30 rounded-lg border">
+                      <AccordionTrigger className="px-3 py-2 flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <Palette className="w-5 h-5 text-primary" />
+                          {t('customizeAppearance.title')}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-4 pt-2 space-y-4">
+                        {/* FG e BG */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>{t('foregroundColor.label')}</Label>
+                            <Input
+                                type="color"
+                                value={fgColor}
+                                onChange={e => setFgColor(e.target.value)}
+                                className="w-full h-9 p-1"
+                            />
+                          </div>
+                          <div>
+                            <Label>{t('backgroundColor.label')}</Label>
+                            <Input
+                                type="color"
+                                value={bgColor}
+                                onChange={e => setBgColor(e.target.value)}
+                                className="w-full h-9 p-1"
+                            />
+                          </div>
+                        </div>
+                        {/* Size Slider */}
+                        <div>
+                          <div className="flex justify-between">
+                            <Label>{t('sizePx.label')}</Label>
+                            <span>{size}px</span>
+                          </div>
+                          <Slider
+                              min={50}
+                              max={1000}
+                              step={1}
+                              value={[size]}
+                              onValueChange={v => setSize(v[0])}
+                          />
+                        </div>
+                        <div>
+                          <Label>{t('errorCorrection.label')}</Label>
+                          <Select
+                              value={errorCorrectionLevel}
+                              onValueChange={v => setErrorCorrectionLevel(v as ErrorCorrectionLevel)}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(['L','M','Q','H'] as ErrorCorrectionLevel[]).map(l => (
+                                  <SelectItem key={l} value={l}>
+                                    {t(`errorCorrection.level${l}`)}
+                                  </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {/* Quiet Zone */}
+                        <div>
+                          <Label>{t('quietZone.label')}</Label>
+                          <Input
+                              type="number"
+                              min={0}
+                              max={40}
+                              value={quietZone}
+                              onChange={e => setQuietZone(+e.target.value)}
+                              className="h-9"
+                          />
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetAppearanceCustomization}
+                            className="w-full"
+                        >
+                          {t('reset.button')}
+                        </Button>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Background */}
+                    <AccordionItem value="background" className="bg-muted/30 rounded-lg border">
+                      <AccordionTrigger className="px-3 py-2 flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <ImageIcon className="w-5 h-5 text-primary" />
+                          {t('customizeQrBackground.title')}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            ref={backgroundImageInputRef}
+                            onChange={handleBackgroundImageUpload}
+                            className="file:text-xs h-9"
+                        />
+                        {backgroundImage && (
+                            <div className="flex items-center gap-2">
+                              <img
+                                  src={backgroundImage}
+                                  className="h-16 w-16 object-cover rounded"
+                              />
+                              <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={removeBackgroundImageFile}
+                              >
+                                {t('removeBackgroundImage.button')}
+                              </Button>
+                            </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Logo */}
+                    <AccordionItem value="logo" className="bg-muted/30 rounded-lg border">
+                      <AccordionTrigger className="px-3 py-2 flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <ImagePlus className="w-5 h-5 text-primary" />
+                          {t('customizeLogo.title')}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            onChange={handleLogoUpload}
+                            className="file:text-xs h-9"
+                        />
+                        {logoDataUri && (
+                            <img
+                                src={logoDataUri}
+                                className="h-12 w-12 object-contain rounded"
+                            />
+                        )}
+                        <div>
+                          <Label>{t('logoSizeRatio.label')}</Label>
+                          <Input
+                              type="number"
+                              min={0.05}
+                              max={0.4}
+                              step={0.01}
+                              value={logoSizeRatio}
+                              onChange={e => setLogoSizeRatio(+e.target.value)}
+                              className="h-9"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <Checkbox
+                              checked={excavateLogo}
+                              onCheckedChange={c => setExcavateLogo(c as boolean)}
+                          />
+                          <Label>{t('cutoutAreaBehindLogo.label')}</Label>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Frame */}
+                    <AccordionItem value="frame" className="bg-muted/30 rounded-lg border">
+                      <AccordionTrigger className="px-3 py-2 flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <Frame className="w-5 h-5 text-primary" />
+                          {t('customizeFrame.title')}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
+                        <Select
+                            value={selectedFrameType}
+                            onValueChange={v => setSelectedFrameType(v as FrameType)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder={t('frameType.placeholder')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(['none','simpleBorder','textBottom','scanMeBottom','roundedBorderTextBottom'] as FrameType[]).map(ft => (
+                                <SelectItem key={ft} value={ft}>
+                                  {t(`frameType.${ft}`)}
+                                </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(selectedFrameType === 'textBottom' ||
+                            selectedFrameType === 'roundedBorderTextBottom') && (
+                            <Input
+                                type="text"
+                                value={frameText}
+                                onChange={e => setFrameText(e.target.value)}
+                                placeholder={t('frameText.placeholder')}
+                                className="h-9"
+                            />
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+              </ScrollArea>
+
+              {/* Botão gerador */}
+              <div className="p-4 border-t bg-background sticky bottom-0">
+                <Button
+                    onClick={handleGenerateQRCode}
+                    disabled={isLoading}
+                    className="w-full py-3 transition-transform hover:scale-105"
+                >
+                  {isLoading ? (
+                      <RefreshCw className="animate-spin mr-2" />
+                  ) : (
+                      <ScanQrCode className="mr-2" />
+                  )}
+                  {t('generateQrCode.button')}
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+    );
+  };
 
   if (!isClient || isMobile === undefined) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><ScanQrCode className="w-12 h-12 text-primary animate-pulse" /></div>;
