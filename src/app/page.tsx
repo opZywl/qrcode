@@ -1,10 +1,9 @@
-
 "use client";
 
 import QRCodeGenerator from '@/components/qrcode-generator';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageToggle } from '@/components/language-toggle';
-import { PortfolioPopup } from '@/components/portfolio-popup'; // Added this import
+import { PortfolioPopup } from '@/components/portfolio-popup';
 import { useTranslation } from 'react-i18next';
 import '@/lib/i18n';
 import React from 'react';

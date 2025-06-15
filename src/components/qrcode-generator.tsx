@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -29,12 +28,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageToggle } from '@/components/language-toggle';
 
-
 type ErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
 type QRContentType = 'url' | 'wifi' | 'vcard' | 'vevent' | 'email' | 'sms' | 'geo' | 'whatsapp' | 'phone';
 type WifiEncryptionType = 'WPA' | 'WEP' | 'nopass';
 type FrameType = 'none' | 'textBottom' | 'scanMeBottom' | 'simpleBorder' | 'roundedBorderTextBottom';
-
 
 type QRCodeEntry = {
   id: string;
@@ -459,7 +456,7 @@ export default function QRCodeGenerator({
           toast({ title: t('toast.error.title'), description: t('contentTypes.whatsapp.error.toRequired'), variant: "destructive" });
           setIsLoading(false); return;
         }
-        const numberOnly = whatsappTo.replace(/\D/g, ''); // Remove non-digits
+        const numberOnly = whatsappTo.replace(/\D/g, '');
         finalValueToEncode = `https://wa.me/${numberOnly}?text=${encodeURIComponent(whatsappMessage)}`;
         originalInputForHistory = whatsappTo;
         contentSpecificDetails = { whatsappTo, whatsappMessage };
@@ -469,7 +466,7 @@ export default function QRCodeGenerator({
           toast({ title: t('toast.error.title'), description: t('contentTypes.phone.error.toRequired'), variant: "destructive" });
           setIsLoading(false); return;
         }
-        finalValueToEncode = `tel:${phoneTo.replace(/\D/g, '')}`; // Remove non-digits for tel URI
+        finalValueToEncode = `tel:${phoneTo.replace(/\D/g, '')}`;
         originalInputForHistory = phoneTo;
         contentSpecificDetails = { phoneTo };
         break;
@@ -930,7 +927,6 @@ export default function QRCodeGenerator({
     }
   };
 
-
   const loadFromHistory = (entry: QRCodeEntry) => {
     resetContentSpecificFields();
     setActiveContentType(entry.contentType);
@@ -1048,7 +1044,7 @@ export default function QRCodeGenerator({
       style.backgroundImage = `url(${backgroundImage})`;
       style.backgroundSize = 'cover';
       style.backgroundPosition = 'center';
-      style.backgroundColor = 'transparent'; // Ensure transparency for image to show
+      style.backgroundColor = 'transparent';
     } else {
       style.backgroundColor = useFrame ? bgColor : 'hsl(var(--muted))';
     }
@@ -1568,7 +1564,6 @@ export default function QRCodeGenerator({
               {t('generateQrCode.button')}
             </Button>
 
-
             {qrValue && (
                 <div className="mt-6 p-3 sm:p-4 border border-dashed border-primary/50 rounded-lg bg-card flex flex-col items-center space-y-4">
                   <div className="mb-2 p-2 border rounded-md bg-muted w-full text-center">
@@ -1616,7 +1611,6 @@ export default function QRCodeGenerator({
                         </div>
                     )}
                   </div>
-
 
                   <div className="w-full space-y-2">
                     <DropdownMenu>

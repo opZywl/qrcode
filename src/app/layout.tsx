@@ -1,13 +1,10 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-// The i18n instance is initialized by client components that import it.
-// Removing the direct import here to prevent server-side execution of client-specific i18n logic.
 
 export const metadata: Metadata = {
-  title: 'QRCODE YZY', // This will be static or handled differently by full i18n routing
-  description: 'Gerador de código QR minimalista com URLs personalizadas.', // Same as above
+  title: 'QRCODE YZY',
+  description: 'Gerador de código QR minimalista com URLs personalizadas.',
 };
 
 export default function RootLayout({
