@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -101,6 +102,8 @@ type QRCodeEntry = {
 interface QRCodeGeneratorProps {
   scannerOpen: boolean;
   onScannerOpenChange: (isOpen: boolean) => void;
+  initialScannerTab: 'camera' | 'image';
+  onScannerTabChange: (tab: 'camera' | 'image') => void;
   historySheetOpen: boolean;
   onHistorySheetOpenChange: (isOpen: boolean) => void;
 }
@@ -114,6 +117,8 @@ const FRAME_BORDER_RADIUS = 8;
 export default function QRCodeGenerator({
                                           scannerOpen,
                                           onScannerOpenChange,
+                                          initialScannerTab,
+                                          onScannerTabChange,
                                           historySheetOpen,
                                           onHistorySheetOpenChange,
                                         }: QRCodeGeneratorProps) {
@@ -145,20 +150,19 @@ export default function QRCodeGenerator({
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const backgroundImageInputRef = useRef<HTMLInputElement>(null);
 
-  const [enableLogoCustomization, setEnableLogoCustomization] = useState<boolean>(false);
-  const [enableBackgroundCustomization, setEnableBackgroundCustomization] = useState<boolean>(false);
-  const [enableFrameCustomization, setEnableFrameCustomization] = useState<boolean>(false);
-
   const [selectedFrameType, setSelectedFrameType] = useState<FrameType>('none');
   const [frameText, setFrameText] = useState<string>('');
 
   const [isControlsSheetOpen, setIsControlsSheetOpen] = useState<boolean>(false);
   const [mobileAccordionValue, setMobileAccordionValue] = useState<string[]>([]);
 
-  const [activeScannerTab, setActiveScannerTab] = useState<'camera' | 'image'>('camera');
   const [scannedImagePreview, setScannedImagePreview] = useState<string | null>(null);
   const [scannedImageQrResult, setScannedImageQrResult] = useState<string | null>(null);
   const [isScanningImage, setIsScanningImage] = useState<boolean>(false);
+
+  const [enableLogoCustomization, setEnableLogoCustomization] = useState<boolean>(false);
+  const [enableBackgroundCustomization, setEnableBackgroundCustomization] = useState<boolean>(false);
+  const [enableFrameCustomization, setEnableFrameCustomization] = useState<boolean>(false);
 
 
   const qrCanvasRef = useRef<HTMLDivElement>(null);
@@ -230,7 +234,7 @@ export default function QRCodeGenerator({
 
 
   useEffect(() => {
-    if (scannerOpen && activeScannerTab === 'camera') {
+    if (scannerOpen && initialScannerTab === 'camera') {
       const getCameraPermission = async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -239,6 +243,7 @@ export default function QRCodeGenerator({
             videoRef.current.srcObject = stream;
           }
         } catch (error) {
+          console.error('Error accessing camera:', error);
           setHasCameraPermission(false);
           toast({
             variant: 'destructive',
@@ -254,17 +259,16 @@ export default function QRCodeGenerator({
         stream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
-      if (activeScannerTab !== 'camera') {
+      if (initialScannerTab !== 'camera') {
         setHasCameraPermission(null);
       }
     }
-  }, [scannerOpen, activeScannerTab, toast, t]);
+  }, [scannerOpen, initialScannerTab, toast, t]);
 
   useEffect(() => {
     if (!scannerOpen) {
       setScannedImagePreview(null);
       setScannedImageQrResult(null);
-      setActiveScannerTab('camera');
       if (imageScanInputRef.current) {
         imageScanInputRef.current.value = "";
       }
@@ -490,15 +494,15 @@ export default function QRCodeGenerator({
         size,
         level: errorCorrectionLevel,
         margin: quietZone,
-        enableLogoCustomization: mobileAccordionValue.includes("logo") || enableLogoCustomization,
-        logoDataUri: (mobileAccordionValue.includes("logo") || enableLogoCustomization) && logoDataUri ? logoDataUri : undefined,
-        logoSizeRatio: (mobileAccordionValue.includes("logo") || enableLogoCustomization) && logoDataUri ? logoSizeRatio : undefined,
-        excavateLogo: (mobileAccordionValue.includes("logo") || enableLogoCustomization) && logoDataUri ? excavateLogo : undefined,
-        enableBackgroundCustomization: mobileAccordionValue.includes("background") || enableBackgroundCustomization,
-        backgroundImage: (mobileAccordionValue.includes("background") || enableBackgroundCustomization) && backgroundImage ? backgroundImage : undefined,
-        enableFrameCustomization: mobileAccordionValue.includes("frame") || enableFrameCustomization,
-        selectedFrameType: (mobileAccordionValue.includes("frame") || enableFrameCustomization) ? selectedFrameType : 'none',
-        frameText: (mobileAccordionValue.includes("frame") || enableFrameCustomization) && (selectedFrameType === 'textBottom' || selectedFrameType === 'roundedBorderTextBottom') ? frameText : undefined,
+        enableLogoCustomization,
+        logoDataUri: enableLogoCustomization && logoDataUri ? logoDataUri : undefined,
+        logoSizeRatio: enableLogoCustomization && logoDataUri ? logoSizeRatio : undefined,
+        excavateLogo: enableLogoCustomization && logoDataUri ? excavateLogo : undefined,
+        enableBackgroundCustomization,
+        backgroundImage: enableBackgroundCustomization && backgroundImage ? backgroundImage : undefined,
+        enableFrameCustomization,
+        selectedFrameType: enableFrameCustomization ? selectedFrameType : 'none',
+        frameText: enableFrameCustomization && (selectedFrameType === 'textBottom' || selectedFrameType === 'roundedBorderTextBottom') ? frameText : undefined,
         timestamp: Date.now(),
         ...contentSpecificDetails,
       };
@@ -517,9 +521,9 @@ export default function QRCodeGenerator({
   }
 
   const handleDownloadQRCode = useCallback((format: 'png' | 'svg' = 'png') => {
-    const useLogo = isMobile ? mobileAccordionValue.includes("logo") : enableLogoCustomization;
-    const useBackground = isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization;
-    const useFrame = isMobile ? mobileAccordionValue.includes("frame") : enableFrameCustomization;
+    const useLogo = (enableLogoCustomization && mobileAccordionValue.includes("logo")) || (enableLogoCustomization && !isMobile && logoDataUri);
+    const useBackground = (enableBackgroundCustomization && mobileAccordionValue.includes("background")) || (enableBackgroundCustomization && !isMobile && backgroundImage);
+    const useFrame = (enableFrameCustomization && mobileAccordionValue.includes("frame")) || (enableFrameCustomization && !isMobile && selectedFrameType !== 'none');
 
     const activeBgImage = useBackground ? backgroundImage : '';
     const activeLogoImgDataUri = useLogo ? logoDataUri : '';
@@ -710,11 +714,11 @@ export default function QRCodeGenerator({
 
     drawFinalImage();
 
-  }, [qrValue, size, fgColor, bgColor, errorCorrectionLevel, quietZone, logoDataUri, logoSizeRatio, excavateLogo, backgroundImage, enableLogoCustomization, enableBackgroundCustomization, enableFrameCustomization, mobileAccordionValue, selectedFrameType, frameText, toast, t, isMobile]);
+  }, [qrValue, size, fgColor, bgColor, errorCorrectionLevel, quietZone, logoDataUri, logoSizeRatio, excavateLogo, backgroundImage, enableLogoCustomization, enableBackgroundCustomization, enableFrameCustomization, selectedFrameType, frameText, toast, t, mobileAccordionValue, isMobile]);
 
 
   const handleShareQRCode = async () => {
-    const useBackground = isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization;
+    const useBackground = (enableBackgroundCustomization && mobileAccordionValue.includes("background")) || (enableBackgroundCustomization && !isMobile && backgroundImage);
     const activeBgImage = useBackground ? backgroundImage : '';
 
     if (!qrValue || !qrCanvasRef.current) {
@@ -777,7 +781,7 @@ export default function QRCodeGenerator({
   };
 
   const handleCopyQRCodeImage = async () => {
-    const useBackground = isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization;
+    const useBackground = (enableBackgroundCustomization && mobileAccordionValue.includes("background")) || (enableBackgroundCustomization && !isMobile && backgroundImage);
     const activeBgImage = useBackground ? backgroundImage : '';
 
 
@@ -856,82 +860,83 @@ export default function QRCodeGenerator({
     setSelectedFrameType('none');
     setFrameText('');
 
-    if (isMobile) {
-      setMobileAccordionValue([]);
-    } else {
-      setEnableLogoCustomization(false);
-      setEnableBackgroundCustomization(false);
-      setEnableFrameCustomization(false);
-    }
+    setEnableLogoCustomization(false);
+    setEnableBackgroundCustomization(false);
+    setEnableFrameCustomization(false);
+    setMobileAccordionValue([]);
+
 
     toast({ title: t('toast.customizationReset.title'), description: t('toast.customizationReset.description') });
   }
 
+  useEffect(() => {
+    setEnableLogoCustomization(mobileAccordionValue.includes("logo"));
+    setEnableBackgroundCustomization(mobileAccordionValue.includes("background"));
+    setEnableFrameCustomization(mobileAccordionValue.includes("frame"));
+
+    if (!mobileAccordionValue.includes("logo")) {
+
+
+    }
+    if (!mobileAccordionValue.includes("background")) {
+
+
+    }
+    if (!mobileAccordionValue.includes("frame")) {
+
+
+    }
+  }, [mobileAccordionValue]);
+
+
   const resetContentSpecificFields = (contentTypeToReset?: QRContentType) => {
-    const typeToClear = contentTypeToReset || activeContentType;
     setQrValue('');
 
-    if (typeToClear === 'url' || !contentTypeToReset) setUrlInput('');
-    if (typeToClear === 'wifi' || !contentTypeToReset) {
+    if (contentTypeToReset === 'url' || !contentTypeToReset) setUrlInput('');
+    if (contentTypeToReset === 'wifi' || !contentTypeToReset) {
       setWifiSsid(''); setWifiPassword(''); setWifiEncryption('WPA'); setWifiHidden(false);
     }
-    if (typeToClear === 'vcard' || !contentTypeToReset) {
+    if (contentTypeToReset === 'vcard' || !contentTypeToReset) {
       setVcardFirstName(''); setVcardLastName(''); setVcardOrganization(''); setVcardTitle('');
       setVcardPhone(''); setVcardEmail(''); setVcardWebsite(''); setVcardAddress('');
       setVcardCity(''); setVcardState(''); setVcardZip(''); setVcardCountry('');
     }
-    if (typeToClear === 'vevent' || !contentTypeToReset) {
+    if (contentTypeToReset === 'vevent' || !contentTypeToReset) {
       setVeventSummary(''); setVeventDescription(''); setVeventLocation('');
       setVeventStartDate(''); setVeventStartTime(''); setVeventEndDate('');
       setVeventEndTime(''); setVeventIsAllDay(false);
     }
-    if (typeToClear === 'email' || !contentTypeToReset) {
+    if (contentTypeToReset === 'email' || !contentTypeToReset) {
       setEmailTo(''); setEmailSubject(''); setEmailBody('');
     }
-    if (typeToClear === 'sms' || !contentTypeToReset) {
+    if (contentTypeToReset === 'sms' || !contentTypeToReset) {
       setSmsTo(''); setSmsBody('');
     }
-    if (typeToClear === 'geo' || !contentTypeToReset) {
+    if (contentTypeToReset === 'geo' || !contentTypeToReset) {
       setGeoLatitude(''); setGeoLongitude('');
     }
-    if (typeToClear === 'whatsapp' || !contentTypeToReset) {
+    if (contentTypeToReset === 'whatsapp' || !contentTypeToReset) {
       setWhatsappTo(''); setWhatsappMessage('');
     }
-    if (typeToClear === 'phone' || !contentTypeToReset) {
+    if (contentTypeToReset === 'phone' || !contentTypeToReset) {
       setPhoneTo('');
     }
   };
 
   const handleContentTypeChange = (newContentType: QRContentType) => {
-    resetContentSpecificFields(activeContentType);
+    const contentTypeToReset = activeContentType;
+    resetContentSpecificFields(contentTypeToReset);
     setActiveContentType(newContentType);
   };
 
-  const handleMobileAccordionChange = (value: string[]) => {
-    const previousValue = mobileAccordionValue;
-    setMobileAccordionValue(value);
-
-    const justDisabled = (key: string) => previousValue.includes(key) && !value.includes(key);
-
-    if (justDisabled("logo")) {
-      setLogoDataUri('');
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-    if (justDisabled("background")) {
-      setBackgroundImage('');
-      if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = "";
-    }
-    if (justDisabled("frame")) {
-      setSelectedFrameType('none');
-      setFrameText('');
-    }
-  };
 
   const loadFromHistory = (entry: QRCodeEntry) => {
     resetContentSpecificFields();
     setActiveContentType(entry.contentType);
 
-    setUrlInput(entry.contentType === 'url' ? entry.originalInput : '');
+
+    if (entry.contentType === 'url') setUrlInput(entry.originalInput);
+
     setWifiSsid(entry.wifiSsid || '');
     setWifiPassword(entry.wifiPassword || '');
     setWifiEncryption(entry.wifiEncryption || 'WPA');
@@ -981,18 +986,28 @@ export default function QRCodeGenerator({
     setErrorCorrectionLevel(entry.level);
     setQuietZone(entry.margin);
 
-    const newAccordionValues = [];
+    const newAccordionValues: string[] = [];
+
+    setEnableLogoCustomization(!!entry.enableLogoCustomization);
+    setEnableBackgroundCustomization(!!entry.enableBackgroundCustomization);
+    setEnableFrameCustomization(!!entry.enableFrameCustomization);
+
     if (entry.enableLogoCustomization) newAccordionValues.push("logo");
     if (entry.enableBackgroundCustomization) newAccordionValues.push("background");
     if (entry.enableFrameCustomization) newAccordionValues.push("frame");
 
-    if (isMobile) {
-      setMobileAccordionValue(newAccordionValues);
-    } else {
-      setEnableLogoCustomization(!!entry.enableLogoCustomization);
-      setEnableBackgroundCustomization(!!entry.enableBackgroundCustomization);
-      setEnableFrameCustomization(!!entry.enableFrameCustomization);
+
+    const hasNonDefaultAppearance = entry.fgColor !== DEFAULT_FG_COLOR ||
+        entry.bgColor !== '#FFFFFF' ||
+        entry.size !== 256 ||
+        entry.level !== 'H' ||
+        entry.margin !== 4;
+
+    if (hasNonDefaultAppearance) {
+      newAccordionValues.push("appearance");
     }
+
+    setMobileAccordionValue(newAccordionValues);
 
 
     if (entry.logoDataUri) {
@@ -1029,27 +1044,30 @@ export default function QRCodeGenerator({
   };
 
 
-  const qrCanvasActualBgColor = (isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization) && backgroundImage ? 'transparent' : bgColor;
-  const logoActuallyActive = (isMobile ? mobileAccordionValue.includes("logo") : enableLogoCustomization) && logoDataUri;
-  const frameActuallyActive = (isMobile ? mobileAccordionValue.includes("frame") : enableFrameCustomization) && selectedFrameType !== 'none';
+  const useActualBackground = (enableBackgroundCustomization && mobileAccordionValue.includes("background")) || (enableBackgroundCustomization && !isMobile && backgroundImage);
+  const qrCanvasActualBgColor = useActualBackground ? 'transparent' : bgColor;
+  const logoActuallyActive = (enableLogoCustomization && logoDataUri && mobileAccordionValue.includes("logo")) || (enableLogoCustomization && logoDataUri && !isMobile) ;
+  const frameActuallyActive = (enableFrameCustomization && selectedFrameType !== 'none' && mobileAccordionValue.includes("frame")) || (enableFrameCustomization && selectedFrameType !== 'none' && !isMobile);
   const textForFrame = selectedFrameType === 'scanMeBottom' ? "SCAN ME" : frameText;
   const displaySize = Math.min(size, isMobile ? 200 : 260);
 
   const getQrWrapperStyle = () => {
-    const style: React.CSSProperties = {};
-    const useBgImage = (isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization) && backgroundImage;
-    const useFrame = (isMobile ? mobileAccordionValue.includes("frame") : enableFrameCustomization) && selectedFrameType !== 'none';
+    const style: React.CSSProperties = {
+      padding: '0px',
+      border: '1px solid hsl(var(--border))',
+      borderRadius: '0.375rem',
+      display: 'inline-block',
+      position: 'relative',
+      backgroundColor: useActualBackground ? 'transparent' : (frameActuallyActive ? bgColor : 'hsl(var(--muted))'),
+    };
 
-    if (useBgImage) {
+    if (useActualBackground) {
       style.backgroundImage = `url(${backgroundImage})`;
       style.backgroundSize = 'cover';
       style.backgroundPosition = 'center';
-      style.backgroundColor = 'transparent';
-    } else {
-      style.backgroundColor = useFrame ? bgColor : 'hsl(var(--muted))';
     }
 
-    if (useFrame) {
+    if (frameActuallyActive) {
       style.padding = `${FRAME_PADDING}px`;
       style.border = `2px solid ${fgColor}`;
       if (selectedFrameType === 'roundedBorderTextBottom') {
@@ -1058,12 +1076,19 @@ export default function QRCodeGenerator({
         style.borderRadius = '0.375rem';
       }
     } else {
-      style.padding = '4px';
-      style.border = '1px solid hsl(var(--border))';
-      style.borderRadius = '0.375rem';
+      style.padding = '0px';
+      style.border = useActualBackground ? 'none' : '1px solid hsl(var(--border))';
     }
     return style;
   }
+
+  const qrCanvasWrapperStyle: React.CSSProperties = {
+    backgroundColor: qrCanvasActualBgColor,
+    display: 'inline-block',
+    maxWidth: '100%',
+    borderRadius: frameActuallyActive ? '0px' : 'calc(0.375rem - 1px)',
+    padding: '0px',
+  };
 
 
   const processQrImage = (file: File) => {
@@ -1148,7 +1173,11 @@ export default function QRCodeGenerator({
       toast({ variant: "destructive", title: t('toast.error.title'), description: t('scannerDialog.noImageInClipboard') });
     } catch (err) {
       console.error("Paste error:", err);
-      toast({ variant: "destructive", title: t('toast.error.title'), description: t('scannerDialog.pasteFailed') });
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        toast({ variant: "destructive", title: t('toast.error.title'), description: t('scannerDialog.pastePermissionDenied') });
+      } else {
+        toast({ variant: "destructive", title: t('toast.error.title'), description: t('scannerDialog.pasteFailed') });
+      }
     }
   };
 
@@ -1159,6 +1188,7 @@ export default function QRCodeGenerator({
           .catch(() => toast({ variant: 'destructive', title: t('toast.copyFailed.title'), description: t('toast.copyFailed.descriptionScanResult') }));
     }
   };
+
 
   const renderCurrentForm = (isMobileLayout: boolean = false) => {
     const inputHeightClass = "h-9";
@@ -1321,7 +1351,7 @@ export default function QRCodeGenerator({
           </CardHeader>
 
           <div className="px-4 sm:px-6 pb-2 flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-            <Button variant="outline" className="w-full sm:w-auto hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary" onClick={() => onScannerOpenChange(true)}>
+            <Button variant="outline" className="w-full sm:w-auto hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary" onClick={() => { onScannerOpenChange(true);}}>
               <ScanLine className="w-5 h-5 mr-2 animate-text-glow-primary" /> {t('scanQrCode.button')}
             </Button>
             <Button variant="outline" className="w-full sm:w-auto hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary" onClick={() => onHistorySheetOpenChange(true)}>
@@ -1384,11 +1414,11 @@ export default function QRCodeGenerator({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fg-color" className="text-sm font-medium text-foreground">{t('foregroundColor.label')}</Label>
-                  <Input id="fg-color" type="color" value={fgColor} onChange={(e) => setFgColor(e.target.value)} className="w-full h-10 p-1"/>
+                  <Input id="fg-color" type="color" value={fgColor} onChange={(e) => setFgColor(e.target.value)} className="w-full h-9 p-1"/>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bg-color" className="text-sm font-medium text-foreground">{t('backgroundColor.label')}</Label>
-                  <Input id="bg-color" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-10 p-1" disabled={(enableBackgroundCustomization && !!backgroundImage) || (enableFrameCustomization && selectedFrameType !== 'none')}/>
+                  <Input id="bg-color" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-9 p-1" disabled={(enableBackgroundCustomization && !!backgroundImage) || (enableFrameCustomization && selectedFrameType !== 'none')}/>
                   {( (enableBackgroundCustomization && !!backgroundImage) || (enableFrameCustomization && selectedFrameType !== 'none') ) && <p className="text-xs text-muted-foreground">{t('backgroundColorDisabledHint')}</p>}
                 </div>
                 <div className="space-y-2 sm:col-span-2">
@@ -1403,7 +1433,7 @@ export default function QRCodeGenerator({
                     <ShieldCheck className="w-4 h-4 mr-1 text-primary animate-text-glow-primary" /> {t('errorCorrection.label')}
                   </Label>
                   <Select onValueChange={(value) => setErrorCorrectionLevel(value as ErrorCorrectionLevel)} value={errorCorrectionLevel}>
-                    <SelectTrigger id="error-correction" className="text-sm h-10"><SelectValue placeholder={t('errorCorrection.label')} /></SelectTrigger>
+                    <SelectTrigger id="error-correction" className="text-sm h-9"><SelectValue placeholder={t('errorCorrection.label')} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="L" className="text-sm">{t('errorCorrection.levelL')}</SelectItem>
                       <SelectItem value="M" className="text-sm">{t('errorCorrection.levelM')}</SelectItem>
@@ -1416,7 +1446,7 @@ export default function QRCodeGenerator({
                   <Label htmlFor="quiet-zone" className="text-sm flex items-center font-medium text-foreground">
                     <Maximize className="w-4 h-4 mr-1 text-primary animate-text-glow-primary" /> {t('quietZone.label')}
                   </Label>
-                  <Input id="quiet-zone" type="number" min="0" max="40" value={quietZone} onChange={(e) => setQuietZone(Number(e.target.value))} className="transition-all duration-300 focus:shadow-outline-primary h-10" placeholder={t('quietZone.placeholder')}/>
+                  <Input id="quiet-zone" type="number" min="0" max="40" value={quietZone} onChange={(e) => setQuietZone(Number(e.target.value))} className="transition-all duration-300 focus:shadow-outline-primary h-9" placeholder={t('quietZone.placeholder')}/>
                 </div>
               </div>
             </div>
@@ -1446,12 +1476,12 @@ export default function QRCodeGenerator({
                   <div className="space-y-3 pl-2 border-l-2 border-primary/20">
                     <div>
                       <Label htmlFor="bg-image-upload" className="text-sm font-medium text-foreground">{t('uploadBackgroundImage.label')}</Label>
-                      <Input id="bg-image-upload" type="file" accept="image/*" ref={backgroundImageInputRef} onChange={handleBackgroundImageUpload} className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 file:text-xs h-10" />
+                      <Input id="bg-image-upload" type="file" accept="image/*" ref={backgroundImageInputRef} onChange={handleBackgroundImageUpload} className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 file:text-xs h-9 text-xs" />
                     </div>
                     {backgroundImage && (
                         <div className="flex flex-col items-start gap-2">
                           <img src={backgroundImage} alt={t('backgroundImagePreview.alt')} className="h-20 w-20 object-cover border rounded-md shadow" />
-                          <Button variant="outline" size="sm" onClick={removeBackgroundImageFile} className="text-destructive hover:bg-destructive/10 hover:border-destructive/50 border-destructive/50">
+                          <Button variant="outline" size="sm" onClick={removeBackgroundImageFile} className="text-destructive hover:bg-destructive/10 hover:border-destructive/50 border-destructive/50 h-9">
                             <Trash2 className="w-4 h-4 mr-1" /> {t('removeBackgroundImage.button')}
                           </Button>
                         </div>
@@ -1485,12 +1515,12 @@ export default function QRCodeGenerator({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start pl-2 border-l-2 border-primary/20">
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="logo-upload" className="text-sm font-medium text-foreground">{t('uploadLogo.label')}</Label>
-                      <Input id="logo-upload" type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoUpload} className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 file:text-xs h-10" />
+                      <Input id="logo-upload" type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoUpload} className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 file:text-xs h-9 text-xs" />
                       {logoDataUri && <img src={logoDataUri} alt="Logo preview" className="mt-2 h-16 w-16 object-contain border rounded-md" />}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="logo-size-ratio" className="text-sm font-medium text-foreground">{t('logoSizeRatio.label')}</Label>
-                      <Input id="logo-size-ratio" type="number" min="0.05" max="0.4" step="0.01" value={logoSizeRatio} onChange={(e) => setLogoSizeRatio(parseFloat(e.target.value))} disabled={!logoDataUri} className="h-10" />
+                      <Input id="logo-size-ratio" type="number" min="0.05" max="0.4" step="0.01" value={logoSizeRatio} onChange={(e) => setLogoSizeRatio(parseFloat(e.target.value))} disabled={!logoDataUri} className="h-9" />
                     </div>
                     <div className="flex items-center space-x-2 pt-6 sm:pt-8">
                       <Checkbox id="excavate-logo" checked={excavateLogo} onCheckedChange={(checked) => setExcavateLogo(checked as boolean)} disabled={!logoDataUri} />
@@ -1525,7 +1555,7 @@ export default function QRCodeGenerator({
                     <div>
                       <Label htmlFor="frame-type" className="text-sm font-medium text-foreground">{t('frameType.label')}</Label>
                       <Select value={selectedFrameType} onValueChange={(value) => setSelectedFrameType(value as FrameType)}>
-                        <SelectTrigger id="frame-type" className="text-sm h-10">
+                        <SelectTrigger id="frame-type" className="text-sm h-9">
                           <SelectValue placeholder={t('frameType.placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1546,7 +1576,7 @@ export default function QRCodeGenerator({
                               value={frameText}
                               onChange={(e) => setFrameText(e.target.value)}
                               placeholder={t('frameText.placeholder')}
-                              className="transition-all duration-300 focus:shadow-outline-primary h-10"
+                              className="transition-all duration-300 focus:shadow-outline-primary h-9"
                           />
                         </div>
                     )}
@@ -1564,6 +1594,7 @@ export default function QRCodeGenerator({
               {t('generateQrCode.button')}
             </Button>
 
+
             {qrValue && (
                 <div className="mt-6 p-3 sm:p-4 border border-dashed border-primary/50 rounded-lg bg-card flex flex-col items-center space-y-4">
                   <div className="mb-2 p-2 border rounded-md bg-muted w-full text-center">
@@ -1571,17 +1602,13 @@ export default function QRCodeGenerator({
                     <p className="text-sm font-mono break-all text-foreground" title={qrValue}>{qrValue}</p>
                   </div>
                   <div
-                      className="qr-code-outer-wrapper inline-block w-full max-w-[280px] sm:max-w-[300px] mx-auto shadow-lg"
+                      className="qr-code-outer-wrapper"
                       style={getQrWrapperStyle()}
                   >
                     <div
                         ref={qrCanvasRef}
                         className="qr-code-canvas-wrapper"
-                        style={{
-                          display: 'inline-block',
-                          maxWidth: '100%',
-                          backgroundColor: qrCanvasActualBgColor,
-                        }}
+                        style={qrCanvasWrapperStyle}
                     >
                       <QRCodeCanvas
                           value={qrValue} size={displaySize}
@@ -1598,7 +1625,7 @@ export default function QRCodeGenerator({
                             className="frame-text-area text-center font-bold"
                             style={{
                               color: fgColor,
-                              backgroundColor: ((isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization) && backgroundImage) ? 'transparent' : bgColor,
+                              backgroundColor: useActualBackground ? 'transparent' : bgColor,
                               padding: '5px 0',
                               marginTop: selectedFrameType !== 'simpleBorder' ? '5px' : '0',
                               height: `${FRAME_TEXT_AREA_HEIGHT}px`,
@@ -1612,10 +1639,11 @@ export default function QRCodeGenerator({
                     )}
                   </div>
 
+
                   <div className="w-full space-y-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary">
+                        <Button variant="outline" className="w-full hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary h-9">
                           <Download className="w-5 h-5 mr-2 animate-text-glow-primary" /> {t('downloadQrCode.button')}
                         </Button>
                       </DropdownMenuTrigger>
@@ -1628,8 +1656,8 @@ export default function QRCodeGenerator({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button onClick={handleCopyQRCodeImage} variant="outline" className="w-full hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary"><ClipboardCopy className="w-5 h-5 mr-2 animate-text-glow-primary" />{t('copyImage.button')}</Button>
-                    <Button onClick={handleShareQRCode} variant="outline" className="w-full hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary"><Share2 className="w-5 h-5 mr-2 animate-text-glow-primary" />{t('shareQrCode.button')}</Button>
+                    <Button onClick={handleCopyQRCodeImage} variant="outline" className="w-full hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary h-9"><ClipboardCopy className="w-5 h-5 mr-2 animate-text-glow-primary" />{t('copyImage.button')}</Button>
+                    <Button onClick={handleShareQRCode} variant="outline" className="w-full hover:shadow-primary-glow focus:shadow-primary-glow hover:border-primary focus:border-primary h-9"><Share2 className="w-5 h-5 mr-2 animate-text-glow-primary" />{t('shareQrCode.button')}</Button>
                   </div>
                 </div>
             )}
@@ -1650,105 +1678,319 @@ export default function QRCodeGenerator({
             </p>
           </CardFooter>
         </Card>
+      </div>
+  );
+
+  const renderMobileLayout = () => (
+      <div className="flex flex-col h-screen bg-background">
+        <div className="flex-grow flex flex-col items-center justify-center p-2 space-y-3">
+          <div className="flex items-center justify-center text-center pt-2">
+            <ScanQrCode className="w-7 h-7 text-primary mr-1.5 animate-text-glow-primary" />
+            <h1 className="text-xl font-headline font-semibold text-primary animate-text-glow-primary">
+              {t('qrCodeMinimal.title')}
+            </h1>
+          </div>
+          {qrValue ? (
+              <div className="p-3 border border-dashed border-primary/50 rounded-lg bg-card flex flex-col items-center space-y-3 w-full max-w-xs">
+                <div className="mb-1 p-1 border rounded-md bg-muted w-full text-center">
+                  <Label className="text-[10px] text-muted-foreground">{t('encodedContent.label')}</Label>
+                  <p className="text-xs font-mono break-all text-foreground" title={qrValue}>{qrValue}</p>
+                </div>
+                <div
+                    className="qr-code-outer-wrapper"
+                    style={getQrWrapperStyle()}
+                >
+                  <div
+                      ref={qrCanvasRef}
+                      className="qr-code-canvas-wrapper"
+                      style={qrCanvasWrapperStyle}
+                  >
+                    <QRCodeCanvas
+                        value={qrValue} size={displaySize}
+                        fgColor={fgColor}
+                        bgColor={qrCanvasActualBgColor}
+                        level={errorCorrectionLevel} margin={quietZone}
+                        includeMargin={true}
+                        imageSettings={logoActuallyActive ? { src: logoDataUri, height: displaySize * logoSizeRatio, width: displaySize * logoSizeRatio, excavate: excavateLogo } : undefined}
+                        style={{maxWidth: '100%', height: 'auto', display: 'block'}}
+                    />
+                  </div>
+                  {frameActuallyActive && (selectedFrameType === 'textBottom' || selectedFrameType === 'scanMeBottom' || selectedFrameType === 'roundedBorderTextBottom') && (
+                      <div className="frame-text-area text-center font-bold text-xs"
+                           style={{ color: fgColor, backgroundColor: useActualBackground ? 'transparent' : bgColor, padding: '4px 0', marginTop: '4px', height: `${FRAME_TEXT_AREA_HEIGHT/1.5}px`, lineHeight: `${(FRAME_TEXT_AREA_HEIGHT -10)/1.5}px`, boxSizing: 'border-box', width: '100%' }}>
+                        {textForFrame}
+                      </div>
+                  )}
+                </div>
+                <div className="w-full space-y-2 pt-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full text-sm h-9"><Download className="w-4 h-4 mr-2" /> {t('downloadQrCode.button')}</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-[calc(100vw-4rem)]">
+                      <DropdownMenuItem onClick={() => handleDownloadQRCode('png')}><ImageIcon className="w-4 h-4 mr-2" /> PNG</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownloadQRCode('svg')}><FileJson className="w-4 h-4 mr-2" /> SVG</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button onClick={handleCopyQRCodeImage} variant="outline" className="w-full text-sm h-9"><ClipboardCopy className="w-4 h-4 mr-2" />{t('copyImage.button')}</Button>
+                  <Button onClick={handleShareQRCode} variant="outline" className="w-full text-sm h-9"><Share2 className="w-4 h-4 mr-2" />{t('shareQrCode.button')}</Button>
+                </div>
+              </div>
+          ) : (
+              <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-lg bg-muted h-64 w-full max-w-xs">
+                <ScanQrCode className="w-16 h-16 text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground">{t('mobile.noQrGenerated.title')}</p>
+                <p className="text-xs text-muted-foreground">{t('mobile.noQrGenerated.description')}</p>
+              </div>
+          )}
+        </div>
+
+        <Sheet open={isControlsSheetOpen} onOpenChange={setIsControlsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button
+                className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm py-3 text-base shadow-lg z-50 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+            >
+              <Edit3 className="w-5 h-5 mr-2 animate-text-glow-primary" /> {t('mobile.editOrNewLabel')}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0 bg-background">
+            <SheetHeader className="p-4 border-b bg-background sticky top-0 z-10 shrink-0">
+              <div className="flex justify-between items-center">
+                <SheetTitle className="flex items-center text-lg text-foreground text-left">
+                  <Settings className="w-5 h-5 mr-2 text-primary animate-text-glow-primary shrink-0" /> <span className="truncate">{t('mobile.controlsPanel.title')}</span>
+                </SheetTitle>
+                <SheetClose asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7"><X className="h-4 w-4" /></Button>
+                </SheetClose>
+              </div>
+            </SheetHeader>
+            <ScrollArea className="flex-grow">
+              <div className="space-y-4 p-4 pb-6">
+                <Tabs value={activeContentType} onValueChange={(value) => handleContentTypeChange(value as QRContentType)} className="w-full">
+                  <ScrollArea className="w-full whitespace-nowrap pb-2">
+                    <TabsList className="inline-flex w-auto p-1 bg-muted rounded-md">
+                      <TabsTrigger value="url" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><LinkIcon className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.url.tab')}</TabsTrigger>
+                      <TabsTrigger value="wifi" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Wifi className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.wifi.tab')}</TabsTrigger>
+                      <TabsTrigger value="whatsapp" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MessageSquareText className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.whatsapp.tab')}</TabsTrigger>
+                      <TabsTrigger value="phone" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Phone className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.phone.tab')}</TabsTrigger>
+                      <TabsTrigger value="vcard" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><User className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.vcard.tab')}</TabsTrigger>
+                      <TabsTrigger value="vevent" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><CalendarDays className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.vevent.tab')}</TabsTrigger>
+                      <TabsTrigger value="email" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Mail className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.email.tab')}</TabsTrigger>
+                      <TabsTrigger value="sms" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MessageSquare className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.sms.tab')}</TabsTrigger>
+                      <TabsTrigger value="geo" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MapPin className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.geo.tab')}</TabsTrigger>
+                    </TabsList>
+                    <ScrollBar orientation="horizontal" className="h-2" />
+                  </ScrollArea>
+                  <TabsContent value={activeContentType} className="mt-4">
+                    {renderCurrentForm(true)}
+                  </TabsContent>
+                </Tabs>
+
+                <Accordion type="multiple" className="w-full space-y-2" value={mobileAccordionValue} onValueChange={setMobileAccordionValue}>
+                  <AccordionItem value="appearance" className="bg-muted/30 rounded-lg border border-border">
+                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
+                          <Palette className="w-4 h-4 text-primary animate-text-glow-primary" />
+                        </div>
+                        <span className="text-foreground">{t('customizeAppearance.title')}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3 pb-4 pt-2 space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1"><Label htmlFor="fg-color-mobile" className="text-sm font-medium text-foreground">{t('foregroundColor.label')}</Label><Input id="fg-color-mobile" type="color" value={fgColor} onChange={(e) => setFgColor(e.target.value)} className="w-full h-9 p-1"/></div>
+                        <div className="space-y-1"><Label htmlFor="bg-color-mobile" className="text-sm font-medium text-foreground">{t('backgroundColor.label')}</Label><Input id="bg-color-mobile" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-9 p-1" disabled={(mobileAccordionValue.includes("background") && !!backgroundImage) || (mobileAccordionValue.includes("frame") && selectedFrameType !== 'none')}/></div>
+                      </div>
+                      {( (mobileAccordionValue.includes("background") && !!backgroundImage) || (mobileAccordionValue.includes("frame") && selectedFrameType !== 'none') ) && <p className="text-xs text-muted-foreground px-1">{t('backgroundColorDisabledHint')}</p>}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <Label htmlFor="size-slider-mobile" className="text-sm font-medium text-foreground">{t('sizePx.label')}</Label>
+                          <span className="text-sm text-foreground">{size}px</span>
+                        </div>
+                        <Slider id="size-slider-mobile" min={50} max={1000} step={1} value={[size]} onValueChange={(value) => setSize(value[0])} />
+                      </div>
+                      <div className="space-y-2"><Label htmlFor="error-correction-mobile" className="text-sm font-medium text-foreground">{t('errorCorrection.label')}</Label>
+                        <Select onValueChange={(value) => setErrorCorrectionLevel(value as ErrorCorrectionLevel)} value={errorCorrectionLevel}>
+                          <SelectTrigger id="error-correction-mobile" className="text-sm h-9"><SelectValue placeholder={t('errorCorrection.label')} /></SelectTrigger>
+                          <SelectContent><SelectItem value="L" className="text-sm">{t('errorCorrection.levelL')}</SelectItem><SelectItem value="M" className="text-sm">{t('errorCorrection.levelM')}</SelectItem><SelectItem value="Q" className="text-sm">{t('errorCorrection.levelQ')}</SelectItem><SelectItem value="H" className="text-sm">{t('errorCorrection.levelH')}</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2"><Label htmlFor="quiet-zone-mobile" className="text-sm font-medium text-foreground">{t('quietZone.label')}</Label><Input id="quiet-zone-mobile" type="number" min="0" max="40" value={quietZone} onChange={(e) => setQuietZone(Number(e.target.value))} placeholder={t('quietZone.placeholder')} className="h-9"/></div>
+                      <Button variant="ghost" size="sm" onClick={resetAppearanceCustomization} className="text-xs w-full justify-start text-muted-foreground mt-2 h-9"><RefreshCw className="w-3 h-3 mr-1" /> {t('reset.button')}</Button>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="background" className="bg-muted/30 rounded-lg border border-border">
+                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
+                          <ImageIcon className="w-4 h-4 text-primary animate-text-glow-primary" />
+                        </div>
+                        <span className="text-foreground">{t('customizeQrBackground.title')}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
+                      <div className="space-y-1"><Label htmlFor="bg-image-upload-mobile" className="text-sm font-medium text-foreground">{t('uploadBackgroundImage.label')}</Label><Input id="bg-image-upload-mobile" type="file" accept="image/*" ref={backgroundImageInputRef} onChange={handleBackgroundImageUpload} className="file:text-xs h-9 text-xs" /></div>
+                      {backgroundImage && (<div className="flex flex-col items-start gap-2"><img src={backgroundImage} alt={t('backgroundImagePreview.alt')} className="h-16 w-16 object-cover border rounded shadow" /><Button variant="outline" size="sm" onClick={removeBackgroundImageFile} className="text-destructive text-sm h-9"><Trash2 className="w-4 h-4 mr-1" /> {t('removeBackgroundImage.button')}</Button></div>)}
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="logo" className="bg-muted/30 rounded-lg border border-border">
+                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
+                          <ImagePlus className="w-4 h-4 text-primary animate-text-glow-primary" />
+                        </div>
+                        <span className="text-foreground">{t('customizeLogo.title')}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
+                      <div className="space-y-1"><Label htmlFor="logo-upload-mobile" className="text-sm font-medium text-foreground">{t('uploadLogo.label')}</Label><Input id="logo-upload-mobile" type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoUpload} className="file:text-xs h-9 text-xs"/>{logoDataUri && <img src={logoDataUri} alt="Logo preview" className="mt-2 h-12 w-12 object-contain border rounded" />}</div>
+                      <div className="space-y-1"><Label htmlFor="logo-size-ratio-mobile" className="text-sm font-medium text-foreground">{t('logoSizeRatio.label')}</Label><Input id="logo-size-ratio-mobile" type="number" min="0.05" max="0.4" step="0.01" value={logoSizeRatio} onChange={(e) => setLogoSizeRatio(parseFloat(e.target.value))} disabled={!logoDataUri} className="h-9" /></div>
+                      <div className="flex items-center space-x-2 p-1"><Checkbox id="excavate-logo-mobile" checked={excavateLogo} onCheckedChange={(checked) => setExcavateLogo(checked as boolean)} disabled={!logoDataUri} /><Label htmlFor="excavate-logo-mobile" className="text-sm font-medium text-foreground">{t('cutoutAreaBehindLogo.label')}</Label></div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="frame" className="bg-muted/30 rounded-lg border border-border">
+                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-background rounded-md border border-input shadow-sm">
+                          <Frame className="w-4 h-4 text-primary animate-text-glow-primary" />
+                        </div>
+                        <span className="text-foreground">{t('customizeFrame.title')}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
+                      <div className="space-y-1"><Label htmlFor="frame-type-mobile" className="text-sm font-medium text-foreground">{t('frameType.label')}</Label>
+                        <Select value={selectedFrameType} onValueChange={(value) => setSelectedFrameType(value as FrameType)}>
+                          <SelectTrigger id="frame-type-mobile" className="text-sm h-9"><SelectValue placeholder={t('frameType.placeholder')} /></SelectTrigger>
+                          <SelectContent><SelectItem value="none" className="text-sm">{t('frameType.none')}</SelectItem><SelectItem value="simpleBorder" className="text-sm">{t('frameType.simpleBorder')}</SelectItem><SelectItem value="textBottom" className="text-sm">{t('frameType.textBottom')}</SelectItem><SelectItem value="scanMeBottom" className="text-sm">{t('frameType.scanMeBottom')}</SelectItem><SelectItem value="roundedBorderTextBottom" className="text-sm">{t('frameType.roundedBorderTextBottom')}</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      {(selectedFrameType === 'textBottom' || selectedFrameType === 'roundedBorderTextBottom') && (<div className="space-y-1"><Label htmlFor="frame-text-mobile" className="text-sm font-medium text-foreground">{t('frameText.label')}</Label><Input id="frame-text-mobile" type="text" value={frameText} onChange={(e) => setFrameText(e.target.value)} placeholder={t('frameText.placeholder')} className="h-9"/></div>)}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </ScrollArea>
+            <div className="p-4 border-t sticky bottom-0 bg-background z-20 shrink-0">
+              <Button onClick={handleGenerateQRCode} disabled={isLoading} className="w-full transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-base py-3">
+                {isLoading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <ScanQrCode className="w-5 h-5 mr-2 animate-text-glow-primary" />}
+                {t('generateQrCode.button')}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+  );
+
+  if (!isClient || isMobile === undefined) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><ScanQrCode className="w-12 h-12 text-primary animate-pulse" /></div>;
+  }
+
+  const mainLayout = isMobile ? renderMobileLayout() : renderDesktopLayout();
+
+  return (
+      <>
+        {mainLayout}
+
         <Dialog open={scannerOpen} onOpenChange={onScannerOpenChange}>
-          <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] flex flex-col rounded-lg">
-            <DialogHeader className="pr-10 sm:pr-12 pt-2">
+          <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] flex flex-col rounded-lg p-0">
+            <DialogHeader className="p-4 border-b pr-10 sm:pr-12 shrink-0">
               <DialogTitle className="text-foreground text-left">{t('scannerDialog.title')}</DialogTitle>
               <DialogDescription className="text-muted-foreground text-left">
                 {t('scannerDialog.description')}
               </DialogDescription>
             </DialogHeader>
-            <Tabs value={activeScannerTab} onValueChange={(value) => setActiveScannerTab(value as 'camera' | 'image')} className="flex-grow flex flex-col min-h-0">
-              <TabsList className="grid w-full grid-cols-2 shrink-0">
-                <TabsTrigger value="camera" className="text-xs sm:text-sm"><ScanLine className="w-4 h-4 mr-1 sm:mr-2" />{t('scannerDialog.tabCamera')}</TabsTrigger>
-                <TabsTrigger value="image" className="text-xs sm:text-sm"><UploadCloud className="w-4 h-4 mr-1 sm:mr-2" />{t('scannerDialog.tabImage')}</TabsTrigger>
-              </TabsList>
-              <TabsContent value="camera" className="flex-grow flex flex-col items-center justify-center p-1 sm:p-2 overflow-auto">
-                <div className="relative w-full aspect-video">
-                  <video ref={videoRef} className="w-full h-full rounded-md bg-muted object-cover" autoPlay muted playsInline />
-                  {activeScannerTab === 'camera' && hasCameraPermission === null && <p className="text-sm text-center text-muted-foreground mt-2">{t('scannerDialog.permissionRequesting')}</p> }
-                  {activeScannerTab === 'camera' && hasCameraPermission === false && (
-                      <Alert variant="destructive" className="items-center mt-2">
-                        <CameraOff className="h-5 w-5" />
-                        <AlertTitle>{t('scannerDialog.permissionDenied.title')}</AlertTitle>
-                        <AlertDescription>
-                          {t('scannerDialog.permissionDenied.description')}
-                        </AlertDescription>
-                      </Alert>
-                  )}
-                  {activeScannerTab === 'camera' && hasCameraPermission === true && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
-                        <div className="w-3/4 h-3/4 border-4 border-primary/50 rounded-lg animate-pulse"></div>
+            <div className="flex-grow overflow-auto p-4">
+              <Tabs defaultValue={initialScannerTab} value={initialScannerTab} onValueChange={(value) => onScannerTabChange(value as 'camera' | 'image')} className="flex flex-col h-full">
+                <TabsList className="grid w-full grid-cols-2 shrink-0">
+                  <TabsTrigger value="image" className="text-xs sm:text-sm"><UploadCloud className="w-4 h-4 mr-1 sm:mr-2" />{t('scannerDialog.tabImage')}</TabsTrigger>
+                  <TabsTrigger value="camera" className="text-xs sm:text-sm"><ScanLine className="w-4 h-4 mr-1 sm:mr-2" />{t('scannerDialog.tabCamera')}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="camera" className="flex-grow flex flex-col items-center justify-center pt-4 min-h-0">
+                  <div className="relative w-full aspect-video">
+                    <video ref={videoRef} className="w-full h-full rounded-md bg-muted object-cover" autoPlay muted playsInline />
+                    {initialScannerTab === 'camera' && hasCameraPermission === null && <p className="text-sm text-center text-muted-foreground mt-2">{t('scannerDialog.permissionRequesting')}</p> }
+                    {initialScannerTab === 'camera' && hasCameraPermission === false && (
+                        <Alert variant="destructive" className="items-center mt-2">
+                          <CameraOff className="h-5 w-5" />
+                          <AlertTitle>{t('scannerDialog.permissionDenied.title')}</AlertTitle>
+                          <AlertDescription>
+                            {t('scannerDialog.permissionDenied.description')}
+                          </AlertDescription>
+                        </Alert>
+                    )}
+                    {initialScannerTab === 'camera' && hasCameraPermission === true && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                          <div className="w-3/4 h-3/4 border-4 border-primary/50 rounded-lg animate-pulse"></div>
+                        </div>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="image" className="flex-grow flex flex-col space-y-3 pt-4 pb-2 min-h-0">
+                  <canvas ref={imageScanCanvasRef} style={{ display: 'none' }} />
+                  <div>
+                    <Label htmlFor="qr-image-upload" className="text-sm font-medium">{t('scannerDialog.scanImage.uploadLabel')}</Label>
+                    <Input id="qr-image-upload" type="file" accept="image/*" ref={imageScanInputRef} onChange={handleImageFileForScanChange} className="mt-1 file:text-xs h-9 text-xs" />
+                  </div>
+                  <Button onClick={handlePasteImageForScan} variant="outline" className="w-full text-sm h-9">
+                    <ClipboardCopy className="w-4 h-4 mr-2" /> {t('scannerDialog.scanImage.pasteButton')}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">{t('scannerDialog.pasteTip')}</p>
+                  {isScanningImage && <div className="flex items-center justify-center py-4"><RefreshCw className="w-6 h-6 animate-spin text-primary" /><p className="ml-2 text-sm text-muted-foreground">{t('scannerDialog.scanImage.loading')}</p></div>}
+                  {scannedImagePreview && !isScanningImage && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">{t('scannerDialog.scanImage.previewLabel')}</Label>
+                        <img src={scannedImagePreview} alt={t('scannerDialog.scanImage.previewAlt')} className="max-w-full max-h-48 object-contain border rounded-md mx-auto" />
                       </div>
                   )}
-                  {activeScannerTab === 'camera' && hasCameraPermission !== true && hasCameraPermission !== null && (
-                      <Alert variant="destructive" className="mt-2">
-                        <AlertTitle>{t('scannerDialog.cameraRequired.title')}</AlertTitle>
+                  {scannedImageQrResult && !isScanningImage && (
+                      <div className="space-y-2 pt-2">
+                        <Label className="text-sm font-medium">{t('scannerDialog.scanImage.resultLabel')}</Label>
+                        <Card className="bg-muted">
+                          <CardContent className="p-3">
+                            <p className="text-sm break-all font-mono text-foreground">{scannedImageQrResult}</p>
+                          </CardContent>
+                        </Card>
+                        <Button onClick={handleCopyScannedResult} variant="outline" size="sm" className="w-full h-9"><Copy className="w-4 h-4 mr-2" />{t('scannerDialog.scanImage.copyResultButton')}</Button>
+                      </div>
+                  )}
+                  {!scannedImageQrResult && !isScanningImage && scannedImagePreview && (
+                      <Alert variant="default" className="mt-2">
                         <AlertDescription>
-                          {t('scannerDialog.cameraRequired.description')}
+                          {t('scannerDialog.scanImage.notFoundDetailed')}
                         </AlertDescription>
                       </Alert>
                   )}
-                </div>
-              </TabsContent>
-              <TabsContent value="image" className="flex-grow flex flex-col space-y-3 p-1 sm:p-2 overflow-auto">
-                <canvas ref={imageScanCanvasRef} style={{ display: 'none' }} />
-                <div>
-                  <Label htmlFor="qr-image-upload" className="text-sm font-medium">{t('scannerDialog.scanImage.uploadLabel')}</Label>
-                  <Input id="qr-image-upload" type="file" accept="image/*" ref={imageScanInputRef} onChange={handleImageFileForScanChange} className="mt-1 file:text-xs h-9 text-xs" />
-                </div>
-                {/* <Button onClick={handlePasteImageForScan} variant="outline" className="w-full text-sm h-9">
-                        <ClipboardCopy className="w-4 h-4 mr-2" /> {t('scannerDialog.scanImage.pasteButton')}
-                    </Button> */}
-                <p className="text-xs text-muted-foreground text-center">{t('scannerDialog.pasteTip')}</p>
-                {isScanningImage && <div className="flex items-center justify-center py-4"><RefreshCw className="w-6 h-6 animate-spin text-primary" /><p className="ml-2 text-sm text-muted-foreground">{t('scannerDialog.scanImage.loading')}</p></div>}
-                {scannedImagePreview && !isScanningImage && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">{t('scannerDialog.scanImage.previewLabel')}</Label>
-                      <img src={scannedImagePreview} alt={t('scannerDialog.scanImage.previewAlt')} className="max-w-full max-h-48 object-contain border rounded-md mx-auto" />
-                    </div>
-                )}
-                {scannedImageQrResult && !isScanningImage && (
-                    <div className="space-y-2 pt-2">
-                      <Label className="text-sm font-medium">{t('scannerDialog.scanImage.resultLabel')}</Label>
-                      <Card className="bg-muted">
-                        <CardContent className="p-3">
-                          <p className="text-sm break-all font-mono text-foreground">{scannedImageQrResult}</p>
-                        </CardContent>
-                      </Card>
-                      <Button onClick={handleCopyScannedResult} variant="outline" size="sm" className="w-full"><Copy className="w-4 h-4 mr-2" />{t('scannerDialog.scanImage.copyResultButton')}</Button>
-                    </div>
-                )}
-                {!scannedImageQrResult && !isScanningImage && scannedImagePreview && (
-                    <Alert variant="default" className="mt-2">
-                      <AlertDescription>
-                        {t('scannerDialog.scanImage.notFoundDetailed')}
-                      </AlertDescription>
-                    </Alert>
-                )}
-              </TabsContent>
-            </Tabs>
-            <DialogFooter className="pt-2 sm:pt-4 shrink-0">
-              <Button variant="outline" onClick={() => onScannerOpenChange(false)}>{t('scannerDialog.close.button')}</Button>
+                </TabsContent>
+              </Tabs>
+            </div>
+            <DialogFooter className="p-4 border-t shrink-0">
+              <Button variant="outline" onClick={() => onScannerOpenChange(false)} className="w-full sm:w-auto h-9">{t('scannerDialog.close.button')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Sheet open={historySheetOpen} onOpenChange={onHistorySheetOpenChange}>
-          <SheetContent side={isMobile ? "bottom" : "right"} className={`${isMobile ? 'h-[75vh] rounded-t-lg' : 'sm:max-w-md w-full'} flex flex-col p-0 bg-background`}>
-            <SheetHeader className="p-4 border-b pr-10 sm:pr-12">
+
+        <Sheet open={historySheetOpen} onOpenChange={onHistorySheetOpenChange} >
+          <SheetContent
+              side={isMobile ? "bottom" : "right"}
+              className={`${isMobile ? 'h-[75vh] rounded-t-lg' : 'sm:max-w-md w-full'} flex flex-col p-0 bg-background`}
+          >
+            <SheetHeader className="p-4 border-b pr-10 sm:pr-12 shrink-0">
               <SheetTitle className="flex items-center text-foreground text-left">
                 <HistoryIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary animate-text-glow-primary shrink-0" /> <span className="truncate">{t('qrCodeHistory.title')}</span>
               </SheetTitle>
               <DialogDescription className="text-muted-foreground text-left">{t('history.sheetDescription')}</DialogDescription>
             </SheetHeader>
-            <div className="py-4 px-4 flex-grow flex flex-col min-h-0">
+            <div className="flex-grow flex flex-col min-h-0">
               {history.length > 0 ? (
                   <>
-                    <div className="flex justify-end mb-4 shrink-0">
+                    <div className="px-4 pt-4 pb-2 flex justify-end shrink-0">
                       <Button variant="outline" size="sm" onClick={clearHistory} className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/50 hover:shadow-destructive focus:shadow-destructive h-9"><Trash2 className="w-4 h-4 mr-1" /> {t('clearHistory.button')}</Button>
                     </div>
-                    <ScrollArea className="flex-grow w-full rounded-md border p-2 sm:p-3 bg-background">
-                      <div className="space-y-3 sm:space-y-3">
+                    <ScrollArea className="flex-grow w-full px-4 pb-4">
+                      <div className="space-y-3 sm:space-y-3 border p-2 sm:p-3 rounded-md bg-background">
                         {history.map((entry) => (
                             <Card key={entry.id} className="p-2.5 shadow-sm bg-card">
                               <div className={`flex items-center gap-2.5 sm:gap-3 flex-row`}>
@@ -1786,12 +2028,10 @@ export default function QRCodeGenerator({
                                     {entry.contentType === 'whatsapp' && <span className="ml-1 text-xs text-muted-foreground">{t('contentTypes.whatsapp.historySuffix')}</span>}
                                     {entry.contentType === 'phone' && <span className="ml-1 text-xs text-muted-foreground">{t('contentTypes.phone.historySuffix')}</span>}
                                   </div>
-                                  <p className="text-[10px] sm:text-xs text-muted-foreground">
-                                    {t('encodedLabel')} <span className="font-mono text-[10px] sm:text-xs truncate block" title={entry.qrValue}>{entry.qrValue}</span>
-                                  </p>
+                                  <p className="text-[10px] sm:text-xs text-muted-foreground">{`${t('encodedLabel')} `}<span className="font-mono text-[10px] sm:text-xs truncate block" title={entry.qrValue}>{entry.qrValue}</span></p>
                                   <p className="text-[10px] sm:text-xs text-muted-foreground">{`${t('generatedLabel')} ${new Date(entry.timestamp).toLocaleString()}`}</p>
                                   <p className="text-[10px] sm:text-xs text-muted-foreground truncate" title={`${t('settingsSummary.fg')} ${entry.fgColor}, ${t('settingsSummary.bg')} ${entry.bgColor}, ${t('settingsSummary.size')} ${entry.size}px, ${t('settingsSummary.level')} ${entry.level}, ${t('settingsSummary.margin')} ${entry.margin}${entry.logoDataUri && (entry.enableLogoCustomization ?? false) ? `, Logo: Yes (Size: ${ (entry.logoSizeRatio || 0)*100 }%)` : ''}${entry.backgroundImage && (entry.enableBackgroundCustomization ?? false) ? `, ${t('settingsSummary.bgImageYes')}` : ''}${entry.selectedFrameType && entry.selectedFrameType !== 'none' && (entry.enableFrameCustomization ?? false) ? `, ${t('settingsSummary.frameYes')}`:''}`}>
-                                    {t('settingsSummary.fg')} {entry.fgColor}, {t('settingsSummary.bg')} {entry.bgColor}, {t('settingsSummary.size')} ${entry.size}px, {t('settingsSummary.level')} ${entry.level}, {t('settingsSummary.margin')} ${entry.margin}
+                                    {t('settingsSummary.fg')} {entry.fgColor}, {t('settingsSummary.bg')} {entry.bgColor}, {t('settingsSummary.size')} {entry.size}px, {t('settingsSummary.level')} ${entry.level}, {t('settingsSummary.margin')} ${entry.margin}
                                     {entry.logoDataUri && (entry.enableLogoCustomization ?? false) && `, ${t('settingsSummary.logoYes')}`}
                                     {entry.backgroundImage && (entry.enableBackgroundCustomization ?? false) && `, ${t('settingsSummary.bgImageYes')}`}
                                     {entry.selectedFrameType && entry.selectedFrameType !== 'none' && (entry.enableFrameCustomization ?? false) && `, ${t('settingsSummary.frameYes')}`}
@@ -1815,207 +2055,10 @@ export default function QRCodeGenerator({
               )}
             </div>
             <SheetClose asChild className="mt-auto shrink-0 p-4 border-t">
-              <Button variant="outline" className="w-full">{t('scannerDialog.close.button')}</Button>
+              <Button variant="outline" className="w-full h-9">{t('scannerDialog.close.button')}</Button>
             </SheetClose>
           </SheetContent>
         </Sheet>
-      </div>
+      </>
   );
-
-  const renderMobileLayout = () => (
-      <div className="flex flex-col h-screen bg-background">
-        <div className="flex-grow flex flex-col items-center justify-center p-2 space-y-3">
-          <div className="flex items-center justify-center text-center pt-2">
-            <ScanQrCode className="w-7 h-7 text-primary mr-1.5 animate-text-glow-primary" />
-            <h1 className="text-xl font-headline font-semibold text-primary animate-text-glow-primary">
-              {t('qrCodeMinimal.title')}
-            </h1>
-          </div>
-          {qrValue ? (
-              <div className="p-3 border border-dashed border-primary/50 rounded-lg bg-card flex flex-col items-center space-y-3 w-full max-w-xs">
-                <div className="mb-1 p-1 border rounded-md bg-muted w-full text-center">
-                  <Label className="text-[10px] text-muted-foreground">{t('encodedContent.label')}</Label>
-                  <p className="text-xs font-mono break-all text-foreground" title={qrValue}>{qrValue}</p>
-                </div>
-                <div
-                    className="qr-code-outer-wrapper inline-block w-full max-w-[240px] mx-auto shadow-lg"
-                    style={getQrWrapperStyle()}
-                >
-                  <div
-                      ref={qrCanvasRef}
-                      className="qr-code-canvas-wrapper"
-                      style={{
-                        display: 'inline-block',
-                        maxWidth: '100%',
-                        backgroundColor: qrCanvasActualBgColor,
-                      }}
-                  >
-                    <QRCodeCanvas
-                        value={qrValue} size={displaySize}
-                        fgColor={fgColor}
-                        bgColor={qrCanvasActualBgColor}
-                        level={errorCorrectionLevel} margin={quietZone}
-                        includeMargin={true}
-                        imageSettings={logoActuallyActive ? { src: logoDataUri, height: displaySize * logoSizeRatio, width: displaySize * logoSizeRatio, excavate: excavateLogo } : undefined}
-                        style={{maxWidth: '100%', height: 'auto', display: 'block'}}
-                    />
-                  </div>
-                  {frameActuallyActive && (selectedFrameType === 'textBottom' || selectedFrameType === 'scanMeBottom' || selectedFrameType === 'roundedBorderTextBottom') && (
-                      <div className="frame-text-area text-center font-bold text-xs"
-                           style={{ color: fgColor, backgroundColor: ((isMobile ? mobileAccordionValue.includes("background") : enableBackgroundCustomization) && backgroundImage) ? 'transparent' : bgColor, padding: '4px 0', marginTop: '4px', height: `${FRAME_TEXT_AREA_HEIGHT/1.5}px`, lineHeight: `${(FRAME_TEXT_AREA_HEIGHT -10)/1.5}px`, boxSizing: 'border-box', width: '100%' }}>
-                        {textForFrame}
-                      </div>
-                  )}
-                </div>
-                <div className="w-full space-y-2 pt-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full text-sm h-9"><Download className="w-4 h-4 mr-2" /> {t('downloadQrCode.button')}</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className="w-[calc(100vw-4rem)]">
-                      <DropdownMenuItem onClick={() => handleDownloadQRCode('png')}><ImageIcon className="w-4 h-4 mr-2" /> PNG</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownloadQRCode('svg')}><FileJson className="w-4 h-4 mr-2" /> SVG</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button onClick={handleCopyQRCodeImage} variant="outline" className="w-full text-sm h-9"><ClipboardCopy className="w-4 h-4 mr-2" />{t('copyImage.button')}</Button>
-                  <Button onClick={handleShareQRCode} variant="outline" className="w-full text-sm h-9"><Share2 className="w-4 h-4 mr-2" />{t('shareQrCode.button')}</Button>
-                </div>
-              </div>
-          ) : (
-              <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-lg bg-muted h-64 w-full max-w-xs">
-                <ScanQrCode className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">{t('mobile.noQrGenerated.title')}</p>
-                <p className="text-xs text-muted-foreground">{t('mobile.noQrGenerated.description')}</p>
-              </div>
-          )}
-        </div>
-
-        <Sheet open={isControlsSheetOpen} onOpenChange={setIsControlsSheetOpen}>
-          <SheetTrigger asChild>
-            <Button className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm py-3 text-base shadow-lg z-50 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
-              <Edit3 className="w-5 h-5 mr-2 animate-text-glow-primary" /> {t('mobile.editOrNewLabel')}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0 bg-background">
-            <SheetHeader className="p-4 border-b bg-background sticky top-0 z-10">
-              <div className="flex justify-between items-center">
-                <SheetTitle className="flex items-center text-lg text-foreground text-left">
-                  <Settings className="w-5 h-5 mr-2 text-primary animate-text-glow-primary shrink-0" /> <span className="truncate">{t('mobile.controlsPanel.title')}</span>
-                </SheetTitle>
-              </div>
-            </SheetHeader>
-            <ScrollArea className="flex-grow bg-background">
-              <div className="space-y-4 p-4 pb-6">
-                <Tabs value={activeContentType} onValueChange={(value) => handleContentTypeChange(value as QRContentType)} className="w-full">
-                  <ScrollArea className="w-full whitespace-nowrap pb-2">
-                    <TabsList className="inline-flex w-auto p-1 bg-muted rounded-md">
-                      <TabsTrigger value="url" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><LinkIcon className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.url.tab')}</TabsTrigger>
-                      <TabsTrigger value="wifi" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Wifi className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.wifi.tab')}</TabsTrigger>
-                      <TabsTrigger value="whatsapp" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MessageSquareText className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.whatsapp.tab')}</TabsTrigger>
-                      <TabsTrigger value="phone" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Phone className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.phone.tab')}</TabsTrigger>
-                      <TabsTrigger value="vcard" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><User className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.vcard.tab')}</TabsTrigger>
-                      <TabsTrigger value="vevent" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><CalendarDays className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.vevent.tab')}</TabsTrigger>
-                      <TabsTrigger value="email" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><Mail className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.email.tab')}</TabsTrigger>
-                      <TabsTrigger value="sms" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MessageSquare className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.sms.tab')}</TabsTrigger>
-                      <TabsTrigger value="geo" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight data-[state=active]:shadow-sm"><MapPin className="w-3 h-3 mr-1 animate-text-glow-primary" />{t('contentTypes.geo.tab')}</TabsTrigger>
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" className="h-2" />
-                  </ScrollArea>
-                  <TabsContent value={activeContentType} className="mt-4">
-                    {renderCurrentForm(true)}
-                  </TabsContent>
-                </Tabs>
-
-                <Accordion type="multiple" className="w-full space-y-2" value={mobileAccordionValue} onValueChange={handleMobileAccordionChange}>
-                  <AccordionItem value="appearance" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Palette className="w-5 h-5 text-primary animate-text-glow-primary" />
-                        {t('customizeAppearance.title')}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1"><Label htmlFor="fg-color-mobile" className="text-sm font-medium text-foreground">{t('foregroundColor.label')}</Label><Input id="fg-color-mobile" type="color" value={fgColor} onChange={(e) => setFgColor(e.target.value)} className="w-full h-9 p-1"/></div>
-                        <div className="space-y-1"><Label htmlFor="bg-color-mobile" className="text-sm font-medium text-foreground">{t('backgroundColor.label')}</Label><Input id="bg-color-mobile" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-9 p-1" disabled={(mobileAccordionValue.includes("background") && !!backgroundImage) || (mobileAccordionValue.includes("frame") && selectedFrameType !== 'none')}/></div>
-                      </div>
-                      {( (mobileAccordionValue.includes("background") && !!backgroundImage) || (mobileAccordionValue.includes("frame") && selectedFrameType !== 'none') ) && <p className="text-xs text-muted-foreground px-1">{t('backgroundColorDisabledHint')}</p>}
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center mb-1">
-                          <Label htmlFor="size-slider-mobile" className="text-sm font-medium text-foreground">{t('sizePx.label')}</Label>
-                          <span className="text-sm text-foreground">{size}px</span>
-                        </div>
-                        <Slider id="size-slider-mobile" min={50} max={1000} step={1} value={[size]} onValueChange={(value) => setSize(value[0])} />
-                      </div>
-                      <div className="space-y-1"><Label htmlFor="error-correction-mobile" className="text-sm font-medium text-foreground">{t('errorCorrection.label')}</Label>
-                        <Select onValueChange={(value) => setErrorCorrectionLevel(value as ErrorCorrectionLevel)} value={errorCorrectionLevel}>
-                          <SelectTrigger id="error-correction-mobile" className="text-sm h-9"><SelectValue placeholder={t('errorCorrection.label')} /></SelectTrigger>
-                          <SelectContent><SelectItem value="L" className="text-sm">{t('errorCorrection.levelL')}</SelectItem><SelectItem value="M" className="text-sm">{t('errorCorrection.levelM')}</SelectItem><SelectItem value="Q" className="text-sm">{t('errorCorrection.levelQ')}</SelectItem><SelectItem value="H" className="text-sm">{t('errorCorrection.levelH')}</SelectItem></SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1"><Label htmlFor="quiet-zone-mobile" className="text-sm font-medium text-foreground">{t('quietZone.label')}</Label><Input id="quiet-zone-mobile" type="number" min="0" max="40" value={quietZone} onChange={(e) => setQuietZone(Number(e.target.value))} placeholder={t('quietZone.placeholder')} className="h-9"/></div>
-                      <Button variant="ghost" size="sm" onClick={resetAppearanceCustomization} className="text-xs w-full justify-start text-muted-foreground mt-2 h-9"><RefreshCw className="w-3 h-3 mr-1" /> {t('reset.button')}</Button>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="background" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2 text-foreground">
-                        <ImageIcon className="w-5 h-5 text-primary animate-text-glow-primary" />{t('customizeQrBackground.title')}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
-                      <div className="space-y-1"><Label htmlFor="bg-image-upload-mobile" className="text-sm font-medium text-foreground">{t('uploadBackgroundImage.label')}</Label><Input id="bg-image-upload-mobile" type="file" accept="image/*" ref={backgroundImageInputRef} onChange={handleBackgroundImageUpload} className="file:text-xs h-9 text-xs" /></div>
-                      {backgroundImage && (<div className="flex flex-col items-start gap-2"><img src={backgroundImage} alt={t('backgroundImagePreview.alt')} className="h-16 w-16 object-cover border rounded shadow" /><Button variant="outline" size="sm" onClick={removeBackgroundImageFile} className="text-destructive text-sm h-9"><Trash2 className="w-4 h-4 mr-1" /> {t('removeBackgroundImage.button')}</Button></div>)}
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="logo" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2 text-foreground">
-                        <ImagePlus className="w-5 h-5 text-primary animate-text-glow-primary" />{t('customizeLogo.title')}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
-                      <div className="space-y-1"><Label htmlFor="logo-upload-mobile" className="text-sm font-medium text-foreground">{t('uploadLogo.label')}</Label><Input id="logo-upload-mobile" type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoUpload} className="file:text-xs h-9 text-xs"/>{logoDataUri && <img src={logoDataUri} alt="Logo preview" className="mt-2 h-12 w-12 object-contain border rounded" />}</div>
-                      <div className="space-y-1"><Label htmlFor="logo-size-ratio-mobile" className="text-sm font-medium text-foreground">{t('logoSizeRatio.label')}</Label><Input id="logo-size-ratio-mobile" type="number" min="0.05" max="0.4" step="0.01" value={logoSizeRatio} onChange={(e) => setLogoSizeRatio(parseFloat(e.target.value))} disabled={!logoDataUri} className="h-9" /></div>
-                      <div className="flex items-center space-x-2 p-1"><Checkbox id="excavate-logo-mobile" checked={excavateLogo} onCheckedChange={(checked) => setExcavateLogo(checked as boolean)} disabled={!logoDataUri} /><Label htmlFor="excavate-logo-mobile" className="text-sm font-medium text-foreground">{t('cutoutAreaBehindLogo.label')}</Label></div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="frame" className="bg-muted/30 rounded-lg border border-border">
-                    <AccordionTrigger className="px-3 py-3 text-sm font-medium w-full flex justify-between items-center hover:no-underline data-[state=open]:bg-muted">
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Frame className="w-5 h-5 text-primary animate-text-glow-primary" />{t('customizeFrame.title')}
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-4 pt-2 space-y-3">
-                      <div className="space-y-1"><Label htmlFor="frame-type-mobile" className="text-sm font-medium text-foreground">{t('frameType.label')}</Label>
-                        <Select value={selectedFrameType} onValueChange={(value) => setSelectedFrameType(value as FrameType)}>
-                          <SelectTrigger id="frame-type-mobile" className="text-sm h-9"><SelectValue placeholder={t('frameType.placeholder')} /></SelectTrigger>
-                          <SelectContent><SelectItem value="none" className="text-sm">{t('frameType.none')}</SelectItem><SelectItem value="simpleBorder" className="text-sm">{t('frameType.simpleBorder')}</SelectItem><SelectItem value="textBottom" className="text-sm">{t('frameType.textBottom')}</SelectItem><SelectItem value="scanMeBottom" className="text-sm">{t('frameType.scanMeBottom')}</SelectItem><SelectItem value="roundedBorderTextBottom" className="text-sm">{t('frameType.roundedBorderTextBottom')}</SelectItem></SelectContent>
-                        </Select>
-                      </div>
-                      {(selectedFrameType === 'textBottom' || selectedFrameType === 'roundedBorderTextBottom') && (<div className="space-y-1"><Label htmlFor="frame-text-mobile" className="text-sm font-medium text-foreground">{t('frameText.label')}</Label><Input id="frame-text-mobile" type="text" value={frameText} onChange={(e) => setFrameText(e.target.value)} placeholder={t('frameText.placeholder')} className="h-9"/></div>)}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-            </ScrollArea>
-            <div className="p-4 border-t sticky bottom-0 bg-background">
-              <Button onClick={handleGenerateQRCode} disabled={isLoading} className="w-full transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-base py-3">
-                {isLoading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <ScanQrCode className="w-5 h-5 mr-2 animate-text-glow-primary" />}
-                {t('generateQrCode.button')}
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-  );
-
-  if (!isClient || isMobile === undefined) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><ScanQrCode className="w-12 h-12 text-primary animate-pulse" /></div>;
-  }
-
-  return isMobile ? renderMobileLayout() : renderDesktopLayout();
 }

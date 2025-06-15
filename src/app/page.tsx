@@ -1,3 +1,4 @@
+
 "use client";
 
 import QRCodeGenerator from '@/components/qrcode-generator';
@@ -6,7 +7,7 @@ import { LanguageToggle } from '@/components/language-toggle';
 import { PortfolioPopup } from '@/components/portfolio-popup';
 import { useTranslation } from 'react-i18next';
 import '@/lib/i18n';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Info, ScanLine, History as HistoryIcon, User, ScanQrCode as AppIcon } from "lucide-react";
@@ -18,10 +19,18 @@ export default function HomePage() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [isPortfolioDialogOpen, setIsPortfolioDialogOpen] = React.useState(false);
+
   const [isScannerDialogOpen, setIsScannerDialogOpen] = React.useState(false);
+  const [activeScannerTab, setActiveScannerTab] = React.useState<'camera' | 'image'>('image');
   const [isHistorySheetOpen, setIsHistorySheetOpen] = React.useState(false);
 
-  if (isMobile === undefined) {
+  const [clientMounted, setClientMounted] = useState(false);
+
+  useEffect(() => {
+    setClientMounted(true);
+  }, []);
+
+  if (isMobile === undefined || !clientMounted) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><AppIcon className="w-12 h-12 text-primary animate-pulse" /></div>;
   }
 
@@ -33,7 +42,10 @@ export default function HomePage() {
               <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setIsScannerDialogOpen(true)}
+                  onClick={() => {
+                    setActiveScannerTab('image'); // Default to image tab
+                    setIsScannerDialogOpen(true);
+                  }}
                   aria-label={t('scanQrCode.button')}
               >
                 <ScanLine size={20} className="text-primary animate-text-glow-primary" />
@@ -96,6 +108,8 @@ export default function HomePage() {
           <QRCodeGenerator
               scannerOpen={isScannerDialogOpen}
               onScannerOpenChange={setIsScannerDialogOpen}
+              initialScannerTab={activeScannerTab}
+              onScannerTabChange={setActiveScannerTab}
               historySheetOpen={isHistorySheetOpen}
               onHistorySheetOpenChange={setIsHistorySheetOpen}
           />
