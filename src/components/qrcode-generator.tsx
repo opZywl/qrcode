@@ -210,6 +210,17 @@ export default function QRCodeGenerator({
   const [whatsappMessage, setWhatsappMessage] = useState('');
   const [phoneTo, setPhoneTo] = useState('');
 
+  const contentTypes: { value: QRContentType; Icon: React.ComponentType<{ className?: string }>; labelKey: string }[] = [
+    { value: "url", Icon: LinkIcon, labelKey: "contentTypes.url.tab" },
+    { value: "wifi", Icon: Wifi, labelKey: "contentTypes.wifi.tab" },
+    { value: "whatsapp", Icon: MessageSquareText, labelKey: "contentTypes.whatsapp.tab" },
+    { value: "phone", Icon: Phone, labelKey: "contentTypes.phone.tab" },
+    { value: "vcard", Icon: User, labelKey: "contentTypes.vcard.tab" },
+    { value: "vevent", Icon: CalendarDays, labelKey: "contentTypes.vevent.tab" },
+    { value: "email", Icon: Mail, labelKey: "contentTypes.email.tab" },
+    { value: "sms", Icon: MessageSquare, labelKey: "contentTypes.sms.tab" },
+    { value: "geo", Icon: MapPin, labelKey: "contentTypes.geo.tab" },
+  ];
 
   useEffect(() => {
     setIsClient(true);
@@ -1359,45 +1370,35 @@ export default function QRCodeGenerator({
             </Button>
           </div>
 
+          <div className="px-4 sm:px-6 mb-4">
+            <div className="grid grid-cols-3 gap-2">
+              {contentTypes.map(({ value, Icon, labelKey }) => (
+                  <button
+                      key={value}
+                      onClick={() => handleContentTypeChange(value)}
+                      className={`
+                        flex flex-col items-center justify-center p-3 rounded-lg transition-all
+                        ${
+                          activeContentType === value
+                              ? "bg-primary/10 ring-2 ring-primary text-primary"
+                              : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                      }
+                      `}
+                  >
+                    <Icon
+                        className={`w-6 h-6 mb-2 ${
+                            activeContentType === value ? "text-primary animate-text-glow-primary" : "text-muted-foreground"
+                        }`}
+                    />
+                    <span className="text-xs text-center font-medium">{t(labelKey)}</span>
+                  </button>
+              ))}
+            </div>
+          </div>
 
-          <Tabs value={activeContentType} onValueChange={(value) => handleContentTypeChange(value as QRContentType)} className="w-full">
-            <ScrollArea className="w-full whitespace-nowrap px-4 sm:px-6">
-              <TabsList className="inline-flex w-auto p-1 mb-4 bg-muted rounded-md">
-                <TabsTrigger value="url" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <LinkIcon className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.url.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="wifi" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <Wifi className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.wifi.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="whatsapp" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <MessageSquareText className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.whatsapp.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="phone" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <Phone className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.phone.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="vcard" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <User className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.vcard.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="vevent" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <CalendarDays className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.vevent.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="email" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <Mail className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.email.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="sms" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <MessageSquare className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.sms.tab')}
-                </TabsTrigger>
-                <TabsTrigger value="geo" className="text-[10px] px-1.5 py-1.5 h-auto leading-tight sm:text-xs sm:px-2.5 md:text-sm md:px-3 data-[state=active]:shadow-sm">
-                  <MapPin className="w-3 h-3 mr-1 sm:w-3 sm:h-3 sm:mr-1 md:w-4 md:h-4 md:mr-1.5 animate-text-glow-primary" />{t('contentTypes.geo.tab')}
-                </TabsTrigger>
-              </TabsList>
-              <ScrollBar orientation="horizontal" className="h-2 mt-[-6px]" />
-            </ScrollArea>
-
-            <TabsContent value={activeContentType} className="px-4 sm:px-6">
-              {renderCurrentForm(false)}
-            </TabsContent>
-          </Tabs>
+          <div className="px-4 sm:px-6 mb-4">
+            {renderCurrentForm(false)}
+          </div>
 
           <CardContent className="space-y-6 pt-6 px-4 sm:px-6">
             <Separator />
@@ -1682,18 +1683,6 @@ export default function QRCodeGenerator({
   );
 
   const renderMobileLayout = () => {
-    const contentTypes: { value: QRContentType; Icon: React.FC; labelKey: string }[] = [
-      { value: 'url',      Icon: LinkIcon,           labelKey: 'contentTypes.url.tab' },
-      { value: 'wifi',     Icon: Wifi,               labelKey: 'contentTypes.wifi.tab' },
-      { value: 'whatsapp', Icon: MessageSquareText,  labelKey: 'contentTypes.whatsapp.tab' },
-      { value: 'phone',    Icon: Phone,              labelKey: 'contentTypes.phone.tab' },
-      { value: 'vcard',    Icon: User,               labelKey: 'contentTypes.vcard.tab' },
-      { value: 'vevent',   Icon: CalendarDays,       labelKey: 'contentTypes.vevent.tab' },
-      { value: 'email',    Icon: Mail,               labelKey: 'contentTypes.email.tab' },
-      { value: 'sms',      Icon: MessageSquare,      labelKey: 'contentTypes.sms.tab' },
-      { value: 'geo',      Icon: MapPin,             labelKey: 'contentTypes.geo.tab' },
-    ];
-
     return (
         <div className="flex flex-col h-screen bg-background">
           {/* Cabeçalho */}
@@ -2079,9 +2068,13 @@ export default function QRCodeGenerator({
     );
   };
 
-  if (!isClient || isMobile === undefined) {
-    return <div className="min-h-screen bg-background flex items-center justify-center"><ScanQrCode className="w-12 h-12 text-primary animate-pulse" /></div>;
-  }
+    if (!isClient || isMobile === undefined) {
+      return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <ScanQrCode className="w-12 h-12 text-primary animate-pulse" />
+          </div>
+      )
+    }
 
   const mainLayout = isMobile ? renderMobileLayout() : renderDesktopLayout();
 
