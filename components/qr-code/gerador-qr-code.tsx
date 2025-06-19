@@ -159,7 +159,12 @@ export function GeradorQRCode({
 
         <PopupPortfolioMobile aberto={portfolioMobileAberto} onAbertoChange={setPortfolioMobileAberto} />
 
-        <DialogScanner aberto={scannerAberto} onAbertoChange={onScannerAbertoChange} />
+        <DialogScanner
+          aberto={scannerAberto}
+          onAbertoChange={onScannerAbertoChange}
+          abaInicial={abaScannerInicial}
+          onAbaChange={onAbaScannerChange}
+        />
 
         <SheetHistorico
           aberto={historicoAberto}
@@ -283,7 +288,12 @@ export function GeradorQRCode({
         </Card>
       </div>
 
-      <DialogScanner aberto={scannerAberto} onAbertoChange={onScannerAbertoChange} />
+      <DialogScanner
+        aberto={scannerAberto}
+        onAbertoChange={onScannerAbertoChange}
+        abaInicial={abaScannerInicial}
+        onAbaChange={onAbaScannerChange}
+      />
 
       <SheetHistorico
         aberto={historicoAberto}
