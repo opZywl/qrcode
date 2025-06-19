@@ -1,20 +1,17 @@
 "use client"
 
 import type React from "react"
-import { useMemo, useRef } from "react"
-import { QRCodeCanvas } from "qrcode.react"
-import { Download, ClipboardCopy, Share2, ImageIcon, FileJson, Sparkles, Eye, Zap } from "lucide-react"
 
+import { useRef, useMemo } from "react"
+import { QRCodeCanvas } from "qrcode.react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Download, ClipboardCopy, Share2, ImageIcon, FileJson, Sparkles, Eye, Zap } from "lucide-react"
 import type { TipoFrame } from "@/hooks/use-qr-code-state"
 
-/* -------------------------------------------------------------------------- */
-/*                                  Props                                     */
-/* -------------------------------------------------------------------------- */
-export interface PreviewQRCodeProps {
+interface PreviewQRCodeProps {
   qrValue: string
   corFrente: string
   corFundo: string
@@ -36,9 +33,6 @@ export interface PreviewQRCodeProps {
   onShare: () => void
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                  Component                                 */
-/* -------------------------------------------------------------------------- */
 export function PreviewQRCode({
   qrValue,
   corFrente,
@@ -62,7 +56,6 @@ export function PreviewQRCode({
 }: PreviewQRCodeProps) {
   const qrCanvasRef = useRef<HTMLDivElement>(null)
 
-  /* ------------------------------ Memo configs ----------------------------- */
   const qrConfig = useMemo(() => {
     const displaySize = Math.min(tamanho, isMobile ? 200 : 280)
     const useActualBackground = habilitarCustomizacaoFundo && imagemFundo
@@ -89,7 +82,6 @@ export function PreviewQRCode({
     tipoFrameSelecionado,
   ])
 
-  /* --------------------------- Frame style helper -------------------------- */
   const frameStyles = useMemo(() => {
     const { frameActive, displaySize } = qrConfig
     const frameSize = frameActive ? displaySize + 80 : displaySize
@@ -127,7 +119,6 @@ export function PreviewQRCode({
     return { getQrWrapperStyle, frameSize, framePadding }
   }, [qrConfig, tipoFrameSelecionado, corFundo, imagemFundo])
 
-  /* ----------------------------- Empty state ------------------------------- */
   if (!qrValue) {
     if (isMobile) {
       return (
@@ -152,8 +143,9 @@ export function PreviewQRCode({
     position: frameActive ? "relative" : "static",
   }
 
-  /* ------------------------ Renderização do frame ------------------------- */
   const renderFrameText = () => {
+    if (!frameActive) return null
+
     const text = tipoFrameSelecionado === "scanMeBottom" ? "SCAN ME" : textoFrame || "QR CODE"
 
     const frameTextConfigs = {
@@ -203,10 +195,10 @@ export function PreviewQRCode({
         position: "",
         content: (
           <>
-            <div className="absolute top-1 left-1 w-4 h-4 border-l-2 border-t-2 border-primary rounded-tl-lg shadow-sm" />
-            <div className="absolute top-1 right-1 w-4 h-4 border-r-2 border-t-2 border-primary rounded-tr-lg shadow-sm" />
-            <div className="absolute bottom-1 left-1 w-4 h-4 border-l-2 border-b-2 border-primary rounded-bl-lg shadow-sm" />
-            <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-primary rounded-br-lg shadow-sm" />
+            <div className="absolute top-1 left-1 w-4 h-4 border-l-2 border-t-2 border-primary rounded-tl-lg shadow-sm"></div>
+            <div className="absolute top-1 right-1 w-4 h-4 border-r-2 border-t-2 border-primary rounded-tr-lg shadow-sm"></div>
+            <div className="absolute bottom-1 left-1 w-4 h-4 border-l-2 border-b-2 border-primary rounded-bl-lg shadow-sm"></div>
+            <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-primary rounded-br-lg shadow-sm"></div>
             <div className="absolute bottom-2 left-0 right-0 text-center">
               <span className="text-xs font-bold text-primary bg-background/90 px-2 py-1 rounded border border-primary/20 shadow-sm">
                 {text}
@@ -227,7 +219,7 @@ export function PreviewQRCode({
           <div className="absolute inset-1 border-2 border-double border-primary/30 rounded-lg pointer-events-none" />
         ),
       },
-    } as const
+    }
 
     const config = frameTextConfigs[tipoFrameSelecionado as keyof typeof frameTextConfigs]
     if (!config) return null
@@ -239,19 +231,19 @@ export function PreviewQRCode({
     return config.content
   }
 
-  /* ----------------- Lista de customizações aplicadas (badge) -------------- */
-  const customizations = useMemo(() => {
-    const list = []
-    if (logoActuallyActive) list.push("Logo")
-    if (qrConfig.useActualBackground) list.push("Fundo")
-    if (frameActive) list.push("Moldura")
-    return list
-  }, [logoActuallyActive, qrConfig.useActualBackground, frameActive])
+  const getCustomizations = () => {
+    const customizations = []
+    if (logoActuallyActive) customizations.push("Logo")
+    if (qrConfig.useActualBackground) customizations.push("Fundo")
+    if (frameActive) customizations.push("Moldura")
+    return customizations
+  }
 
-  /* -------------------------------- Render -------------------------------- */
+  const customizations = getCustomizations()
+
   return (
     <div className="mt-6 p-4 sm:p-6 border-2 border-dashed border-primary/30 rounded-xl bg-gradient-to-br from-card/50 to-muted/30 backdrop-blur-sm flex flex-col items-center space-y-6 shadow-lg transition-all duration-300 hover:shadow-xl">
-      {/* Header */}
+      {/* Header com informações */}
       <div className="w-full space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -279,7 +271,7 @@ export function PreviewQRCode({
         </div>
       </div>
 
-      {/* QR code + frame */}
+      {/* QR Code com moldura */}
       <div className="relative transition-all duration-300 hover:scale-105">
         <div className="qr-code-outer-wrapper" style={frameStyles.getQrWrapperStyle()}>
           <div ref={qrCanvasRef} className="qr-code-canvas-wrapper" style={qrCanvasWrapperStyle}>
@@ -290,7 +282,7 @@ export function PreviewQRCode({
               bgColor={qrCanvasActualBgColor}
               level={nivelCorrecaoErro}
               margin={zonaQuieta}
-              includeMargin
+              includeMargin={true}
               imageSettings={
                 logoActuallyActive
                   ? {
@@ -308,25 +300,25 @@ export function PreviewQRCode({
         </div>
       </div>
 
-      {/* Info grid */}
       <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-        {[
-          { label: "Tamanho", value: `${tamanho}px` },
-          { label: "Correção", value: nivelCorrecaoErro },
-          { label: "Margem", value: zonaQuieta },
-          { label: "Formato", value: "PNG/SVG" },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50"
-          >
-            <p className="text-xs text-muted-foreground">{item.label}</p>
-            <p className="text-sm font-semibold text-foreground">{item.value}</p>
-          </div>
-        ))}
+        <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
+          <p className="text-xs text-muted-foreground">Tamanho</p>
+          <p className="text-sm font-semibold text-foreground">{tamanho}px</p>
+        </div>
+        <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
+          <p className="text-xs text-muted-foreground">Correção</p>
+          <p className="text-sm font-semibold text-foreground">{nivelCorrecaoErro}</p>
+        </div>
+        <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
+          <p className="text-xs text-muted-foreground">Margem</p>
+          <p className="text-sm font-semibold text-foreground">{zonaQuieta}</p>
+        </div>
+        <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
+          <p className="text-xs text-muted-foreground">Formato</p>
+          <p className="text-sm font-semibold text-foreground">PNG/SVG</p>
+        </div>
       </div>
 
-      {/* Action buttons */}
       <div className="w-full space-y-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -352,7 +344,94 @@ export function PreviewQRCode({
 
         <div className="grid grid-cols-2 gap-3">
           <Button
-            onClick={onCopy}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(qrValue)
+
+                const button = document.activeElement as HTMLButtonElement
+                if (button) {
+                  const originalContent = button.innerHTML
+                  const originalClassName = button.className
+
+                  button.innerHTML = `
+                    <div class="flex items-center justify-center w-full">
+                      <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span class="font-medium">Copiado!</span>
+                    </div>
+                  `
+                  button.className =
+                    "h-12 border-2 border-green-500 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 dark:border-green-400 transition-all duration-300 rounded-lg shadow-md"
+
+                  setTimeout(() => {
+                    button.innerHTML = originalContent
+                    button.className = originalClassName
+                  }, 2500)
+                }
+              } catch (error) {
+                console.error("Erro ao copiar:", error)
+
+                const button = document.activeElement as HTMLButtonElement
+                if (button) {
+                  const originalContent = button.innerHTML
+                  const originalClassName = button.className
+
+                  button.innerHTML = `
+                    <div class="flex items-center justify-center w-full">
+                      <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                      <span class="font-medium">Erro!</span>
+                    </div>
+                  `
+                  button.className =
+                    "h-12 border-2 border-red-500 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200 dark:border-red-400 transition-all duration-300 rounded-lg shadow-md"
+
+                  setTimeout(() => {
+                    button.innerHTML = originalContent
+                    button.className = originalClassName
+                  }, 2500)
+                }
+
+                try {
+                  const textArea = document.createElement("textarea")
+                  textArea.value = qrValue
+                  textArea.style.position = "fixed"
+                  textArea.style.left = "-999999px"
+                  textArea.style.top = "-999999px"
+                  document.body.appendChild(textArea)
+                  textArea.focus()
+                  textArea.select()
+                  document.execCommand("copy")
+                  document.body.removeChild(textArea)
+
+                  const button = document.activeElement as HTMLButtonElement
+                  if (button) {
+                    const originalContent = button.innerHTML
+                    const originalClassName = button.className
+
+                    button.innerHTML = `
+                      <div class="flex items-center justify-center w-full">
+                        <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="font-medium">Copiado!</span>
+                      </div>
+                    `
+                    button.className =
+                      "h-12 border-2 border-green-500 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 dark:border-green-400 transition-all duration-300 rounded-lg shadow-md"
+
+                    setTimeout(() => {
+                      button.innerHTML = originalContent
+                      button.className = originalClassName
+                    }, 2500)
+                  }
+                } catch (fallbackError) {
+                  alert(`Copie manualmente: ${qrValue}`)
+                }
+              }
+            }}
             variant="outline"
             className="h-12 border-2 border-blue-400/40 hover:border-blue-500/70 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-105"
           >
@@ -371,7 +450,6 @@ export function PreviewQRCode({
         </div>
       </div>
 
-      {/* Warning */}
       {(logoActuallyActive || qrConfig.useActualBackground) && (
         <div className="w-full p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg transition-all duration-200 hover:bg-amber-100 dark:hover:bg-amber-950/30">
           <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
@@ -382,8 +460,3 @@ export function PreviewQRCode({
     </div>
   )
 }
-
-/* -------------------------------------------------------------------------- */
-/*                     default export (back-compatibilidade)                  */
-/* -------------------------------------------------------------------------- */
-export default PreviewQRCode
