@@ -355,8 +355,8 @@ export function PersonalizacaoAparencia({
                     <ImageIcon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Imagem de Fundo</h4>
-                    <p className="text-xs text-muted-foreground">Adicione uma imagem de fundo personalizada</p>
+                    <h4 className="font-semibold text-foreground">Fundo Personalizado</h4>
+                    <p className="text-xs text-muted-foreground">Use uma imagem como fundo do QR Code</p>
                   </div>
                 </div>
                 <Switch
@@ -376,40 +376,27 @@ export function PersonalizacaoAparencia({
               {valores.habilitarCustomizacaoFundo && (
                 <div className="space-y-4 border-l-4 border-gradient-to-b from-blue-500 to-cyan-500 pl-4">
                   <div className="space-y-2">
-                    <Label htmlFor="background-upload" className="text-sm font-medium text-foreground">
-                      Upload de Imagem
+                    <Label htmlFor="bg-image-upload" className="text-sm font-medium text-foreground">
+                      Upload de Imagem de Fundo
                     </Label>
                     <div className="relative">
                       <Input
-                        id="background-upload"
+                        id="bg-image-upload"
                         type="file"
                         accept="image/*"
                         ref={backgroundImageInputRef}
                         onChange={onBackgroundImageUpload}
                         className="hidden"
                       />
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => backgroundImageInputRef.current?.click()}
-                          className="flex-1 h-12 border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200"
-                        >
-                          <Upload className="w-4 h-4 mr-2 text-blue-600" />
-                          <span className="text-blue-700 dark:text-blue-300">Selecionar Imagem</span>
-                        </Button>
-                        {valores.imagemFundo && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={onRemoveBackgroundImage}
-                            className="h-12 w-12 border-2 border-red-300 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 hover:text-red-700 transition-all duration-200"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => backgroundImageInputRef.current?.click()}
+                        className="w-full h-12 border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200"
+                      >
+                        <Upload className="w-4 h-4 mr-2 text-blue-600" />
+                        <span className="text-blue-700 dark:text-blue-300">Selecionar Imagem</span>
+                      </Button>
                     </div>
 
                     {valores.imagemFundo && (
@@ -420,22 +407,26 @@ export function PersonalizacaoAparencia({
                           className="h-12 w-12 object-cover border rounded-md"
                         />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">Imagem de fundo carregada</p>
-                          <p className="text-xs text-muted-foreground">A imagem será aplicada como fundo do QR Code</p>
+                          <p className="text-sm font-medium text-foreground">Imagem carregada</p>
+                          <p className="text-xs text-muted-foreground">Será usada como fundo do QR Code</p>
                         </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={onRemoveBackgroundImage}
+                          className="text-destructive hover:bg-destructive/10 hover:border-destructive/50 border-destructive/30"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     )}
                   </div>
-
-                  <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded border-l-4 border-blue-500/30">
-                    A imagem será redimensionada para cobrir todo o fundo do QR Code
-                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Frame Personalizado */}
+          {/* Moldura Personalizada */}
           <Card
             className={`transition-all duration-300 ${valores.habilitarCustomizacaoFrame ? "ring-2 ring-green-500/20 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20" : "hover:shadow-md"}`}
           >
@@ -449,7 +440,7 @@ export function PersonalizacaoAparencia({
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground">Moldura Personalizada</h4>
-                    <p className="text-xs text-muted-foreground">Adicione uma moldura decorativa ao QR Code</p>
+                    <p className="text-xs text-muted-foreground">Adicione bordas e texto ao QR Code</p>
                   </div>
                 </div>
                 <Switch
@@ -473,42 +464,83 @@ export function PersonalizacaoAparencia({
                       Tipo de Moldura
                     </Label>
                     <Select
-                      onValueChange={(value) => onChange("tipoFrameSelecionado", value as TipoFrame)}
                       value={valores.tipoFrameSelecionado}
+                      onValueChange={(value) => onChange("tipoFrameSelecionado", value as TipoFrame)}
                     >
                       <SelectTrigger
                         id="frame-type"
                         className="text-sm h-10 border-2 hover:border-green-500/50 transition-all duration-200"
                       >
-                        <SelectValue placeholder="Selecione um tipo de moldura" />
+                        <SelectValue placeholder="Selecione o tipo de moldura" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none" className="text-sm">
-                          Nenhuma
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-dashed border-muted-foreground rounded" />
+                            Nenhuma
+                          </div>
                         </SelectItem>
                         <SelectItem value="simpleBorder" className="text-sm">
-                          Borda Simples
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-current rounded" />
+                            Borda Simples
+                          </div>
                         </SelectItem>
                         <SelectItem value="textBottom" className="text-sm">
-                          Texto Embaixo
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-current rounded flex items-end justify-center text-[6px]">
+                              T
+                            </div>
+                            Texto na Parte Inferior
+                          </div>
                         </SelectItem>
                         <SelectItem value="scanMeBottom" className="text-sm">
-                          "SCAN ME" Embaixo
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-current rounded flex items-end justify-center text-[6px]">
+                              S
+                            </div>
+                            "SCAN ME" na Parte Inferior
+                          </div>
                         </SelectItem>
                         <SelectItem value="roundedBorderTextBottom" className="text-sm">
-                          Borda Arredondada + Texto
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-current rounded-full flex items-end justify-center text-[6px]">
+                              T
+                            </div>
+                            Borda Arredondada com Texto
+                          </div>
                         </SelectItem>
                         <SelectItem value="topBottomText" className="text-sm">
-                          Texto em Cima e Embaixo
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-current rounded flex flex-col items-center justify-between text-[4px] py-0.5">
+                              <span>T</span>
+                              <span>B</span>
+                            </div>
+                            Texto Superior e Inferior
+                          </div>
                         </SelectItem>
                         <SelectItem value="decorativeBorder" className="text-sm">
-                          Borda Decorativa
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-current rounded relative">
+                              <div className="absolute top-0 left-0 w-1 h-1 border-l border-t border-current"></div>
+                              <div className="absolute top-0 right-0 w-1 h-1 border-r border-t border-current"></div>
+                              <div className="absolute bottom-0 left-0 w-1 h-1 border-l border-b border-current"></div>
+                              <div className="absolute bottom-0 right-0 w-1 h-1 border-r border-b border-current"></div>
+                            </div>
+                            Bordas Decorativas
+                          </div>
                         </SelectItem>
                         <SelectItem value="modernFrame" className="text-sm">
-                          Moldura Moderna
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-current rounded-lg bg-gradient-to-br from-transparent to-current/10"></div>
+                            Moldura Moderna
+                          </div>
                         </SelectItem>
                         <SelectItem value="classicFrame" className="text-sm">
-                          Moldura Clássica
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-4 border-double border-current rounded"></div>
+                            Moldura Clássica
+                          </div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -524,6 +556,7 @@ export function PersonalizacaoAparencia({
                       </Label>
                       <Input
                         id="frame-text"
+                        type="text"
                         value={valores.textoFrame}
                         onChange={(e) => onChange("textoFrame", e.target.value)}
                         placeholder="Digite o texto da moldura"
@@ -532,9 +565,12 @@ export function PersonalizacaoAparencia({
                     </div>
                   )}
 
-                  <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded border-l-4 border-green-500/30">
-                    A moldura será aplicada ao redor do QR Code com o estilo selecionado
-                  </p>
+                  <div className="p-3 bg-muted/30 rounded border-l-4 border-green-500/30">
+                    <p className="text-xs text-muted-foreground">
+                      💡 <strong>Dica:</strong> Molduras podem afetar a escaneabilidade do QR Code. Use cores
+                      contrastantes e teste sempre.
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
