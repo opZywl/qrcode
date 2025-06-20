@@ -4,6 +4,11 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'QrCode',
   description: 'by Lucas Lima',
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 }
 
 export default function RootLayout({

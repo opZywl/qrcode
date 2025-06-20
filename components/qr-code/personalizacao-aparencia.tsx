@@ -51,7 +51,7 @@ export function PersonalizacaoAparencia({
   backgroundImageInputRef,
   isMobile,
 }: PersonalizacaoAparenciaProps) {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <div className="space-y-4">

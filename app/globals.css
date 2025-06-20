@@ -131,13 +131,11 @@
     @apply bg-background text-foreground;
   }
 
-  /* Scrollbar personalizada para o browser - FORÇAR OVERRIDE */
   html {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary)) hsl(var(--background)) !important;
   }
 
-  /* Webkit scrollbar - FORÇAR OVERRIDE */
   ::-webkit-scrollbar {
     width: 14px !important;
     height: 14px !important;
@@ -165,7 +163,6 @@
     background: hsl(var(--background)) !important;
   }
 
-  /* Scrollbar para elementos específicos */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -216,11 +213,11 @@
   0%,
   100% {
     text-shadow: 0 0 3px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8), 0
-      0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5);
+    0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5);
   }
   50% {
     text-shadow: 0 0 6px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.8), 0
-      0 12px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5);
+    0 12px hsl(var(--footer-glow-hue) var(--footer-glow-saturation) var(--footer-glow-lightness) / 0.5);
   }
 }
 
@@ -234,7 +231,6 @@
   }
 }
 
-/* Animações de entrada suaves */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -280,7 +276,6 @@
   animation: scaleIn 0.3s ease-out;
 }
 
-/* Efeitos de hover melhorados */
 .hover-lift {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -290,7 +285,6 @@
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Gradientes personalizados */
 .bg-gradient-rainbow {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -303,7 +297,6 @@
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
-/* Melhorias para componentes específicos */
 .qr-type-button {
   position: relative;
   overflow: hidden;
@@ -324,7 +317,6 @@
   left: 100%;
 }
 
-/* Estilos para o seletor de idiomas */
 .language-selector {
   position: relative;
 }
@@ -344,7 +336,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Melhorias para mobile */
 @media (max-width: 768px) {
   .mobile-optimized {
     touch-action: manipulation;
@@ -356,11 +347,10 @@
   }
 
   .mobile-text {
-    font-size: 16px; /* Previne zoom no iOS */
+    font-size: 16px;
   }
 }
 
-/* Efeitos de loading */
 .loading-shimmer {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
