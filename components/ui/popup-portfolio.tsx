@@ -105,7 +105,7 @@ export function PopupPortfolio() {
       </CardHeader>
       <CardContent className="p-3 pt-0">
         <p className="text-sm text-card-foreground mb-3">
-          Olá! Gostou do gerador de QR Code? Confira meu portfólio para ver mais projetos incríveis!
+          Confira meu portfólio para ver mais projetos incríveis!
         </p>
         <Button
           variant="outline"

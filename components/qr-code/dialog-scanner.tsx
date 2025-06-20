@@ -62,7 +62,6 @@ interface QRResult {
 export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange }: DialogScannerProps) {
   const isMobile = useIsMobile()
 
-  // Estados da câmera
   const [temPermissaoCamera, setTemPermissaoCamera] = useState<boolean | null>(null)
   const [tentandoCamera, setTentandoCamera] = useState<boolean>(false)
   const [scanningFromCamera, setScanningFromCamera] = useState<boolean>(false)
