@@ -3,10 +3,9 @@
 Website: https://qrcode-yzy.vercel.app \
 GitHub: https://github.com/opZywl/qrcode
 
-## Screenshots
-
 <div align="center">
-  <table align="center">
+  <h2>Screenshots</h2>
+  <table>
     <tr>
       <td><img src="gh_assets/screenshot-1.png" width="250" alt="1" /></td>
       <td><img src="gh_assets/screenshot-2.png" width="250" alt="2" /></td>
@@ -14,7 +13,6 @@ GitHub: https://github.com/opZywl/qrcode
     </tr>
   </table>
 </div>
-
 
 ## Issues
 Se você encontrar algum bug ou funcionalidade ausente, pode nos informar abrindo uma issue [aqui](https://github.com/opZywl/qrcode/issues).
