@@ -210,6 +210,7 @@ export function GeradorQRCode({
               onGenerate={qrGenerator.handleGenerateQRCode}
               onResetGranular={qrGenerator.resetGranular}
               isLoading={qrGenerator.isLoading}
+              tiposVisiveis={tiposVisiveis}
           />
 
           <PopupPortfolioMobile aberto={portfolioMobileAberto} onAbertoChange={setPortfolioMobileAberto} />
