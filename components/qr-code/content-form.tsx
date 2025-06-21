@@ -19,7 +19,7 @@ interface FormularioConteudoProps {
   isMobile: boolean
 }
 
-export function FormularioConteudo({ tipo, valores, onChange, isMobile }: FormularioConteudoProps) {
+export function ContentForm({ tipo, valores, onChange, isMobile }: FormularioConteudoProps) {
   const [localizandoGPS, setLocalizandoGPS] = useState(false)
   const { toast } = useToast()
 

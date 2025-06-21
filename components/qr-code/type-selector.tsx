@@ -45,7 +45,7 @@ const tiposConteudo = [
 
 const DEFAULT_VISIBLE: TipoConteudoQR[] = ["url", "wifi", "whatsapp", "phone", "vcard", "vevent", "email", "sms", "geo"]
 
-export function SeletorTipoConteudo({ tipoAtivo, onTipoChange, tiposVisiveis }: SeletorTipoConteudoProps) {
+export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis }: SeletorTipoConteudoProps) {
   const visiveis = tiposVisiveis ?? DEFAULT_VISIBLE
   const lista = tiposConteudo.filter((t) => visiveis.includes(t.valor))
 
@@ -95,4 +95,4 @@ export function SeletorTipoConteudo({ tipoAtivo, onTipoChange, tiposVisiveis }: 
   )
 }
 
-export default SeletorTipoConteudo
+export default TypeSelector

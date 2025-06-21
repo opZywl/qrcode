@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 type Tema = "light" | "dark" | "system"
 
-export function AlternadorTema() {
+export function ThemeToggle() {
   const [tema, setTemaState] = React.useState<Tema>("system")
   const [temaEfetivo, setTemaEfetivo] = React.useState<"light" | "dark">("light")
 

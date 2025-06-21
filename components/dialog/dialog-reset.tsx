@@ -19,7 +19,7 @@ interface DialogConfirmacaoResetProps {
   tipo: "content" | "appearance" | "all"
 }
 
-export function DialogConfirmacaoReset({ aberto, onAbertoChange, onConfirmar, tipo }: DialogConfirmacaoResetProps) {
+export function DialogReset({ aberto, onAbertoChange, onConfirmar, tipo }: DialogConfirmacaoResetProps) {
   const getTextos = () => {
     switch (tipo) {
       case "content":

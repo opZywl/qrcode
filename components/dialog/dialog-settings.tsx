@@ -34,7 +34,7 @@ interface DialogConfiguracoesProps {
     onTiposVisiveisChange: (tipos: TipoConteudoQR[]) => void
 }
 
-export function DialogConfiguracoes({
+export function DialogSettings({
     aberto,
     onAbertoChange,
     tiposVisiveis,

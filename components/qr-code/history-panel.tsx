@@ -49,7 +49,7 @@ interface SheetHistoricoProps {
   isMobile: boolean
 }
 
-export function SheetHistorico({
+export function HistoryPanel({
   aberto,
   onAbertoChange,
   historico,

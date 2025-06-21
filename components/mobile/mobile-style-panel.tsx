@@ -19,7 +19,7 @@ interface PersonalizacaoAparenciaMobileProps {
   onValoresAccordionChange: (values: string[]) => void
 }
 
-export function PersonalizacaoAparenciaMobile({
+export function MobileStylePanel({
   valores,
   onChange,
   onResetGranular,

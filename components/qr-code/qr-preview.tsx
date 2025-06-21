@@ -33,27 +33,27 @@ interface PreviewQRCodeProps {
     onShare: () => void
 }
 
-export function PreviewQRCode({
-                                  qrValue,
-                                  corFrente,
-                                  corFundo,
-                                  tamanho,
-                                  nivelCorrecaoErro,
-                                  zonaQuieta,
-                                  logoDataUri,
-                                  logoTamanhoRatio = 0.2,
-                                  escavarLogo = true,
-                                  imagemFundo,
-                                  habilitarCustomizacaoLogo,
-                                  habilitarCustomizacaoFundo,
-                                  habilitarCustomizacaoFrame,
-                                  tipoFrameSelecionado = "none",
-                                  textoFrame = "",
-                                  isMobile,
-                                  onDownload,
-                                  onCopy,
-                                  onShare,
-                              }: PreviewQRCodeProps) {
+export function QrPreview({
+  qrValue,
+  corFrente,
+  corFundo,
+  tamanho,
+  nivelCorrecaoErro,
+  zonaQuieta,
+  logoDataUri,
+  logoTamanhoRatio = 0.2,
+  escavarLogo = true,
+  imagemFundo,
+  habilitarCustomizacaoLogo,
+  habilitarCustomizacaoFundo,
+  habilitarCustomizacaoFrame,
+  tipoFrameSelecionado = "none",
+  textoFrame = "",
+  isMobile,
+  onDownload,
+  onCopy,
+  onShare,
+}: PreviewQRCodeProps) {
     const qrCanvasRef = useRef<HTMLDivElement>(null)
 
     const qrConfig = useMemo(() => {
@@ -243,7 +243,6 @@ export function PreviewQRCode({
 
     return (
         <div className="mt-6 p-4 sm:p-6 border-2 border-dashed border-primary/30 rounded-xl bg-gradient-to-br from-card/50 to-muted/30 backdrop-blur-sm flex flex-col items-center space-y-6 shadow-lg transition-all duration-300 hover:shadow-xl">
-            {/* Header com informações */}
             <div className="w-full space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -271,7 +270,6 @@ export function PreviewQRCode({
                 </div>
             </div>
 
-            {/* QR Code com moldura */}
             <div className="relative transition-all duration-300 hover:scale-105">
                 <div className="qr-code-outer-wrapper" style={frameStyles.getQrWrapperStyle()}>
                     <div ref={qrCanvasRef} className="qr-code-canvas-wrapper" style={qrCanvasWrapperStyle}>
@@ -353,10 +351,8 @@ export function PreviewQRCode({
                             const originalClassName = button.className
 
                             try {
-                                // Primeiro tenta copiar a imagem
                                 await onCopy()
 
-                                // Feedback visual de sucesso
                                 button.innerHTML = `
                   <div class="flex items-center justify-center w-full">
                     <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,7 +371,6 @@ export function PreviewQRCode({
                             } catch (error) {
                                 console.error("Erro ao copiar:", error)
 
-                                // Feedback visual de erro
                                 button.innerHTML = `
                   <div class="flex items-center justify-center w-full">
                     <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

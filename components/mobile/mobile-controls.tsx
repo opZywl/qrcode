@@ -7,10 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Settings, RefreshCw, Sparkles, RotateCcw, Trash2, Zap } from "lucide-react"
-import { SeletorTipoConteudo } from "./seletor-tipo-conteudo"
-import { FormularioConteudo } from "./formulario-conteudo"
-import { PersonalizacaoAparenciaMobile } from "./personalizacao-aparencia-mobile"
-import { DialogConfirmacaoReset } from "./dialog-confirmacao-reset"
+import { TypeSelector } from "../qr-code/type-selector"
+import { ContentForm } from "../qr-code/content-form"
+import { MobileStylePanel } from "./mobile-style-panel"
+import { DialogReset } from "../dialog/dialog-reset"
 import { DialogDescription } from "@/components/ui/dialog"
 import type { TipoConteudoQR } from "@/hooks/use-qr-code-state"
 
@@ -175,7 +175,7 @@ export function SheetControlesMobile({
                         </Button>
                     )}
                   </div>
-                  <SeletorTipoConteudo
+                  <TypeSelector
                       tipoAtivo={qrState.tipoConteudoAtivo}
                       onTipoChange={(tipo) => qrState.updateField("tipoConteudoAtivo", tipo)}
                       tiposVisiveis={tiposVisiveis}
@@ -196,7 +196,7 @@ export function SheetControlesMobile({
                     )}
                   </div>
                   <div className="bg-muted/30 rounded-lg p-4 border border-muted-foreground/20">
-                    <FormularioConteudo
+                    <ContentForm
                         tipo={qrState.tipoConteudoAtivo}
                         valores={qrState}
                         onChange={qrState.updateField}
@@ -234,7 +234,7 @@ export function SheetControlesMobile({
                     )}
                   </div>
 
-                  <PersonalizacaoAparenciaMobile
+                  <MobileStylePanel
                       valores={qrState}
                       onChange={qrState.updateField}
                       onResetGranular={onResetGranular}
@@ -313,7 +313,7 @@ export function SheetControlesMobile({
         </Sheet>
 
         {/* Dialog de Confirmação */}
-        <DialogConfirmacaoReset
+        <DialogReset
             aberto={dialogResetAberto}
             onAbertoChange={setDialogResetAberto}
             onConfirmar={handleConfirmarReset}

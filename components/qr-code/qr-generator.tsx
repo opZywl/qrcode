@@ -7,19 +7,19 @@ import { Separator } from "@/components/ui/separator"
 import { QrCodeIcon as ScanQrCode, ScanLine, HistoryIcon, Info, RefreshCw, Palette } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { AlternadorTema } from "@/components/ui/alternador-tema"
-import { SeletorTipoConteudo } from "./seletor-tipo-conteudo"
-import { FormularioConteudo } from "./formulario-conteudo"
-import { PersonalizacaoAparencia } from "./personalizacao-aparencia"
-import { PreviewQRCode } from "./preview-qr-code"
-import { DialogScanner } from "./dialog-scanner"
-import { SheetHistorico } from "./sheet-historico"
-import { SheetControlesMobile } from "./sheet-controles-mobile"
-import { PopupPortfolioMobile } from "./popup-portfolio-mobile"
-import { DialogConfiguracoes } from "./dialog-configuracoes"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { TypeSelector } from "./type-selector"
+import { ContentForm } from "./content-form"
+import { StylePanel } from "./style-panel"
+import { QrPreview } from "./qr-preview"
+import { DialogScanner } from "../dialog/dialog-scanner"
+import { HistoryPanel } from "./history-panel"
+import { SheetControlesMobile } from "../mobile/mobile-controls"
+import { DevPopup } from "./dev-popup"
+import { DialogSettings } from "../dialog/dialog-settings"
 import { useQRCodeState, type TipoConteudoQR } from "@/hooks/use-qr-code-state"
 import { useQRCodeGenerator } from "@/hooks/use-qr-code-generator"
-import { SeletorIdioma } from "@/components/ui/seletor-idioma"
+import { LanguageSelector } from "@/components/ui/language-selector"
 
 const DEFAULT_VISIBLE_TYPES: TipoConteudoQR[] = [
   "url",
@@ -44,7 +44,7 @@ interface GeradorQRCodeProps {
   onHistoricoAbertoChange: (aberto: boolean) => void
 }
 
-export function GeradorQRCode({
+export function QrGenerator({
                                 scannerAberto,
                                 onScannerAbertoChange,
                                 abaScannerInicial,
@@ -115,8 +115,8 @@ export function GeradorQRCode({
                 <h1 className="text-lg font-headline font-semibold text-foreground">Gerador de QR Code</h1>
               </div>
               <div className="flex items-center space-x-2">
-                <SeletorIdioma />
-                <AlternadorTema />
+                <LanguageSelector />
+                <ThemeToggle />
                 <Button
                     variant="outline"
                     size="icon"
@@ -172,7 +172,7 @@ export function GeradorQRCode({
             {/* Área Central */}
             <div className="flex-grow flex flex-col items-center justify-center p-4">
               {qrState.qrValue ? (
-                  <PreviewQRCode
+                  <QrPreview
                       qrValue={qrState.qrValue}
                       {...qrState}
                       isMobile={true}
@@ -213,7 +213,7 @@ export function GeradorQRCode({
               tiposVisiveis={tiposVisiveis}
           />
 
-          <PopupPortfolioMobile aberto={portfolioMobileAberto} onAbertoChange={setPortfolioMobileAberto} />
+          <DevPopup aberto={portfolioMobileAberto} onAbertoChange={setPortfolioMobileAberto} />
 
           <DialogScanner
               aberto={scannerAberto}
@@ -222,7 +222,7 @@ export function GeradorQRCode({
               onAbaChange={onAbaScannerChange}
           />
 
-          <SheetHistorico
+          <HistoryPanel
               aberto={historicoAberto}
               onAbertoChange={onHistoricoAbertoChange}
               historico={qrState.historico}
@@ -231,7 +231,7 @@ export function GeradorQRCode({
               isMobile={true}
           />
 
-          <DialogConfiguracoes
+          <DialogSettings
               aberto={configDialogOpen}
               onAbertoChange={setConfigDialogOpen}
               tiposVisiveis={tiposVisiveis}
@@ -259,8 +259,8 @@ export function GeradorQRCode({
                   </CardDescription>
                 </div>
                 <div className="hidden md:flex items-center space-x-2 shrink-0 ml-4">
-                  <SeletorIdioma />
-                  <AlternadorTema />
+                  <LanguageSelector />
+                  <ThemeToggle />
                 </div>
               </div>
             </CardHeader>
@@ -300,7 +300,7 @@ export function GeradorQRCode({
 
             {/* Seletor de tipo */}
             <div className="px-4 sm:px-6 mb-4">
-              <SeletorTipoConteudo
+              <TypeSelector
                   tipoAtivo={qrState.tipoConteudoAtivo}
                   onTipoChange={qrGenerator.handleContentTypeChange}
                   tiposVisiveis={tiposVisiveis}
@@ -309,7 +309,7 @@ export function GeradorQRCode({
 
             {/* Formulário de conteúdo */}
             <div className="px-4 sm:px-6 mb-4">
-              <FormularioConteudo
+              <ContentForm
                   tipo={qrState.tipoConteudoAtivo}
                   valores={qrState}
                   onChange={qrState.updateField}
@@ -320,7 +320,7 @@ export function GeradorQRCode({
             <CardContent className="space-y-6 pt-6 px-4 sm:px-6">
               <Separator />
 
-              <PersonalizacaoAparencia
+              <StylePanel
                   valores={qrState}
                   onChange={qrState.updateField}
                   onReset={qrGenerator.resetAppearanceCustomization}
@@ -341,7 +341,7 @@ export function GeradorQRCode({
                 Gerar QR Code
               </Button>
 
-              <PreviewQRCode
+              <QrPreview
                   qrValue={qrState.qrValue}
                   {...qrState}
                   isMobile={false}
@@ -376,7 +376,7 @@ export function GeradorQRCode({
             onAbaChange={onAbaScannerChange}
         />
 
-        <SheetHistorico
+        <HistoryPanel
             aberto={historicoAberto}
             onAbertoChange={onHistoricoAbertoChange}
             historico={qrState.historico}
@@ -385,7 +385,7 @@ export function GeradorQRCode({
             isMobile={false}
         />
 
-        <DialogConfiguracoes
+        <DialogSettings
             aberto={configDialogOpen}
             onAbertoChange={setConfigDialogOpen}
             tiposVisiveis={tiposVisiveis}

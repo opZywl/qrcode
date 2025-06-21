@@ -40,7 +40,7 @@ interface PersonalizacaoAparenciaProps {
   isMobile: boolean
 }
 
-export function PersonalizacaoAparencia({
+export function StylePanel({
   valores,
   onChange,
   onReset,

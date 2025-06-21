@@ -19,7 +19,7 @@ const idiomas: IdiomaInfo[] = [
   { codigo: "es", nome: "Español", bandeira: "🇪🇸" },
 ]
 
-export function SeletorIdioma() {
+export function LanguageSelector() {
   const [idiomaSelecionado, setIdiomaSelecionado] = React.useState<Idioma>("pt")
   const [montado, setMontado] = React.useState(false)
 

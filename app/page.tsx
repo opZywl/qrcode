@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { GeradorQRCode } from "@/components/qr-code/gerador-qr-code"
+import { QrGenerator } from "@/components/qr-code/qr-generator"
 import { PopupPortfolio } from "@/components/ui/popup-portfolio"
 
 export default function HomePage() {
@@ -11,7 +11,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <GeradorQRCode
+      <QrGenerator
         scannerAberto={scannerAberto}
         onScannerAbertoChange={setScannerAberto}
         abaScannerInicial={abaScanner}
