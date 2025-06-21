@@ -8,8 +8,8 @@ GitHub: https://github.com/opZywl/qrcode
   <table>
     <tr>
       <td><img src="gh_assets/screenshot-1.png" width="250" alt="1" /></td>
-      <td><img src="gh_assets/screenshot-2.png" width="250" alt="2" /></td>
-      <td><img src="gh_assets/screenshot-3.png" width="250" alt="3" /></td>
+      <td><img src="gh_assets/screenshot-2.png" width="250" alt="3" /></td>
+      <td><img src="gh_assets/screenshot-3.png" width="250" alt="2" /></td>
     </tr>
   </table>
 </div>
