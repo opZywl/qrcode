@@ -9,33 +9,6 @@ GitHub: https://github.com/opZywl/qrcode
         <td>
             <img src="gh_assets/screenshot-1.png">
         </td>
-        <td>
-            <img src="gh_assets/screenshot-2.png">
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="gh_assets/screenshot-3.png">
-        </td>
-        <td>
-            <img src="gh_assets/screenshot-4.png">
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="gh_assets/screenshot-5.png">
-        </td>
-        <td>
-            <img src="gh_assets/screenshot-6.png">
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="gh_assets/screenshot-7.png">
-        </td>
-        <td>
-            <img src="gh_assets/screenshot-8.png">
-        </td>
     </tr>
 </table>
 
