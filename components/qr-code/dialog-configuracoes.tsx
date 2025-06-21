@@ -69,6 +69,11 @@ export function DialogConfiguracoes({
             <DialogContent className="max-w-sm sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Personalizar Tipos</DialogTitle>
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" size="sm" onClick={() => setLocalList(TIPOS_DISPONIVEIS.map((t) => t.valor))}>
+                            Selecionar Todos
+                        </Button>
+                    </div>
                 </DialogHeader>
 
                 <ScrollArea className="h-80 pr-2">
