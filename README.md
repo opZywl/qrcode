@@ -5,11 +5,11 @@ GitHub: https://github.com/opZywl/qrcode
 
 ## Screenshots
 <table>
-    <tr>
-        <td>
-            <img src="gh_assets/screenshot-1.png">
-        </td>
-    </tr>
+  <tr>
+    <td align="center">
+      <img src="gh_assets/screenshot-1.png" width="412" alt="Screenshot 1" />
+    </td>
+  </tr>
 </table>
 
 ## Issues
