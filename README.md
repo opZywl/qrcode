@@ -1,9 +1,7 @@
 # Gerador de QR Code
 
-Website: https://qrcode-yzy.vercel.app/
-GitHub: https://github.com/opZywl/qrcode
-Portfolio: https://www.lucas-lima.vercel.app/ 
-LinkedIn: https://www.linkedin.com/in/lucsp-lima/ 
+Website: https://qrcode-yzy.vercel.app \
+GitHub: https://github.com/opZywl/qrcode \
 
 ## Screenshots
 <table>
