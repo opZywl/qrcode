@@ -144,12 +144,27 @@ export interface EntradaQRCode {
   cupomTipo?: "desconto" | "frete" | "produto"
 }
 
+const TIPOS_PADRAO_ATIVOS: TipoConteudoQR[] = [
+  "url",
+  "wifi",
+  "whatsapp",
+  "phone",
+  "vcard",
+  "vevent",
+  "email",
+  "sms",
+  "geo",
+]
+
 export function useQRCodeState() {
   const [isClient, setIsClient] = useState(false)
 
   // Estado principal
   const [tipoConteudoAtivo, setTipoConteudoAtivo] = useState<TipoConteudoQR>("url")
   const [qrValue, setQrValue] = useState<string>("")
+
+  // Configurações de tipos visíveis
+  const [tiposVisiveis, setTiposVisiveis] = useState<TipoConteudoQR[]>(TIPOS_PADRAO_ATIVOS)
 
   // Aparência
   const [corFrente, setCorFrente] = useState<string>("#000000")
@@ -280,6 +295,11 @@ export function useQRCodeState() {
     if (historicoSalvo) {
       setHistorico(JSON.parse(historicoSalvo))
     }
+
+    const tiposVisiveisSalvos = localStorage.getItem("qrCodeTiposVisiveis")
+    if (tiposVisiveisSalvos) {
+      setTiposVisiveis(JSON.parse(tiposVisiveisSalvos))
+    }
   }, [isClient])
 
   useEffect(() => {
@@ -291,7 +311,12 @@ export function useQRCodeState() {
     }
   }, [historico, isClient])
 
-  // Efeito para mobile accordion
+  useEffect(() => {
+    if (!isClient) return
+    localStorage.setItem("qrCodeTiposVisiveis", JSON.stringify(tiposVisiveis))
+  }, [tiposVisiveis, isClient])
+
+
   useEffect(() => {
     setHabilitarCustomizacaoLogo(valoresAccordionMobile.includes("logo"))
     setHabilitarCustomizacaoFundo(valoresAccordionMobile.includes("background"))
@@ -305,6 +330,9 @@ export function useQRCodeState() {
         break
       case "qrValue":
         setQrValue(valor)
+        break
+      case "tiposVisiveis":
+        setTiposVisiveis(valor)
         break
       case "corFrente":
         setCorFrente(valor)
@@ -656,6 +684,7 @@ export function useQRCodeState() {
     // Estado
     tipoConteudoAtivo,
     qrValue,
+    tiposVisiveis,
     corFrente,
     corFundo,
     tamanho,

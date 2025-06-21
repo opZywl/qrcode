@@ -22,6 +22,7 @@ import type { TipoConteudoQR } from "@/hooks/use-qr-code-state"
 interface SeletorTipoConteudoProps {
   tipoAtivo: TipoConteudoQR
   onTipoChange: (tipo: TipoConteudoQR) => void
+  tiposVisiveis?: TipoConteudoQR[]
 }
 
 const tiposConteudo = [
@@ -42,10 +43,15 @@ const tiposConteudo = [
   { valor: "cupom" as const, Icon: Ticket, label: "Cupom", cor: "from-rose-500 to-rose-600" },
 ]
 
-export function SeletorTipoConteudo({ tipoAtivo, onTipoChange }: SeletorTipoConteudoProps) {
+const DEFAULT_VISIBLE: TipoConteudoQR[] = ["url", "wifi", "whatsapp", "phone", "vcard", "vevent", "email", "sms", "geo"]
+
+export function SeletorTipoConteudo({ tipoAtivo, onTipoChange, tiposVisiveis }: SeletorTipoConteudoProps) {
+  const visiveis = tiposVisiveis ?? DEFAULT_VISIBLE
+  const lista = tiposConteudo.filter((t) => visiveis.includes(t.valor))
+
   return (
       <div className="grid grid-cols-3 gap-3 p-1">
-        {tiposConteudo.map(({ valor, Icon, label, cor }) => (
+        {lista.map(({ valor, Icon, label, cor }) => (
             <button
                 key={valor}
                 onClick={() => onTipoChange(valor)}
@@ -60,9 +66,9 @@ export function SeletorTipoConteudo({ tipoAtivo, onTipoChange }: SeletorTipoCont
             >
               <div
                   className={`
-            p-2 rounded-lg mb-2 transition-all duration-300
-            ${tipoAtivo === valor ? "bg-white/20 backdrop-blur-sm" : "bg-background/50 group-hover:bg-primary/10"}
-          `}
+              p-2 rounded-lg mb-2 transition-all duration-300
+              ${tipoAtivo === valor ? "bg-white/20 backdrop-blur-sm" : "bg-background/50 group-hover:bg-primary/10"}
+            `}
               >
                 <Icon
                     className={`w-6 h-6 transition-all duration-300 ${
@@ -88,3 +94,5 @@ export function SeletorTipoConteudo({ tipoAtivo, onTipoChange }: SeletorTipoCont
       </div>
   )
 }
+
+export default SeletorTipoConteudo
