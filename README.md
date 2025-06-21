@@ -4,7 +4,7 @@ Website: https://qrcode-yzy.vercel.app \
 GitHub: https://github.com/opZywl/qrcode
 
 ## Screenshots
-,
+
 <div align="center">
   <table align="center">
     <tr>
