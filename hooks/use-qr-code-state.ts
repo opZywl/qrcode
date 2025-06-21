@@ -2,19 +2,35 @@
 
 import { useState, useEffect } from "react"
 
-export type TipoConteudoQR = "url" | "wifi" | "vcard" | "vevent" | "email" | "sms" | "geo" | "whatsapp" | "phone"
+export type TipoConteudoQR =
+    | "url"
+    | "wifi"
+    | "vcard"
+    | "vevent"
+    | "email"
+    | "sms"
+    | "geo"
+    | "whatsapp"
+    | "phone"
+    | "pix"
+    | "appstore"
+    | "spotify"
+    | "zoom"
+    | "menu"
+    | "cupom"
+
 export type NivelCorrecaoErro = "L" | "M" | "Q" | "H"
 export type TipoEncriptacaoWifi = "WPA" | "WEP" | "nopass"
 export type TipoFrame =
-  | "none"
-  | "textBottom"
-  | "scanMeBottom"
-  | "simpleBorder"
-  | "roundedBorderTextBottom"
-  | "topBottomText"
-  | "decorativeBorder"
-  | "modernFrame"
-  | "classicFrame"
+    | "none"
+    | "textBottom"
+    | "scanMeBottom"
+    | "simpleBorder"
+    | "roundedBorderTextBottom"
+    | "topBottomText"
+    | "decorativeBorder"
+    | "modernFrame"
+    | "classicFrame"
 
 export interface EntradaQRCode {
   id: string
@@ -86,6 +102,46 @@ export interface EntradaQRCode {
 
   // Phone
   telefonePara?: string
+
+  // PIX
+  pixChave?: string
+  pixNome?: string
+  pixCidade?: string
+  pixValor?: string
+  pixDescricao?: string
+
+  // App Store
+  appstorePlataforma?: "ios" | "android" | "ambos"
+  appstoreIosUrl?: string
+  appstoreAndroidUrl?: string
+  appstoreNome?: string
+
+  // Spotify/YouTube
+  spotifyTipo?: "track" | "album" | "playlist" | "artist" | "youtube"
+  spotifyUrl?: string
+  spotifyTitulo?: string
+  spotifyArtista?: string
+
+  // Zoom/Meet
+  zoomTipo?: "zoom" | "meet" | "teams"
+  zoomUrl?: string
+  zoomId?: string
+  zoomSenha?: string
+  zoomTitulo?: string
+
+  // Menu
+  menuNome?: string
+  menuDescricao?: string
+  menuItens?: string
+  menuPreco?: string
+  menuCategoria?: string
+
+  // Cupom
+  cupomCodigo?: string
+  cupomDescricao?: string
+  cupomValor?: string
+  cupomValidade?: string
+  cupomTipo?: "desconto" | "frete" | "produto"
 }
 
 export function useQRCodeState() {
@@ -170,6 +226,46 @@ export function useQRCodeState() {
 
   // Phone
   const [telefonePara, setTelefonePara] = useState("")
+
+  // PIX
+  const [pixChave, setPixChave] = useState("")
+  const [pixNome, setPixNome] = useState("")
+  const [pixCidade, setPixCidade] = useState("")
+  const [pixValor, setPixValor] = useState("")
+  const [pixDescricao, setPixDescricao] = useState("")
+
+  // App Store
+  const [appstorePlataforma, setAppstorePlataforma] = useState<"ios" | "android" | "ambos">("ambos")
+  const [appstoreIosUrl, setAppstoreIosUrl] = useState("")
+  const [appstoreAndroidUrl, setAppstoreAndroidUrl] = useState("")
+  const [appstoreNome, setAppstoreNome] = useState("")
+
+  // Spotify/YouTube
+  const [spotifyTipo, setSpotifyTipo] = useState<"track" | "album" | "playlist" | "artist" | "youtube">("track")
+  const [spotifyUrl, setSpotifyUrl] = useState("")
+  const [spotifyTitulo, setSpotifyTitulo] = useState("")
+  const [spotifyArtista, setSpotifyArtista] = useState("")
+
+  // Zoom/Meet
+  const [zoomTipo, setZoomTipo] = useState<"zoom" | "meet" | "teams">("zoom")
+  const [zoomUrl, setZoomUrl] = useState("")
+  const [zoomId, setZoomId] = useState("")
+  const [zoomSenha, setZoomSenha] = useState("")
+  const [zoomTitulo, setZoomTitulo] = useState("")
+
+  // Menu
+  const [menuNome, setMenuNome] = useState("")
+  const [menuDescricao, setMenuDescricao] = useState("")
+  const [menuItens, setMenuItens] = useState("")
+  const [menuPreco, setMenuPreco] = useState("")
+  const [menuCategoria, setMenuCategoria] = useState("")
+
+  // Cupom
+  const [cupomCodigo, setCupomCodigo] = useState("")
+  const [cupomDescricao, setCupomDescricao] = useState("")
+  const [cupomValor, setCupomValor] = useState("")
+  const [cupomValidade, setCupomValidade] = useState("")
+  const [cupomTipo, setCupomTipo] = useState<"desconto" | "frete" | "produto">("desconto")
 
   // Histórico
   const [historico, setHistorico] = useState<EntradaQRCode[]>([])
@@ -360,6 +456,96 @@ export function useQRCodeState() {
       case "telefonePara":
         setTelefonePara(valor)
         break
+        // PIX
+      case "pixChave":
+        setPixChave(valor)
+        break
+      case "pixNome":
+        setPixNome(valor)
+        break
+      case "pixCidade":
+        setPixCidade(valor)
+        break
+      case "pixValor":
+        setPixValor(valor)
+        break
+      case "pixDescricao":
+        setPixDescricao(valor)
+        break
+        // App Store
+      case "appstorePlataforma":
+        setAppstorePlataforma(valor)
+        break
+      case "appstoreIosUrl":
+        setAppstoreIosUrl(valor)
+        break
+      case "appstoreAndroidUrl":
+        setAppstoreAndroidUrl(valor)
+        break
+      case "appstoreNome":
+        setAppstoreNome(valor)
+        break
+        // Spotify/YouTube
+      case "spotifyTipo":
+        setSpotifyTipo(valor)
+        break
+      case "spotifyUrl":
+        setSpotifyUrl(valor)
+        break
+      case "spotifyTitulo":
+        setSpotifyTitulo(valor)
+        break
+      case "spotifyArtista":
+        setSpotifyArtista(valor)
+        break
+        // Zoom/Meet
+      case "zoomTipo":
+        setZoomTipo(valor)
+        break
+      case "zoomUrl":
+        setZoomUrl(valor)
+        break
+      case "zoomId":
+        setZoomId(valor)
+        break
+      case "zoomSenha":
+        setZoomSenha(valor)
+        break
+      case "zoomTitulo":
+        setZoomTitulo(valor)
+        break
+        // Menu
+      case "menuNome":
+        setMenuNome(valor)
+        break
+      case "menuDescricao":
+        setMenuDescricao(valor)
+        break
+      case "menuItens":
+        setMenuItens(valor)
+        break
+      case "menuPreco":
+        setMenuPreco(valor)
+        break
+      case "menuCategoria":
+        setMenuCategoria(valor)
+        break
+        // Cupom
+      case "cupomCodigo":
+        setCupomCodigo(valor)
+        break
+      case "cupomDescricao":
+        setCupomDescricao(valor)
+        break
+      case "cupomValor":
+        setCupomValor(valor)
+        break
+      case "cupomValidade":
+        setCupomValidade(valor)
+        break
+      case "cupomTipo":
+        setCupomTipo(valor)
+        break
       case "historico":
         setHistorico(valor)
         break
@@ -424,6 +610,46 @@ export function useQRCodeState() {
     if (tipoParaReset === "phone" || !tipoParaReset) {
       setTelefonePara("")
     }
+    if (tipoParaReset === "pix" || !tipoParaReset) {
+      setPixChave("")
+      setPixNome("")
+      setPixCidade("")
+      setPixValor("")
+      setPixDescricao("")
+    }
+    if (tipoParaReset === "appstore" || !tipoParaReset) {
+      setAppstorePlataforma("ambos")
+      setAppstoreIosUrl("")
+      setAppstoreAndroidUrl("")
+      setAppstoreNome("")
+    }
+    if (tipoParaReset === "spotify" || !tipoParaReset) {
+      setSpotifyTipo("track")
+      setSpotifyUrl("")
+      setSpotifyTitulo("")
+      setSpotifyArtista("")
+    }
+    if (tipoParaReset === "zoom" || !tipoParaReset) {
+      setZoomTipo("zoom")
+      setZoomUrl("")
+      setZoomId("")
+      setZoomSenha("")
+      setZoomTitulo("")
+    }
+    if (tipoParaReset === "menu" || !tipoParaReset) {
+      setMenuNome("")
+      setMenuDescricao("")
+      setMenuItens("")
+      setMenuPreco("")
+      setMenuCategoria("")
+    }
+    if (tipoParaReset === "cupom" || !tipoParaReset) {
+      setCupomCodigo("")
+      setCupomDescricao("")
+      setCupomValor("")
+      setCupomValidade("")
+      setCupomTipo("desconto")
+    }
   }
 
   return {
@@ -481,6 +707,46 @@ export function useQRCodeState() {
     whatsappMensagem,
     telefonePara,
     historico,
+
+    // PIX
+    pixChave,
+    pixNome,
+    pixCidade,
+    pixValor,
+    pixDescricao,
+
+    // App Store
+    appstorePlataforma,
+    appstoreIosUrl,
+    appstoreAndroidUrl,
+    appstoreNome,
+
+    // Spotify/YouTube
+    spotifyTipo,
+    spotifyUrl,
+    spotifyTitulo,
+    spotifyArtista,
+
+    // Zoom/Meet
+    zoomTipo,
+    zoomUrl,
+    zoomId,
+    zoomSenha,
+    zoomTitulo,
+
+    // Menu
+    menuNome,
+    menuDescricao,
+    menuItens,
+    menuPreco,
+    menuCategoria,
+
+    // Cupom
+    cupomCodigo,
+    cupomDescricao,
+    cupomValor,
+    cupomValidade,
+    cupomTipo,
 
     // Métodos
     updateField,

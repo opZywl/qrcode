@@ -156,6 +156,18 @@ export function useQRCodeGenerator(
             return 0x22c55e // green
           case "phone":
             return 0x6366f1 // indigo
+          case "pix":
+            return 0x00bb2d // green
+          case "appstore":
+            return 0x007aff // blue
+          case "spotify":
+            return 0x1db954 // spotify green
+          case "zoom":
+            return 0x2d8cff // zoom blue
+          case "menu":
+            return 0xff6b35 // orange
+          case "cupom":
+            return 0xff1744 // red
           default:
             return 0x6b7280 // gray
         }
@@ -181,6 +193,18 @@ export function useQRCodeGenerator(
             return "📱"
           case "phone":
             return "☎️"
+          case "pix":
+            return "💰"
+          case "appstore":
+            return "📱"
+          case "spotify":
+            return "🎵"
+          case "zoom":
+            return "📹"
+          case "menu":
+            return "🍽️"
+          case "cupom":
+            return "🎫"
           default:
             return "🔲"
         }
@@ -284,6 +308,69 @@ export function useQRCodeGenerator(
 
           case "phone":
             if (entrada.telefonePara) fields.push({ name: "☎️ Número", value: entrada.telefonePara, inline: true })
+            break
+
+          case "pix":
+            if (entrada.pixChave) fields.push({ name: "💰 Chave PIX", value: entrada.pixChave, inline: true })
+            if (entrada.pixNome) fields.push({ name: "👤 Beneficiário", value: entrada.pixNome, inline: true })
+            if (entrada.pixCidade) fields.push({ name: "🏙️ Cidade", value: entrada.pixCidade, inline: true })
+            if (entrada.pixValor) fields.push({ name: "💵 Valor", value: `R$ ${entrada.pixValor}`, inline: true })
+            if (entrada.pixDescricao) fields.push({ name: "📝 Descrição", value: entrada.pixDescricao, inline: false })
+            break
+
+          case "appstore":
+            if (entrada.appstoreNome) fields.push({ name: "📱 App", value: entrada.appstoreNome, inline: true })
+            if (entrada.appstorePlataforma)
+              fields.push({ name: "🏪 Plataforma", value: entrada.appstorePlataforma.toUpperCase(), inline: true })
+            if (entrada.appstoreIosUrl) fields.push({ name: "🍎 iOS", value: entrada.appstoreIosUrl, inline: false })
+            if (entrada.appstoreAndroidUrl)
+              fields.push({ name: "🤖 Android", value: entrada.appstoreAndroidUrl, inline: false })
+            break
+
+          case "spotify":
+            if (entrada.spotifyTitulo) fields.push({ name: "🎵 Título", value: entrada.spotifyTitulo, inline: true })
+            if (entrada.spotifyArtista) fields.push({ name: "🎤 Artista", value: entrada.spotifyArtista, inline: true })
+            if (entrada.spotifyTipo)
+              fields.push({ name: "📻 Tipo", value: entrada.spotifyTipo.toUpperCase(), inline: true })
+            if (entrada.spotifyUrl) fields.push({ name: "🔗 URL", value: entrada.spotifyUrl, inline: false })
+            break
+
+          case "zoom":
+            if (entrada.zoomTitulo) fields.push({ name: "📹 Reunião", value: entrada.zoomTitulo, inline: true })
+            if (entrada.zoomTipo)
+              fields.push({ name: "💻 Plataforma", value: entrada.zoomTipo.toUpperCase(), inline: true })
+            if (entrada.zoomId) fields.push({ name: "🆔 ID", value: entrada.zoomId, inline: true })
+            if (entrada.zoomUrl) fields.push({ name: "🔗 URL", value: entrada.zoomUrl, inline: false })
+            break
+
+          case "menu":
+            if (entrada.menuNome) fields.push({ name: "🍽️ Restaurante", value: entrada.menuNome, inline: true })
+            if (entrada.menuCategoria) fields.push({ name: "📂 Categoria", value: entrada.menuCategoria, inline: true })
+            if (entrada.menuPreco) fields.push({ name: "💰 Preços", value: entrada.menuPreco, inline: true })
+            if (entrada.menuDescricao)
+              fields.push({
+                name: "📝 Descrição",
+                value: entrada.menuDescricao.substring(0, 100) + (entrada.menuDescricao.length > 100 ? "..." : ""),
+                inline: false,
+              })
+            break
+
+          case "cupom":
+            if (entrada.cupomCodigo) fields.push({ name: "🎫 Código", value: entrada.cupomCodigo, inline: true })
+            if (entrada.cupomTipo) fields.push({ name: "🏷️ Tipo", value: entrada.cupomTipo.toUpperCase(), inline: true })
+            if (entrada.cupomValor) fields.push({ name: "💰 Valor", value: entrada.cupomValor, inline: true })
+            if (entrada.cupomValidade)
+              fields.push({
+                name: "📅 Validade",
+                value: new Date(entrada.cupomValidade).toLocaleDateString("pt-BR"),
+                inline: true,
+              })
+            if (entrada.cupomDescricao)
+              fields.push({
+                name: "📝 Descrição",
+                value: entrada.cupomDescricao.substring(0, 100) + (entrada.cupomDescricao.length > 100 ? "..." : ""),
+                inline: false,
+              })
             break
         }
 
@@ -586,6 +673,194 @@ export function useQRCodeGenerator(
           }
           break
 
+        case "pix":
+          if (!qrState.pixChave.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "Chave PIX é obrigatória",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+
+          // Formato PIX simplificado (EMV QR Code seria mais complexo)
+          const pixData = {
+            chave: qrState.pixChave,
+            nome: qrState.pixNome || "Beneficiário",
+            cidade: qrState.pixCidade || "Cidade",
+            valor: qrState.pixValor ? Number.parseFloat(qrState.pixValor) : undefined,
+            descricao: qrState.pixDescricao || "",
+          }
+
+          valorFinalParaCodificar = `PIX:${pixData.chave}|${pixData.nome}|${pixData.cidade}${pixData.valor ? `|${pixData.valor}` : ""}${pixData.descricao ? `|${pixData.descricao}` : ""}`
+          inputOriginalParaHistorico = qrState.pixChave
+          detalhesEspecificosConteudo = {
+            pixChave: qrState.pixChave,
+            pixNome: qrState.pixNome,
+            pixCidade: qrState.pixCidade,
+            pixValor: qrState.pixValor,
+            pixDescricao: qrState.pixDescricao,
+          }
+          break
+
+        case "appstore":
+          if (qrState.appstorePlataforma === "ios" && !qrState.appstoreIosUrl.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "URL da App Store é obrigatória",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+          if (qrState.appstorePlataforma === "android" && !qrState.appstoreAndroidUrl.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "URL da Play Store é obrigatória",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+          if (
+              qrState.appstorePlataforma === "ambos" &&
+              (!qrState.appstoreIosUrl.trim() || !qrState.appstoreAndroidUrl.trim())
+          ) {
+            toast({
+              title: "❌ Erro",
+              description: "URLs de ambas as lojas são obrigatórias",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+
+          if (qrState.appstorePlataforma === "ios") {
+            valorFinalParaCodificar = qrState.appstoreIosUrl
+          } else if (qrState.appstorePlataforma === "android") {
+            valorFinalParaCodificar = qrState.appstoreAndroidUrl
+          } else {
+            // Para ambos, criar uma página de redirecionamento ou usar a URL do iOS como padrão
+            valorFinalParaCodificar = `APP:${qrState.appstoreNome}|iOS:${qrState.appstoreIosUrl}|Android:${qrState.appstoreAndroidUrl}`
+          }
+
+          inputOriginalParaHistorico = qrState.appstoreNome || "App"
+          detalhesEspecificosConteudo = {
+            appstorePlataforma: qrState.appstorePlataforma,
+            appstoreIosUrl: qrState.appstoreIosUrl,
+            appstoreAndroidUrl: qrState.appstoreAndroidUrl,
+            appstoreNome: qrState.appstoreNome,
+          }
+          break
+
+        case "spotify":
+          if (!qrState.spotifyUrl.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "URL é obrigatória",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+
+          valorFinalParaCodificar = qrState.spotifyUrl
+          inputOriginalParaHistorico = qrState.spotifyTitulo || qrState.spotifyUrl
+          detalhesEspecificosConteudo = {
+            spotifyTipo: qrState.spotifyTipo,
+            spotifyUrl: qrState.spotifyUrl,
+            spotifyTitulo: qrState.spotifyTitulo,
+            spotifyArtista: qrState.spotifyArtista,
+          }
+          break
+
+        case "zoom":
+          if (!qrState.zoomUrl.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "URL da reunião é obrigatória",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+
+          valorFinalParaCodificar = qrState.zoomUrl
+          inputOriginalParaHistorico = qrState.zoomTitulo || qrState.zoomUrl
+          detalhesEspecificosConteudo = {
+            zoomTipo: qrState.zoomTipo,
+            zoomUrl: qrState.zoomUrl,
+            zoomId: qrState.zoomId,
+            zoomSenha: qrState.zoomSenha,
+            zoomTitulo: qrState.zoomTitulo,
+          }
+          break
+
+        case "menu":
+          if (!qrState.menuNome.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "Nome do restaurante é obrigatório",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+
+          const menuInfo = [
+            `RESTAURANTE: ${qrState.menuNome}`,
+            qrState.menuCategoria ? `CATEGORIA: ${qrState.menuCategoria}` : "",
+            qrState.menuDescricao ? `DESCRIÇÃO: ${qrState.menuDescricao}` : "",
+            qrState.menuItens ? `ITENS:\n${qrState.menuItens}` : "",
+            qrState.menuPreco ? `PREÇOS: ${qrState.menuPreco}` : "",
+          ]
+              .filter(Boolean)
+              .join("\n\n")
+
+          valorFinalParaCodificar = menuInfo
+          inputOriginalParaHistorico = qrState.menuNome
+          detalhesEspecificosConteudo = {
+            menuNome: qrState.menuNome,
+            menuDescricao: qrState.menuDescricao,
+            menuItens: qrState.menuItens,
+            menuPreco: qrState.menuPreco,
+            menuCategoria: qrState.menuCategoria,
+          }
+          break
+
+        case "cupom":
+          if (!qrState.cupomCodigo.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "Código do cupom é obrigatório",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+
+          const cupomInfo = [
+            `CUPOM: ${qrState.cupomCodigo}`,
+            `TIPO: ${qrState.cupomTipo.toUpperCase()}`,
+            qrState.cupomValor ? `VALOR: ${qrState.cupomValor}` : "",
+            qrState.cupomDescricao ? `DESCRIÇÃO: ${qrState.cupomDescricao}` : "",
+            qrState.cupomValidade ? `VÁLIDO ATÉ: ${new Date(qrState.cupomValidade).toLocaleDateString("pt-BR")}` : "",
+          ]
+              .filter(Boolean)
+              .join("\n")
+
+          valorFinalParaCodificar = cupomInfo
+          inputOriginalParaHistorico = qrState.cupomCodigo
+          detalhesEspecificosConteudo = {
+            cupomCodigo: qrState.cupomCodigo,
+            cupomDescricao: qrState.cupomDescricao,
+            cupomValor: qrState.cupomValor,
+            cupomValidade: qrState.cupomValidade,
+            cupomTipo: qrState.cupomTipo,
+          }
+          break
+
         default:
           toast({
             title: "❌ Erro",
@@ -850,6 +1125,46 @@ export function useQRCodeGenerator(
 
         // Phone
         qrState.updateField("telefonePara", entrada.telefonePara || "")
+
+        // PIX
+        qrState.updateField("pixChave", entrada.pixChave || "")
+        qrState.updateField("pixNome", entrada.pixNome || "")
+        qrState.updateField("pixCidade", entrada.pixCidade || "")
+        qrState.updateField("pixValor", entrada.pixValor || "")
+        qrState.updateField("pixDescricao", entrada.pixDescricao || "")
+
+        // App Store
+        qrState.updateField("appstorePlataforma", entrada.appstorePlataforma || "ambos")
+        qrState.updateField("appstoreIosUrl", entrada.appstoreIosUrl || "")
+        qrState.updateField("appstoreAndroidUrl", entrada.appstoreAndroidUrl || "")
+        qrState.updateField("appstoreNome", entrada.appstoreNome || "")
+
+        // Spotify/YouTube
+        qrState.updateField("spotifyTipo", entrada.spotifyTipo || "track")
+        qrState.updateField("spotifyUrl", entrada.spotifyUrl || "")
+        qrState.updateField("spotifyTitulo", entrada.spotifyTitulo || "")
+        qrState.updateField("spotifyArtista", entrada.spotifyArtista || "")
+
+        // Zoom/Meet
+        qrState.updateField("zoomTipo", entrada.zoomTipo || "zoom")
+        qrState.updateField("zoomUrl", entrada.zoomUrl || "")
+        qrState.updateField("zoomId", entrada.zoomId || "")
+        qrState.updateField("zoomSenha", entrada.zoomSenha || "")
+        qrState.updateField("zoomTitulo", entrada.zoomTitulo || "")
+
+        // Menu
+        qrState.updateField("menuNome", entrada.menuNome || "")
+        qrState.updateField("menuDescricao", entrada.menuDescricao || "")
+        qrState.updateField("menuItens", entrada.menuItens || "")
+        qrState.updateField("menuPreco", entrada.menuPreco || "")
+        qrState.updateField("menuCategoria", entrada.menuCategoria || "")
+
+        // Cupom
+        qrState.updateField("cupomCodigo", entrada.cupomCodigo || "")
+        qrState.updateField("cupomDescricao", entrada.cupomDescricao || "")
+        qrState.updateField("cupomValor", entrada.cupomValor || "")
+        qrState.updateField("cupomValidade", entrada.cupomValidade || "")
+        qrState.updateField("cupomTipo", entrada.cupomTipo || "desconto")
 
         // Aparência
         qrState.updateField("qrValue", entrada.valorQR)
