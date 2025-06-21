@@ -4,13 +4,15 @@ Website: https://qrcode-yzy.vercel.app \
 GitHub: https://github.com/opZywl/qrcode
 
 ## Screenshots
-<table>
-  <tr>
-    <td align="center">
-      <img src="gh_assets/screenshot-1.png" width="412" alt="Screenshot 1" />
-    </td>
-  </tr>
-</table>
+,
+<div align="center">
+  <table align="center">
+    <tr>
+      <td><img src="gh_assets/screenshot-1.png" width="250" alt="1" /></td>
+    </tr>
+  </table>
+</div>
+
 
 ## Issues
 Se você encontrar algum bug ou funcionalidade ausente, pode nos informar abrindo uma issue [aqui](https://github.com/opZywl/qrcode/issues).
