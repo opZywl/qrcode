@@ -1,7 +1,7 @@
 # Gerador de QR Code
 
 Website: https://qrcode-yzy.vercel.app \
-GitHub: https://github.com/opZywl/qrcode \
+GitHub: https://github.com/opZywl/qrcode
 
 ## Screenshots
 <table>
