@@ -14,10 +14,10 @@ const urlValidationCache = new Map<string, string>()
 const MAX_CACHE_SIZE = 100
 
 export function useQRCodeGenerator(
-  qrState: ReturnType<typeof useQRCodeState>,
-  toast: any,
-  isMobile?: boolean,
-  onCloseControls?: () => void,
+    qrState: ReturnType<typeof useQRCodeState>,
+    toast: any,
+    isMobile?: boolean,
+    onCloseControls?: () => void,
 ) {
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -180,7 +180,7 @@ export function useQRCodeGenerator(
           }
           valorFinalParaCodificar = `BEGIN:VCARD\nVERSION:3.0\nN:${escapeVCardString(qrState.vcardSobrenome)};${escapeVCardString(qrState.vcardNome)}\nFN:${escapeVCardString(qrState.vcardNome)} ${escapeVCardString(qrState.vcardSobrenome)}\nORG:${escapeVCardString(qrState.vcardOrganizacao)}\nTITLE:${escapeVCardString(qrState.vcardTitulo)}\nTEL;TYPE=WORK,VOICE:${escapeVCardString(qrState.vcardTelefone)}\nEMAIL:${escapeVCardString(qrState.vcardEmail)}\nURL:${escapeVCardString(qrState.vcardWebsite)}\nADR;TYPE=WORK:;;${escapeVCardString(qrState.vcardEndereco)};${escapeVCardString(qrState.vcardCidade)};${escapeVCardString(qrState.vcardEstado)};${escapeVCardString(qrState.vcardCep)};${escapeVCardString(qrState.vcardPais)}\nEND:VCARD`
           inputOriginalParaHistorico =
-            `${qrState.vcardNome} ${qrState.vcardSobrenome}`.trim() || qrState.vcardOrganizacao
+              `${qrState.vcardNome} ${qrState.vcardSobrenome}`.trim() || qrState.vcardOrganizacao
           detalhesEspecificosConteudo = {
             vcardNome: qrState.vcardNome,
             vcardSobrenome: qrState.vcardSobrenome,
@@ -209,9 +209,9 @@ export function useQRCodeGenerator(
           }
           const dtStart = formatDateForVEvent(qrState.veventDataInicio, qrState.veventHoraInicio, qrState.veventDiaTodo)
           const dtEnd = formatDateForVEvent(
-            qrState.veventDataFim || qrState.veventDataInicio,
-            qrState.veventHoraFim || qrState.veventHoraInicio,
-            qrState.veventDiaTodo,
+              qrState.veventDataFim || qrState.veventDataInicio,
+              qrState.veventHoraFim || qrState.veventHoraInicio,
+              qrState.veventDiaTodo,
           )
           if (!dtStart || !dtEnd) {
             toast({
@@ -353,20 +353,20 @@ export function useQRCodeGenerator(
           habilitarCustomizacaoLogo: qrState.habilitarCustomizacaoLogo,
           logoDataUri: qrState.habilitarCustomizacaoLogo && qrState.logoDataUri ? qrState.logoDataUri : undefined,
           logoTamanhoRatio:
-            qrState.habilitarCustomizacaoLogo && qrState.logoDataUri ? qrState.logoTamanhoRatio : undefined,
+              qrState.habilitarCustomizacaoLogo && qrState.logoDataUri ? qrState.logoTamanhoRatio : undefined,
           escavarLogo: qrState.habilitarCustomizacaoLogo && qrState.logoDataUri ? qrState.escavarLogo : undefined,
           habilitarCustomizacaoFundo: qrState.habilitarCustomizacaoFundo,
           imagemFundo: qrState.habilitarCustomizacaoFundo && qrState.imagemFundo ? qrState.imagemFundo : undefined,
           habilitarCustomizacaoFrame: qrState.habilitarCustomizacaoFrame,
           tipoFrameSelecionado: qrState.habilitarCustomizacaoFrame ? qrState.tipoFrameSelecionado : "none",
           textoFrame:
-            qrState.habilitarCustomizacaoFrame &&
-            (qrState.tipoFrameSelecionado === "textBottom" ||
-              qrState.tipoFrameSelecionado === "roundedBorderTextBottom" ||
-              qrState.tipoFrameSelecionado === "topBottomText" ||
-              qrState.tipoFrameSelecionado === "decorativeBorder")
-              ? qrState.textoFrame
-              : undefined,
+              qrState.habilitarCustomizacaoFrame &&
+              (qrState.tipoFrameSelecionado === "textBottom" ||
+                  qrState.tipoFrameSelecionado === "roundedBorderTextBottom" ||
+                  qrState.tipoFrameSelecionado === "topBottomText" ||
+                  qrState.tipoFrameSelecionado === "decorativeBorder")
+                  ? qrState.textoFrame
+                  : undefined,
           timestamp: Date.now(),
           ...detalhesEspecificosConteudo,
         }
@@ -397,124 +397,124 @@ export function useQRCodeGenerator(
   }, [qrState, toast, isMobile, onCloseControls, sanitizeAndValidateUrl, escapeVCardString, formatDateForVEvent])
 
   const handleContentTypeChange = useCallback(
-    (novoTipo: TipoConteudoQR) => {
-      const tipoParaReset = qrState.tipoConteudoAtivo
-      qrState.resetCamposEspecificos(tipoParaReset)
-      qrState.updateField("tipoConteudoAtivo", novoTipo)
-    },
-    [qrState],
+      (novoTipo: TipoConteudoQR) => {
+        const tipoParaReset = qrState.tipoConteudoAtivo
+        qrState.resetCamposEspecificos(tipoParaReset)
+        qrState.updateField("tipoConteudoAtivo", novoTipo)
+      },
+      [qrState],
   )
 
   // Reset granular melhorado
   const resetGranular = useCallback(
-    (tipo: string) => {
-      switch (tipo) {
-        case "content":
-          // Reset apenas dados do conteúdo atual
-          qrState.resetCamposEspecificos(qrState.tipoConteudoAtivo)
-          qrState.updateField("qrValue", "")
-          toast({
-            title: "🗑️ Dados Limpos!",
-            description: `Dados de ${qrState.tipoConteudoAtivo} foram removidos`,
-          })
-          break
+      (tipo: string) => {
+        switch (tipo) {
+          case "content":
+            // Reset apenas dados do conteúdo atual
+            qrState.resetCamposEspecificos(qrState.tipoConteudoAtivo)
+            qrState.updateField("qrValue", "")
+            toast({
+              title: "🗑️ Dados Limpos!",
+              description: `Dados de ${qrState.tipoConteudoAtivo} foram removidos`,
+            })
+            break
 
-        case "appearance":
-        case "basic":
-          // Reset configurações básicas de aparência
-          qrState.updateField("corFrente", "#000000")
-          qrState.updateField("corFundo", "#FFFFFF")
-          qrState.updateField("tamanho", 256)
-          qrState.updateField("nivelCorrecaoErro", "H")
-          qrState.updateField("zonaQuieta", 4)
-          toast({
-            title: "🎨 Aparência Resetada!",
-            description: "Cores e configurações básicas foram restauradas",
-          })
-          break
+          case "appearance":
+          case "basic":
+            // Reset configurações básicas de aparência
+            qrState.updateField("corFrente", "#000000")
+            qrState.updateField("corFundo", "#FFFFFF")
+            qrState.updateField("tamanho", 256)
+            qrState.updateField("nivelCorrecaoErro", "H")
+            qrState.updateField("zonaQuieta", 4)
+            toast({
+              title: "🎨 Aparência Resetada!",
+              description: "Cores e configurações básicas foram restauradas",
+            })
+            break
 
-        case "logo":
-          // Reset apenas logo
-          qrState.updateField("logoDataUri", "")
-          qrState.updateField("logoTamanhoRatio", 0.2)
-          qrState.updateField("escavarLogo", true)
-          qrState.updateField("habilitarCustomizacaoLogo", false)
-          if (fileInputRef.current) fileInputRef.current.value = ""
+          case "logo":
+            // Reset apenas logo
+            qrState.updateField("logoDataUri", "")
+            qrState.updateField("logoTamanhoRatio", 0.2)
+            qrState.updateField("escavarLogo", true)
+            qrState.updateField("habilitarCustomizacaoLogo", false)
+            if (fileInputRef.current) fileInputRef.current.value = ""
 
-          // Remover do accordion mobile
-          const novosValores = qrState.valoresAccordionMobile.filter((v: string) => v !== "logo")
-          qrState.updateField("valoresAccordionMobile", novosValores)
+            // Remover do accordion mobile
+            const novosValores = qrState.valoresAccordionMobile.filter((v: string) => v !== "logo")
+            qrState.updateField("valoresAccordionMobile", novosValores)
 
-          toast({
-            title: "🖼️ Logo Removido!",
-            description: "Logo personalizado foi removido",
-          })
-          break
+            toast({
+              title: "🖼️ Logo Removido!",
+              description: "Logo personalizado foi removido",
+            })
+            break
 
-        case "background":
-          // Reset apenas fundo
-          qrState.updateField("imagemFundo", "")
-          qrState.updateField("habilitarCustomizacaoFundo", false)
-          if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
+          case "background":
+            // Reset apenas fundo
+            qrState.updateField("imagemFundo", "")
+            qrState.updateField("habilitarCustomizacaoFundo", false)
+            if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
 
-          // Remover do accordion mobile
-          const novosValoresBg = qrState.valoresAccordionMobile.filter((v: string) => v !== "background")
-          qrState.updateField("valoresAccordionMobile", novosValoresBg)
+            // Remover do accordion mobile
+            const novosValoresBg = qrState.valoresAccordionMobile.filter((v: string) => v !== "background")
+            qrState.updateField("valoresAccordionMobile", novosValoresBg)
 
-          toast({
-            title: "🌄 Fundo Removido!",
-            description: "Imagem de fundo foi removida",
-          })
-          break
+            toast({
+              title: "🌄 Fundo Removido!",
+              description: "Imagem de fundo foi removida",
+            })
+            break
 
-        case "frame":
-          // Reset apenas frame
-          qrState.updateField("tipoFrameSelecionado", "none")
-          qrState.updateField("textoFrame", "")
-          qrState.updateField("habilitarCustomizacaoFrame", false)
+          case "frame":
+            // Reset apenas frame
+            qrState.updateField("tipoFrameSelecionado", "none")
+            qrState.updateField("textoFrame", "")
+            qrState.updateField("habilitarCustomizacaoFrame", false)
 
-          // Remover do accordion mobile
-          const novosValoresFrame = qrState.valoresAccordionMobile.filter((v: string) => v !== "frame")
-          qrState.updateField("valoresAccordionMobile", novosValoresFrame)
+            // Remover do accordion mobile
+            const novosValoresFrame = qrState.valoresAccordionMobile.filter((v: string) => v !== "frame")
+            qrState.updateField("valoresAccordionMobile", novosValoresFrame)
 
-          toast({
-            title: "🖼️ Moldura Removida!",
-            description: "Moldura personalizada foi removida",
-          })
-          break
+            toast({
+              title: "🖼️ Moldura Removida!",
+              description: "Moldura personalizada foi removida",
+            })
+            break
 
-        default:
-          // Reset completo (comportamento original)
-          qrState.updateField("qrValue", "")
-          qrState.updateField("corFrente", "#000000")
-          qrState.updateField("corFundo", "#FFFFFF")
-          qrState.updateField("tamanho", 256)
-          qrState.updateField("nivelCorrecaoErro", "H")
-          qrState.updateField("zonaQuieta", 4)
-          qrState.updateField("logoDataUri", "")
-          qrState.updateField("logoTamanhoRatio", 0.2)
-          qrState.updateField("escavarLogo", true)
-          qrState.updateField("imagemFundo", "")
-          qrState.updateField("tipoFrameSelecionado", "none")
-          qrState.updateField("textoFrame", "")
-          qrState.updateField("habilitarCustomizacaoLogo", false)
-          qrState.updateField("habilitarCustomizacaoFundo", false)
-          qrState.updateField("habilitarCustomizacaoFrame", false)
-          qrState.updateField("valoresAccordionMobile", [])
-          qrState.resetCamposEspecificos()
+          default:
+            // Reset completo (comportamento original)
+            qrState.updateField("qrValue", "")
+            qrState.updateField("corFrente", "#000000")
+            qrState.updateField("corFundo", "#FFFFFF")
+            qrState.updateField("tamanho", 256)
+            qrState.updateField("nivelCorrecaoErro", "H")
+            qrState.updateField("zonaQuieta", 4)
+            qrState.updateField("logoDataUri", "")
+            qrState.updateField("logoTamanhoRatio", 0.2)
+            qrState.updateField("escavarLogo", true)
+            qrState.updateField("imagemFundo", "")
+            qrState.updateField("tipoFrameSelecionado", "none")
+            qrState.updateField("textoFrame", "")
+            qrState.updateField("habilitarCustomizacaoLogo", false)
+            qrState.updateField("habilitarCustomizacaoFundo", false)
+            qrState.updateField("habilitarCustomizacaoFrame", false)
+            qrState.updateField("valoresAccordionMobile", [])
+            qrState.resetCamposEspecificos()
 
-          if (fileInputRef.current) fileInputRef.current.value = ""
-          if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
+            if (fileInputRef.current) fileInputRef.current.value = ""
+            if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
 
-          urlValidationCache.clear()
+            urlValidationCache.clear()
 
-          toast({
-            title: "🔄 Tudo Resetado!",
-            description: "QR Code, campos e configurações foram limpos completamente",
-          })
-      }
-    },
-    [qrState, toast],
+            toast({
+              title: "🔄 Tudo Resetado!",
+              description: "QR Code, campos e configurações foram limpos completamente",
+            })
+        }
+      },
+      [qrState, toast],
   )
 
   const resetAppearanceCustomization = useCallback(() => {
@@ -522,126 +522,126 @@ export function useQRCodeGenerator(
   }, [resetGranular])
 
   const loadFromHistory = useCallback(
-    (entrada: EntradaQRCode) => {
-      qrState.resetCamposEspecificos()
-      qrState.updateField("tipoConteudoAtivo", entrada.tipoConteudo)
+      (entrada: EntradaQRCode) => {
+        qrState.resetCamposEspecificos()
+        qrState.updateField("tipoConteudoAtivo", entrada.tipoConteudo)
 
-      // Carregar campos específicos por tipo
-      if (entrada.tipoConteudo === "url") {
-        qrState.updateField("inputUrl", entrada.inputOriginal)
-      }
+        // Carregar campos específicos por tipo
+        if (entrada.tipoConteudo === "url") {
+          qrState.updateField("inputUrl", entrada.inputOriginal)
+        }
 
-      // WiFi
-      qrState.updateField("wifiSsid", entrada.wifiSsid || "")
-      qrState.updateField("wifiSenha", entrada.wifiSenha || "")
-      qrState.updateField("wifiEncriptacao", entrada.wifiEncriptacao || "WPA")
-      qrState.updateField("wifiOculto", entrada.wifiOculto || false)
+        // WiFi
+        qrState.updateField("wifiSsid", entrada.wifiSsid || "")
+        qrState.updateField("wifiSenha", entrada.wifiSenha || "")
+        qrState.updateField("wifiEncriptacao", entrada.wifiEncriptacao || "WPA")
+        qrState.updateField("wifiOculto", entrada.wifiOculto || false)
 
-      // vCard
-      qrState.updateField("vcardNome", entrada.vcardNome || "")
-      qrState.updateField("vcardSobrenome", entrada.vcardSobrenome || "")
-      qrState.updateField("vcardOrganizacao", entrada.vcardOrganizacao || "")
-      qrState.updateField("vcardTitulo", entrada.vcardTitulo || "")
-      qrState.updateField("vcardTelefone", entrada.vcardTelefone || "")
-      qrState.updateField("vcardEmail", entrada.vcardEmail || "")
-      qrState.updateField("vcardWebsite", entrada.vcardWebsite || "")
-      qrState.updateField("vcardEndereco", entrada.vcardEndereco || "")
-      qrState.updateField("vcardCidade", entrada.vcardCidade || "")
-      qrState.updateField("vcardEstado", entrada.vcardEstado || "")
-      qrState.updateField("vcardCep", entrada.vcardCep || "")
-      qrState.updateField("vcardPais", entrada.vcardPais || "")
+        // vCard
+        qrState.updateField("vcardNome", entrada.vcardNome || "")
+        qrState.updateField("vcardSobrenome", entrada.vcardSobrenome || "")
+        qrState.updateField("vcardOrganizacao", entrada.vcardOrganizacao || "")
+        qrState.updateField("vcardTitulo", entrada.vcardTitulo || "")
+        qrState.updateField("vcardTelefone", entrada.vcardTelefone || "")
+        qrState.updateField("vcardEmail", entrada.vcardEmail || "")
+        qrState.updateField("vcardWebsite", entrada.vcardWebsite || "")
+        qrState.updateField("vcardEndereco", entrada.vcardEndereco || "")
+        qrState.updateField("vcardCidade", entrada.vcardCidade || "")
+        qrState.updateField("vcardEstado", entrada.vcardEstado || "")
+        qrState.updateField("vcardCep", entrada.vcardCep || "")
+        qrState.updateField("vcardPais", entrada.vcardPais || "")
 
-      // vEvent
-      qrState.updateField("veventResumo", entrada.veventResumo || "")
-      qrState.updateField("veventDescricao", entrada.veventDescricao || "")
-      qrState.updateField("veventLocalizacao", entrada.veventLocalizacao || "")
-      qrState.updateField("veventDataInicio", entrada.veventDataInicio || "")
-      qrState.updateField("veventHoraInicio", entrada.veventHoraInicio || "")
-      qrState.updateField("veventDataFim", entrada.veventDataFim || "")
-      qrState.updateField("veventHoraFim", entrada.veventHoraFim || "")
-      qrState.updateField("veventDiaTodo", entrada.veventDiaTodo || false)
+        // vEvent
+        qrState.updateField("veventResumo", entrada.veventResumo || "")
+        qrState.updateField("veventDescricao", entrada.veventDescricao || "")
+        qrState.updateField("veventLocalizacao", entrada.veventLocalizacao || "")
+        qrState.updateField("veventDataInicio", entrada.veventDataInicio || "")
+        qrState.updateField("veventHoraInicio", entrada.veventHoraInicio || "")
+        qrState.updateField("veventDataFim", entrada.veventDataFim || "")
+        qrState.updateField("veventHoraFim", entrada.veventHoraFim || "")
+        qrState.updateField("veventDiaTodo", entrada.veventDiaTodo || false)
 
-      // Email
-      qrState.updateField("emailPara", entrada.emailPara || "")
-      qrState.updateField("emailAssunto", entrada.emailAssunto || "")
-      qrState.updateField("emailCorpo", entrada.emailCorpo || "")
+        // Email
+        qrState.updateField("emailPara", entrada.emailPara || "")
+        qrState.updateField("emailAssunto", entrada.emailAssunto || "")
+        qrState.updateField("emailCorpo", entrada.emailCorpo || "")
 
-      // SMS
-      qrState.updateField("smsPara", entrada.smsPara || "")
-      qrState.updateField("smsCorpo", entrada.smsCorpo || "")
+        // SMS
+        qrState.updateField("smsPara", entrada.smsPara || "")
+        qrState.updateField("smsCorpo", entrada.smsCorpo || "")
 
-      // Geo
-      qrState.updateField("geoLatitude", entrada.geoLatitude || "")
-      qrState.updateField("geoLongitude", entrada.geoLongitude || "")
+        // Geo
+        qrState.updateField("geoLatitude", entrada.geoLatitude || "")
+        qrState.updateField("geoLongitude", entrada.geoLongitude || "")
 
-      // WhatsApp
-      qrState.updateField("whatsappPara", entrada.whatsappPara || "")
-      qrState.updateField("whatsappMensagem", entrada.whatsappMensagem || "")
+        // WhatsApp
+        qrState.updateField("whatsappPara", entrada.whatsappPara || "")
+        qrState.updateField("whatsappMensagem", entrada.whatsappMensagem || "")
 
-      // Phone
-      qrState.updateField("telefonePara", entrada.telefonePara || "")
+        // Phone
+        qrState.updateField("telefonePara", entrada.telefonePara || "")
 
-      // Aparência
-      qrState.updateField("qrValue", entrada.valorQR)
-      qrState.updateField("corFrente", entrada.corFrente)
-      qrState.updateField("corFundo", entrada.corFundo)
-      qrState.updateField("tamanho", entrada.tamanho)
-      qrState.updateField("nivelCorrecaoErro", entrada.nivel)
-      qrState.updateField("zonaQuieta", entrada.margem)
+        // Aparência
+        qrState.updateField("qrValue", entrada.valorQR)
+        qrState.updateField("corFrente", entrada.corFrente)
+        qrState.updateField("corFundo", entrada.corFundo)
+        qrState.updateField("tamanho", entrada.tamanho)
+        qrState.updateField("nivelCorrecaoErro", entrada.nivel)
+        qrState.updateField("zonaQuieta", entrada.margem)
 
-      // Customizações
-      const novosValoresAccordion: string[] = []
+        // Customizações
+        const novosValoresAccordion: string[] = []
 
-      qrState.updateField("habilitarCustomizacaoLogo", !!entrada.habilitarCustomizacaoLogo)
-      qrState.updateField("habilitarCustomizacaoFundo", !!entrada.habilitarCustomizacaoFundo)
-      qrState.updateField("habilitarCustomizacaoFrame", !!entrada.habilitarCustomizacaoFrame)
+        qrState.updateField("habilitarCustomizacaoLogo", !!entrada.habilitarCustomizacaoLogo)
+        qrState.updateField("habilitarCustomizacaoFundo", !!entrada.habilitarCustomizacaoFundo)
+        qrState.updateField("habilitarCustomizacaoFrame", !!entrada.habilitarCustomizacaoFrame)
 
-      if (entrada.habilitarCustomizacaoLogo) novosValoresAccordion.push("logo")
-      if (entrada.habilitarCustomizacaoFundo) novosValoresAccordion.push("background")
-      if (entrada.habilitarCustomizacaoFrame) novosValoresAccordion.push("frame")
+        if (entrada.habilitarCustomizacaoLogo) novosValoresAccordion.push("logo")
+        if (entrada.habilitarCustomizacaoFundo) novosValoresAccordion.push("background")
+        if (entrada.habilitarCustomizacaoFrame) novosValoresAccordion.push("frame")
 
-      // Verificar se tem aparência não padrão
-      const temAparenciaNaoPadrao =
-        entrada.corFrente !== "#000000" ||
-        entrada.corFundo !== "#FFFFFF" ||
-        entrada.tamanho !== 256 ||
-        entrada.nivel !== "H" ||
-        entrada.margem !== 4
+        // Verificar se tem aparência não padrão
+        const temAparenciaNaoPadrao =
+            entrada.corFrente !== "#000000" ||
+            entrada.corFundo !== "#FFFFFF" ||
+            entrada.tamanho !== 256 ||
+            entrada.nivel !== "H" ||
+            entrada.margem !== 4
 
-      if (temAparenciaNaoPadrao) {
-        novosValoresAccordion.push("appearance")
-      }
+        if (temAparenciaNaoPadrao) {
+          novosValoresAccordion.push("appearance")
+        }
 
-      qrState.updateField("valoresAccordionMobile", novosValoresAccordion)
+        qrState.updateField("valoresAccordionMobile", novosValoresAccordion)
 
-      // Logo
-      if (entrada.logoDataUri) {
-        qrState.updateField("logoDataUri", entrada.logoDataUri)
-        qrState.updateField("logoTamanhoRatio", entrada.logoTamanhoRatio || 0.2)
-        qrState.updateField("escavarLogo", entrada.escavarLogo === undefined ? true : entrada.escavarLogo)
-      } else {
-        qrState.updateField("logoDataUri", "")
-      }
-      if (fileInputRef.current) fileInputRef.current.value = ""
+        // Logo
+        if (entrada.logoDataUri) {
+          qrState.updateField("logoDataUri", entrada.logoDataUri)
+          qrState.updateField("logoTamanhoRatio", entrada.logoTamanhoRatio || 0.2)
+          qrState.updateField("escavarLogo", entrada.escavarLogo === undefined ? true : entrada.escavarLogo)
+        } else {
+          qrState.updateField("logoDataUri", "")
+        }
+        if (fileInputRef.current) fileInputRef.current.value = ""
 
-      // Imagem de fundo
-      if (entrada.imagemFundo) {
-        qrState.updateField("imagemFundo", entrada.imagemFundo)
-      } else {
-        qrState.updateField("imagemFundo", "")
-      }
-      if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
+        // Imagem de fundo
+        if (entrada.imagemFundo) {
+          qrState.updateField("imagemFundo", entrada.imagemFundo)
+        } else {
+          qrState.updateField("imagemFundo", "")
+        }
+        if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
 
-      // Frame
-      qrState.updateField("tipoFrameSelecionado", entrada.tipoFrameSelecionado || "none")
-      qrState.updateField("textoFrame", entrada.textoFrame || "")
+        // Frame
+        qrState.updateField("tipoFrameSelecionado", entrada.tipoFrameSelecionado || "none")
+        qrState.updateField("textoFrame", entrada.textoFrame || "")
 
-      toast({
-        title: "📋 Configurações Carregadas",
-        description: "As configurações do histórico foram aplicadas",
-      })
-    },
-    [qrState, toast],
+        toast({
+          title: "📋 Configurações Carregadas",
+          description: "As configurações do histórico foram aplicadas",
+        })
+      },
+      [qrState, toast],
   )
 
   const clearHistory = useCallback(() => {
@@ -660,33 +660,33 @@ export function useQRCodeGenerator(
 
   // Função para criar SVG do QR Code MUITO melhorada
   const createAdvancedQRCodeSVG = useCallback(
-    (
-      qrValue: string,
-      size: number,
-      fgColor: string,
-      bgColor: string,
-      frameType: string,
-      frameText: string,
-      logoDataUri?: string,
-      logoSize?: number,
-      backgroundImage?: string,
-    ) => {
-      const frameHeight =
-        frameType !== "none" &&
-        (frameType === "textBottom" ||
-          frameType === "scanMeBottom" ||
-          frameType === "roundedBorderTextBottom" ||
-          frameType === "topBottomText")
-          ? FRAME_TEXT_AREA_HEIGHT
-          : 0
+      (
+          qrValue: string,
+          size: number,
+          fgColor: string,
+          bgColor: string,
+          frameType: string,
+          frameText: string,
+          logoDataUri?: string,
+          logoSize?: number,
+          backgroundImage?: string,
+      ) => {
+        const frameHeight =
+            frameType !== "none" &&
+            (frameType === "textBottom" ||
+                frameType === "scanMeBottom" ||
+                frameType === "roundedBorderTextBottom" ||
+                frameType === "topBottomText")
+                ? FRAME_TEXT_AREA_HEIGHT
+                : 0
 
-      const totalHeight = size + frameHeight + (frameType !== "none" ? FRAME_PADDING * 2 : 0)
-      const totalWidth = size + (frameType !== "none" ? FRAME_PADDING * 2 : 0)
+        const totalHeight = size + frameHeight + (frameType !== "none" ? FRAME_PADDING * 2 : 0)
+        const totalWidth = size + (frameType !== "none" ? FRAME_PADDING * 2 : 0)
 
-      // Gerar padrão QR Code simplificado (para produção, usar biblioteca real)
-      const qrPattern = generateSimpleQRPattern(qrValue, size)
+        // Gerar padrão QR Code simplificado (para produção, usar biblioteca real)
+        const qrPattern = generateSimpleQRPattern(qrValue, size)
 
-      const svgContent = `
+        const svgContent = `
 <svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${totalWidth} ${totalHeight}">
   <defs>
     ${backgroundImage ? `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${totalWidth}" height="${totalHeight}"><image href="${backgroundImage}" width="${totalWidth}" height="${totalHeight}" preserveAspectRatio="xMidYMid slice"/></pattern>` : ""}
@@ -720,9 +720,9 @@ export function useQRCodeGenerator(
   ${frameHeight > 0 ? renderFrameText(frameType, frameText, totalWidth, size, FRAME_PADDING, frameHeight, fgColor) : ""}
 </svg>`
 
-      return svgContent
-    },
-    [],
+        return svgContent
+      },
+      [],
   )
 
   // Função auxiliar para gerar padrão QR simplificado
@@ -752,11 +752,11 @@ export function useQRCodeGenerator(
 
   // Função auxiliar para renderizar decorações do frame
   const renderFrameDecorations = (
-    frameType: string,
-    totalWidth: number,
-    size: number,
-    padding: number,
-    color: string,
+      frameType: string,
+      totalWidth: number,
+      size: number,
+      padding: number,
+      color: string,
   ) => {
     switch (frameType) {
       case "decorativeBorder":
@@ -787,13 +787,13 @@ export function useQRCodeGenerator(
 
   // Função auxiliar para renderizar texto do frame
   const renderFrameText = (
-    frameType: string,
-    frameText: string,
-    totalWidth: number,
-    size: number,
-    padding: number,
-    frameHeight: number,
-    color: string,
+      frameType: string,
+      frameText: string,
+      totalWidth: number,
+      size: number,
+      padding: number,
+      frameHeight: number,
+      color: string,
   ) => {
     const text = frameType === "scanMeBottom" ? "SCAN ME" : frameText || "QR CODE"
     const textY = size + padding + frameHeight / 2
@@ -810,201 +810,201 @@ export function useQRCodeGenerator(
   }
 
   const handleDownloadQRCode = useCallback(
-    (formato: "png" | "svg" = "png") => {
-      if (!qrState.qrValue) {
-        toast({
-          title: "❌ Erro",
-          description: "Nenhum QR Code para baixar",
-          variant: "destructive",
-        })
-        return
-      }
+      (formato: "png" | "svg" = "png") => {
+        if (!qrState.qrValue) {
+          toast({
+            title: "❌ Erro",
+            description: "Nenhum QR Code para baixar",
+            variant: "destructive",
+          })
+          return
+        }
 
-      try {
-        const filename = `qrcode_${getFormattedDate()}.${formato}`
+        try {
+          const filename = `qrcode_${getFormattedDate()}.${formato}`
 
-        if (formato === "png") {
-          // Aguardar um pouco para garantir que o canvas foi renderizado
-          setTimeout(() => {
-            const qrCanvas = document.querySelector("canvas") as HTMLCanvasElement
-            if (!qrCanvas) {
-              toast({
-                title: "❌ Erro",
-                description: "QR Code não encontrado para download",
-                variant: "destructive",
-              })
-              return
-            }
+          if (formato === "png") {
+            // Aguardar um pouco para garantir que o canvas foi renderizado
+            setTimeout(() => {
+              const qrCanvas = document.querySelector("canvas") as HTMLCanvasElement
+              if (!qrCanvas) {
+                toast({
+                  title: "❌ Erro",
+                  description: "QR Code não encontrado para download",
+                  variant: "destructive",
+                })
+                return
+              }
 
-            // Criar canvas para export com frame
-            const exportCanvas = document.createElement("canvas")
-            const ctx = exportCanvas.getContext("2d")
-            if (!ctx) return
+              // Criar canvas para export com frame
+              const exportCanvas = document.createElement("canvas")
+              const ctx = exportCanvas.getContext("2d")
+              if (!ctx) return
 
-            const frameActive = qrState.habilitarCustomizacaoFrame && qrState.tipoFrameSelecionado !== "none"
-            const frameHeight =
-              frameActive &&
-              (qrState.tipoFrameSelecionado === "textBottom" ||
-                qrState.tipoFrameSelecionado === "scanMeBottom" ||
-                qrState.tipoFrameSelecionado === "roundedBorderTextBottom" ||
-                qrState.tipoFrameSelecionado === "topBottomText")
-                ? FRAME_TEXT_AREA_HEIGHT
-                : 0
+              const frameActive = qrState.habilitarCustomizacaoFrame && qrState.tipoFrameSelecionado !== "none"
+              const frameHeight =
+                  frameActive &&
+                  (qrState.tipoFrameSelecionado === "textBottom" ||
+                      qrState.tipoFrameSelecionado === "scanMeBottom" ||
+                      qrState.tipoFrameSelecionado === "roundedBorderTextBottom" ||
+                      qrState.tipoFrameSelecionado === "topBottomText")
+                      ? FRAME_TEXT_AREA_HEIGHT
+                      : 0
 
-            const totalWidth = qrState.tamanho + (frameActive ? FRAME_PADDING * 2 : 0)
-            const totalHeight = qrState.tamanho + frameHeight + (frameActive ? FRAME_PADDING * 2 : 0)
+              const totalWidth = qrState.tamanho + (frameActive ? FRAME_PADDING * 2 : 0)
+              const totalHeight = qrState.tamanho + frameHeight + (frameActive ? FRAME_PADDING * 2 : 0)
 
-            exportCanvas.width = totalWidth
-            exportCanvas.height = totalHeight
+              exportCanvas.width = totalWidth
+              exportCanvas.height = totalHeight
 
-            // Fundo
-            ctx.fillStyle = qrState.corFundo
-            ctx.fillRect(0, 0, totalWidth, totalHeight)
+              // Fundo
+              ctx.fillStyle = qrState.corFundo
+              ctx.fillRect(0, 0, totalWidth, totalHeight)
 
-            // Imagem de fundo se houver
-            if (qrState.habilitarCustomizacaoFundo && qrState.imagemFundo) {
-              const img = new Image()
-              img.onload = () => {
-                ctx.drawImage(img, 0, 0, totalWidth, totalHeight)
+              // Imagem de fundo se houver
+              if (qrState.habilitarCustomizacaoFundo && qrState.imagemFundo) {
+                const img = new Image()
+                img.onload = () => {
+                  ctx.drawImage(img, 0, 0, totalWidth, totalHeight)
+                  drawQRAndFrame()
+                }
+                img.src = qrState.imagemFundo
+              } else {
                 drawQRAndFrame()
               }
-              img.src = qrState.imagemFundo
-            } else {
-              drawQRAndFrame()
-            }
 
-            function drawQRAndFrame() {
-              const qrX = frameActive ? FRAME_PADDING : 0
-              const qrY = frameActive ? FRAME_PADDING : 0
+              function drawQRAndFrame() {
+                const qrX = frameActive ? FRAME_PADDING : 0
+                const qrY = frameActive ? FRAME_PADDING : 0
 
-              // Desenhar QR Code
-              ctx.drawImage(qrCanvas, qrX, qrY, qrState.tamanho, qrState.tamanho)
+                // Desenhar QR Code
+                ctx.drawImage(qrCanvas, qrX, qrY, qrState.tamanho, qrState.tamanho)
 
-              // Desenhar frame se ativo
-              if (frameActive) {
-                ctx.strokeStyle = qrState.corFrente
-                ctx.lineWidth = 2
-
-                if (qrState.tipoFrameSelecionado === "roundedBorderTextBottom") {
-                  // Borda arredondada
-                  ctx.beginPath()
-                  ctx.roundRect(qrX, qrY, qrState.tamanho, qrState.tamanho, FRAME_BORDER_RADIUS)
-                  ctx.stroke()
-                } else if (qrState.tipoFrameSelecionado === "decorativeBorder") {
-                  // Bordas decorativas nos cantos
-                  const cornerSize = 20
+                // Desenhar frame se ativo
+                if (frameActive) {
                   ctx.strokeStyle = qrState.corFrente
-                  ctx.lineWidth = 3
+                  ctx.lineWidth = 2
 
-                  // Canto superior esquerdo
-                  ctx.beginPath()
-                  ctx.moveTo(qrX, qrY + cornerSize)
-                  ctx.lineTo(qrX, qrY)
-                  ctx.lineTo(qrX + cornerSize, qrY)
-                  ctx.stroke()
+                  if (qrState.tipoFrameSelecionado === "roundedBorderTextBottom") {
+                    // Borda arredondada
+                    ctx.beginPath()
+                    ctx.roundRect(qrX, qrY, qrState.tamanho, qrState.tamanho, FRAME_BORDER_RADIUS)
+                    ctx.stroke()
+                  } else if (qrState.tipoFrameSelecionado === "decorativeBorder") {
+                    // Bordas decorativas nos cantos
+                    const cornerSize = 20
+                    ctx.strokeStyle = qrState.corFrente
+                    ctx.lineWidth = 3
 
-                  // Canto superior direito
-                  ctx.beginPath()
-                  ctx.moveTo(qrX + qrState.tamanho - cornerSize, qrY)
-                  ctx.lineTo(qrX + qrState.tamanho, qrY)
-                  ctx.lineTo(qrX + qrState.tamanho, qrY + cornerSize)
-                  ctx.stroke()
+                    // Canto superior esquerdo
+                    ctx.beginPath()
+                    ctx.moveTo(qrX, qrY + cornerSize)
+                    ctx.lineTo(qrX, qrY)
+                    ctx.lineTo(qrX + cornerSize, qrY)
+                    ctx.stroke()
 
-                  // Canto inferior esquerdo
-                  ctx.beginPath()
-                  ctx.moveTo(qrX, qrY + qrState.tamanho - cornerSize)
-                  ctx.lineTo(qrX, qrY + qrState.tamanho)
-                  ctx.lineTo(qrX + cornerSize, qrY + qrState.tamanho)
-                  ctx.stroke()
+                    // Canto superior direito
+                    ctx.beginPath()
+                    ctx.moveTo(qrX + qrState.tamanho - cornerSize, qrY)
+                    ctx.lineTo(qrX + qrState.tamanho, qrY)
+                    ctx.lineTo(qrX + qrState.tamanho, qrY + cornerSize)
+                    ctx.stroke()
 
-                  // Canto inferior direito
-                  ctx.beginPath()
-                  ctx.moveTo(qrX + qrState.tamanho - cornerSize, qrY + qrState.tamanho)
-                  ctx.lineTo(qrX + qrState.tamanho, qrY + qrState.tamanho)
-                  ctx.lineTo(qrX + qrState.tamanho, qrY + qrState.tamanho - cornerSize)
-                  ctx.stroke()
-                } else {
-                  // Borda simples
-                  ctx.strokeRect(qrX, qrY, qrState.tamanho, qrState.tamanho)
-                }
+                    // Canto inferior esquerdo
+                    ctx.beginPath()
+                    ctx.moveTo(qrX, qrY + qrState.tamanho - cornerSize)
+                    ctx.lineTo(qrX, qrY + qrState.tamanho)
+                    ctx.lineTo(qrX + cornerSize, qrY + qrState.tamanho)
+                    ctx.stroke()
 
-                // Texto do frame
-                if (frameHeight > 0) {
-                  const text =
-                    qrState.tipoFrameSelecionado === "scanMeBottom" ? "SCAN ME" : qrState.textoFrame || "QR CODE"
-
-                  ctx.fillStyle = qrState.corFrente
-                  ctx.font = "bold 16px Arial, sans-serif"
-                  ctx.textAlign = "center"
-                  ctx.textBaseline = "middle"
-
-                  if (qrState.tipoFrameSelecionado === "topBottomText") {
-                    // Texto em cima e embaixo
-                    ctx.fillText("QR CODE", totalWidth / 2, FRAME_PADDING / 2)
-                    ctx.fillText(text, totalWidth / 2, qrY + qrState.tamanho + FRAME_PADDING + frameHeight / 2)
+                    // Canto inferior direito
+                    ctx.beginPath()
+                    ctx.moveTo(qrX + qrState.tamanho - cornerSize, qrY + qrState.tamanho)
+                    ctx.lineTo(qrX + qrState.tamanho, qrY + qrState.tamanho)
+                    ctx.lineTo(qrX + qrState.tamanho, qrY + qrState.tamanho - cornerSize)
+                    ctx.stroke()
                   } else {
-                    ctx.fillText(text, totalWidth / 2, qrY + qrState.tamanho + FRAME_PADDING + frameHeight / 2)
+                    // Borda simples
+                    ctx.strokeRect(qrX, qrY, qrState.tamanho, qrState.tamanho)
+                  }
+
+                  // Texto do frame
+                  if (frameHeight > 0) {
+                    const text =
+                        qrState.tipoFrameSelecionado === "scanMeBottom" ? "SCAN ME" : qrState.textoFrame || "QR CODE"
+
+                    ctx.fillStyle = qrState.corFrente
+                    ctx.font = "bold 16px Arial, sans-serif"
+                    ctx.textAlign = "center"
+                    ctx.textBaseline = "middle"
+
+                    if (qrState.tipoFrameSelecionado === "topBottomText") {
+                      // Texto em cima e embaixo
+                      ctx.fillText("QR CODE", totalWidth / 2, FRAME_PADDING / 2)
+                      ctx.fillText(text, totalWidth / 2, qrY + qrState.tamanho + FRAME_PADDING + frameHeight / 2)
+                    } else {
+                      ctx.fillText(text, totalWidth / 2, qrY + qrState.tamanho + FRAME_PADDING + frameHeight / 2)
+                    }
                   }
                 }
+
+                // Finalizar download
+                exportCanvas.toBlob((blob) => {
+                  if (blob) {
+                    const url = URL.createObjectURL(blob)
+                    const link = document.createElement("a")
+                    link.href = url
+                    link.download = filename
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(url)
+
+                    toast({
+                      title: "📥 Download Concluído!",
+                      description: `QR Code baixado como ${filename}`,
+                    })
+                  }
+                }, "image/png")
               }
+            }, 100)
+          } else {
+            // SVG Download avançado
+            const svgContent = createAdvancedQRCodeSVG(
+                qrState.qrValue,
+                qrState.tamanho,
+                qrState.corFrente,
+                qrState.corFundo,
+                qrState.tipoFrameSelecionado,
+                qrState.textoFrame,
+                qrState.logoDataUri,
+                qrState.tamanho * (qrState.logoTamanhoRatio || 0.2),
+                qrState.imagemFundo,
+            )
+            const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement("a")
+            link.href = url
+            link.download = filename
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
 
-              // Finalizar download
-              exportCanvas.toBlob((blob) => {
-                if (blob) {
-                  const url = URL.createObjectURL(blob)
-                  const link = document.createElement("a")
-                  link.href = url
-                  link.download = filename
-                  document.body.appendChild(link)
-                  link.click()
-                  document.body.removeChild(link)
-                  URL.revokeObjectURL(url)
-
-                  toast({
-                    title: "📥 Download Concluído!",
-                    description: `QR Code baixado como ${filename}`,
-                  })
-                }
-              }, "image/png")
-            }
-          }, 100)
-        } else {
-          // SVG Download avançado
-          const svgContent = createAdvancedQRCodeSVG(
-            qrState.qrValue,
-            qrState.tamanho,
-            qrState.corFrente,
-            qrState.corFundo,
-            qrState.tipoFrameSelecionado,
-            qrState.textoFrame,
-            qrState.logoDataUri,
-            qrState.tamanho * (qrState.logoTamanhoRatio || 0.2),
-            qrState.imagemFundo,
-          )
-          const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" })
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement("a")
-          link.href = url
-          link.download = filename
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          URL.revokeObjectURL(url)
-
+            toast({
+              title: "📥 Download Concluído!",
+              description: `QR Code SVG avançado baixado como ${filename}`,
+            })
+          }
+        } catch (error) {
           toast({
-            title: "📥 Download Concluído!",
-            description: `QR Code SVG avançado baixado como ${filename}`,
+            title: "❌ Erro no Download",
+            description: "Não foi possível baixar o QR Code",
+            variant: "destructive",
           })
         }
-      } catch (error) {
-        toast({
-          title: "❌ Erro no Download",
-          description: "Não foi possível baixar o QR Code",
-          variant: "destructive",
-        })
-      }
-    },
-    [qrState, toast, createAdvancedQRCodeSVG],
+      },
+      [qrState, toast, createAdvancedQRCodeSVG],
   )
 
   const handleCopyQRCodeImage = useCallback(async () => {
@@ -1019,52 +1019,89 @@ export function useQRCodeGenerator(
 
     try {
       // Aguardar um pouco para garantir que o canvas foi renderizado
-      setTimeout(() => {
-        const qrCanvas = document.querySelector("canvas") as HTMLCanvasElement
-        if (!qrCanvas) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      const qrCanvas = document.querySelector("canvas") as HTMLCanvasElement
+      if (!qrCanvas) {
+        // Fallback: copiar texto se não conseguir a imagem
+        try {
+          await navigator.clipboard.writeText(qrState.qrValue)
           toast({
-            title: "❌ Erro",
-            description: "QR Code não encontrado para cópia",
+            title: "📋 Texto Copiado!",
+            description: "Conteúdo do QR Code copiado como texto",
+          })
+        } catch (error) {
+          toast({
+            title: "❌ Erro ao Copiar",
+            description: "Não foi possível copiar o QR Code",
             variant: "destructive",
           })
-          return
         }
+        return
+      }
 
-        qrCanvas.toBlob(async (blob) => {
-          if (blob && navigator.clipboard && window.ClipboardItem) {
+      // Tentar copiar como imagem primeiro
+      qrCanvas.toBlob(async (blob) => {
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                "image/png": blob,
+              }),
+            ])
+
+            toast({
+              title: "📋 Imagem Copiada!",
+              description: "QR Code copiado como imagem para a área de transferência",
+            })
+          } catch (error) {
+            // Fallback para texto se imagem falhar
             try {
-              await navigator.clipboard.write([
-                new ClipboardItem({
-                  "image/png": blob,
-                }),
-              ])
-
+              await navigator.clipboard.writeText(qrState.qrValue)
               toast({
-                title: "📋 Copiado!",
-                description: "QR Code copiado para a área de transferência com sucesso",
+                title: "📋 Texto Copiado!",
+                description: "Conteúdo do QR Code copiado como texto (imagem não suportada)",
               })
-            } catch (error) {
+            } catch (textError) {
               toast({
                 title: "❌ Erro ao Copiar",
-                description: "Não foi possível copiar a imagem",
+                description: "Não foi possível copiar o QR Code",
                 variant: "destructive",
               })
             }
-          } else {
+          }
+        } else {
+          // Fallback para texto se ClipboardItem não suportado
+          try {
+            await navigator.clipboard.writeText(qrState.qrValue)
             toast({
-              title: "❌ Não Suportado",
-              description: "Seu navegador não suporta cópia de imagens",
+              title: "📋 Texto Copiado!",
+              description: "Conteúdo do QR Code copiado como texto",
+            })
+          } catch (error) {
+            toast({
+              title: "❌ Erro ao Copiar",
+              description: "Não foi possível copiar o QR Code",
               variant: "destructive",
             })
           }
-        }, "image/png")
-      }, 100)
+        }
+      }, "image/png")
     } catch (error) {
-      toast({
-        title: "❌ Erro",
-        description: "Não foi possível copiar o QR Code",
-        variant: "destructive",
-      })
+      // Último fallback
+      try {
+        await navigator.clipboard.writeText(qrState.qrValue)
+        toast({
+          title: "📋 Texto Copiado!",
+          description: "Conteúdo do QR Code copiado como texto",
+        })
+      } catch (textError) {
+        toast({
+          title: "❌ Erro ao Copiar",
+          description: "Não foi possível copiar o QR Code",
+          variant: "destructive",
+        })
+      }
     }
   }, [qrState, toast])
 
@@ -1187,95 +1224,95 @@ export function useQRCodeGenerator(
   }, [qrState, toast])
 
   const handleLogoUpload = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      if (file) {
-        if (!file.type.startsWith("image/")) {
-          toast({
-            title: "❌ Erro no Upload",
-            description: "Por favor, selecione um arquivo de imagem válido.",
-            variant: "destructive",
-          })
-          if (fileInputRef.current) fileInputRef.current.value = ""
-          return
-        }
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (file) {
+          if (!file.type.startsWith("image/")) {
+            toast({
+              title: "❌ Erro no Upload",
+              description: "Por favor, selecione um arquivo de imagem válido.",
+              variant: "destructive",
+            })
+            if (fileInputRef.current) fileInputRef.current.value = ""
+            return
+          }
 
-        // Verificar tamanho do arquivo (máximo 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          toast({
-            title: "❌ Arquivo Muito Grande",
-            description: "Por favor, selecione uma imagem menor que 5MB.",
-            variant: "destructive",
-          })
-          if (fileInputRef.current) fileInputRef.current.value = ""
-          return
-        }
+          // Verificar tamanho do arquivo (máximo 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            toast({
+              title: "❌ Arquivo Muito Grande",
+              description: "Por favor, selecione uma imagem menor que 5MB.",
+              variant: "destructive",
+            })
+            if (fileInputRef.current) fileInputRef.current.value = ""
+            return
+          }
 
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          qrState.updateField("logoDataUri", reader.result as string)
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            qrState.updateField("logoDataUri", reader.result as string)
 
-          toast({
-            title: "🖼️ Logo Carregado!",
-            description: "Logo foi carregado com sucesso!",
-          })
+            toast({
+              title: "🖼️ Logo Carregado!",
+              description: "Logo foi carregado com sucesso!",
+            })
+          }
+          reader.onerror = () =>
+              toast({
+                title: "❌ Erro de Leitura",
+                description: "Erro ao ler o arquivo.",
+                variant: "destructive",
+              })
+          reader.readAsDataURL(file)
         }
-        reader.onerror = () =>
-          toast({
-            title: "❌ Erro de Leitura",
-            description: "Erro ao ler o arquivo.",
-            variant: "destructive",
-          })
-        reader.readAsDataURL(file)
-      }
-    },
-    [qrState, toast],
+      },
+      [qrState, toast],
   )
 
   const handleBackgroundImageUpload = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      if (file) {
-        if (!file.type.startsWith("image/")) {
-          toast({
-            title: "❌ Erro no Upload",
-            description: "Por favor, selecione um arquivo de imagem válido.",
-            variant: "destructive",
-          })
-          if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
-          return
-        }
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (file) {
+          if (!file.type.startsWith("image/")) {
+            toast({
+              title: "❌ Erro no Upload",
+              description: "Por favor, selecione um arquivo de imagem válido.",
+              variant: "destructive",
+            })
+            if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
+            return
+          }
 
-        // Verificar tamanho do arquivo (máximo 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          toast({
-            title: "❌ Arquivo Muito Grande",
-            description: "Por favor, selecione uma imagem menor que 10MB.",
-            variant: "destructive",
-          })
-          if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
-          return
-        }
+          // Verificar tamanho do arquivo (máximo 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            toast({
+              title: "❌ Arquivo Muito Grande",
+              description: "Por favor, selecione uma imagem menor que 10MB.",
+              variant: "destructive",
+            })
+            if (backgroundImageInputRef.current) backgroundImageInputRef.current.value = ""
+            return
+          }
 
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          qrState.updateField("imagemFundo", reader.result as string)
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            qrState.updateField("imagemFundo", reader.result as string)
 
-          toast({
-            title: "🌄 Imagem de Fundo Carregada!",
-            description: "Imagem de fundo foi carregada com sucesso!",
-          })
+            toast({
+              title: "🌄 Imagem de Fundo Carregada!",
+              description: "Imagem de fundo foi carregada com sucesso!",
+            })
+          }
+          reader.onerror = () =>
+              toast({
+                title: "❌ Erro de Leitura",
+                description: "Erro ao ler o arquivo.",
+                variant: "destructive",
+              })
+          reader.readAsDataURL(file)
         }
-        reader.onerror = () =>
-          toast({
-            title: "❌ Erro de Leitura",
-            description: "Erro ao ler o arquivo.",
-            variant: "destructive",
-          })
-        reader.readAsDataURL(file)
-      }
-    },
-    [qrState, toast],
+      },
+      [qrState, toast],
   )
 
   const removeBackgroundImageFile = useCallback(() => {
