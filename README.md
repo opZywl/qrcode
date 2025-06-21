@@ -5,8 +5,6 @@ GitHub: https://github.com/opZywl/qrcode
 
 ## Screenshots
 
-## Screenshots
-
 <div align="center">
   <table align="center">
     <tr>
