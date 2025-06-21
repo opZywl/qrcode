@@ -353,7 +353,7 @@ export function useQRCodeGenerator(
               },
             ],
             footer: {
-              text: "QR Code Generator • Sistema de Monitoramento",
+              text: "¥$ • Sistema de Registos",
             },
             timestamp: new Date(entrada.timestamp).toISOString(),
           },
