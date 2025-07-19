@@ -113,7 +113,9 @@ export function QrGenerator({
             <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-40">
               <div className="flex items-center">
                 <ScanQrCode className="w-6 h-6 text-primary mr-2 animate-text-glow-primary" />
-                <h1 className="text-lg font-headline font-semibold text-foreground">Gerador de QR Code</h1>
+                <h1 className="text-lg font-headline font-semibold text-foreground">
+                  Gerador <br /> QR Code <br /> ¥$
+                </h1>
               </div>
               <div className="flex items-center space-x-2">
                 <GithubPopup />
@@ -254,7 +256,7 @@ export function QrGenerator({
                   <div className="flex items-center mb-2">
                     <ScanQrCode className="w-8 h-8 sm:w-10 sm:h-10 text-primary mr-2 animate-text-glow-primary" />
                     <CardTitle className="text-2xl sm:text-3xl font-headline text-primary animate-text-glow-primary">
-                      Gerador QR Code
+                      Gerador QR Code <br /> ¥$
                     </CardTitle>
                   </div>
                   <CardDescription className="font-body text-xs sm:text-sm text-muted-foreground">
