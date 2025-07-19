@@ -20,6 +20,7 @@ import { DialogSettings } from "../dialog/dialog-settings"
 import { useQRCodeState, type TipoConteudoQR } from "@/hooks/use-qr-code-state"
 import { useQRCodeGenerator } from "@/hooks/use-qr-code-generator"
 import { LanguageSelector } from "@/components/ui/language-selector"
+import {GithubPopup} from "@/components/ui/github-popup";
 
 const DEFAULT_VISIBLE_TYPES: TipoConteudoQR[] = [
   "url",
@@ -115,6 +116,7 @@ export function QrGenerator({
                 <h1 className="text-lg font-headline font-semibold text-foreground">Gerador de QR Code</h1>
               </div>
               <div className="flex items-center space-x-2">
+                <GithubPopup />
                 <LanguageSelector />
                 <ThemeToggle />
                 <Button
@@ -260,6 +262,7 @@ export function QrGenerator({
                   </CardDescription>
                 </div>
                 <div className="hidden md:flex items-center space-x-2 shrink-0 ml-4">
+                  <GithubPopup />
                   <LanguageSelector />
                   <ThemeToggle />
                 </div>
