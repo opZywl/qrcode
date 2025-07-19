@@ -169,6 +169,17 @@ export function QrGenerator({
               </div>
             </div>
 
+            {/* Botão Gerar no topo */}
+            <div className="p-4">
+              <Button
+                  onClick={() => setControlesSheetAberto(true)}
+                  className="w-full py-3 text-base font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow"
+              >
+                <ScanQrCode className="w-5 h-5 mr-2 animate-text-glow-primary" />
+                Gerar QR Code
+              </Button>
+            </div>
+
             {/* Área Central */}
             <div className="flex-grow flex flex-col items-center justify-center p-4">
               {qrState.qrValue ? (
@@ -190,16 +201,6 @@ export function QrGenerator({
               )}
             </div>
 
-            {/* Botão flutuante de gerar */}
-            <div className="p-4 border-t bg-background/95 backdrop-blur-sm">
-              <Button
-                  onClick={() => setControlesSheetAberto(true)}
-                  className="w-full py-3 text-base font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow"
-              >
-                <ScanQrCode className="w-5 h-5 mr-2 animate-text-glow-primary" />
-                Gerar QR Code
-              </Button>
-            </div>
           </div>
 
           {/* Dialogs */}
