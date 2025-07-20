@@ -792,7 +792,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
         <DialogHeader className="p-4 border-b pr-10 sm:pr-12 shrink-0">
           <DialogTitle className="text-foreground text-left flex items-center gap-2">
             <ScanLine className="w-5 h-5 text-primary animate-text-glow-primary" />
-            Scanner de QR Code Avançado
+            Scanner
             {scanCount > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {scanCount} scan{scanCount > 1 ? "s" : ""}

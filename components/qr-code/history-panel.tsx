@@ -360,7 +360,7 @@ export function HistoryPanel({
               </div>
               <div>
                 <SheetTitle className="text-lg text-foreground flex items-center gap-2">
-                  Histórico Detalhado
+                  Histórico
                   {historico.length > 0 && (
                     <Badge variant="secondary" className="text-xs">
                       {historico.length} item{historico.length > 1 ? "s" : ""}
