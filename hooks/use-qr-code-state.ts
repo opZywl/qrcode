@@ -11,6 +11,7 @@ export type TipoConteudoQR =
     | "sms"
     | "geo"
     | "whatsapp"
+    | "whatsappGroup"
     | "phone"
     | "pix"
     | "appstore"
@@ -100,6 +101,10 @@ export interface EntradaQRCode {
   whatsappPara?: string
   whatsappMensagem?: string
 
+  // WhatsApp Group
+  whatsappGroupLink?: string
+  whatsappGroupMensagem?: string
+
   // Phone
   telefonePara?: string
 
@@ -148,6 +153,7 @@ const TIPOS_PADRAO_ATIVOS: TipoConteudoQR[] = [
   "url",
   "wifi",
   "whatsapp",
+  "whatsappGroup",
   "phone",
   "vcard",
   "vevent",
@@ -238,6 +244,10 @@ export function useQRCodeState() {
   // WhatsApp
   const [whatsappPara, setWhatsappPara] = useState("")
   const [whatsappMensagem, setWhatsappMensagem] = useState("")
+
+  // WhatsApp Group
+  const [whatsappGroupLink, setWhatsappGroupLink] = useState("")
+  const [whatsappGroupMensagem, setWhatsappGroupMensagem] = useState("")
 
   // Phone
   const [telefonePara, setTelefonePara] = useState("")
@@ -481,6 +491,12 @@ export function useQRCodeState() {
       case "whatsappMensagem":
         setWhatsappMensagem(valor)
         break
+      case "whatsappGroupLink":
+        setWhatsappGroupLink(valor)
+        break
+      case "whatsappGroupMensagem":
+        setWhatsappGroupMensagem(valor)
+        break
       case "telefonePara":
         setTelefonePara(valor)
         break
@@ -635,6 +651,10 @@ export function useQRCodeState() {
       setWhatsappPara("")
       setWhatsappMensagem("")
     }
+    if (tipoParaReset === "whatsappGroup" || !tipoParaReset) {
+      setWhatsappGroupLink("")
+      setWhatsappGroupMensagem("")
+    }
     if (tipoParaReset === "phone" || !tipoParaReset) {
       setTelefonePara("")
     }
@@ -734,6 +754,8 @@ export function useQRCodeState() {
     geoLongitude,
     whatsappPara,
     whatsappMensagem,
+    whatsappGroupLink,
+    whatsappGroupMensagem,
     telefonePara,
     historico,
 

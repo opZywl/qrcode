@@ -6,6 +6,7 @@ import {
   MessageSquareText,
   Phone,
   User,
+  Users,
   CalendarDays,
   Mail,
   MessageSquare,
@@ -29,6 +30,7 @@ const tiposConteudo = [
   { valor: "url" as const, Icon: LinkIcon, label: "URL", cor: "from-blue-500 to-blue-600" },
   { valor: "wifi" as const, Icon: Wifi, label: "WiFi", cor: "from-green-500 to-green-600" },
   { valor: "whatsapp" as const, Icon: MessageSquareText, label: "WhatsApp", cor: "from-green-400 to-green-500" },
+  { valor: "whatsappGroup" as const, Icon: Users, label: "Grupo WhatsApp", cor: "from-green-500 to-emerald-500" },
   { valor: "phone" as const, Icon: Phone, label: "Telefone", cor: "from-purple-500 to-purple-600" },
   { valor: "vcard" as const, Icon: User, label: "Contato", cor: "from-orange-500 to-orange-600" },
   { valor: "vevent" as const, Icon: CalendarDays, label: "Evento", cor: "from-red-500 to-red-600" },
@@ -43,7 +45,7 @@ const tiposConteudo = [
   { valor: "cupom" as const, Icon: Ticket, label: "Cupom", cor: "from-rose-500 to-rose-600" },
 ]
 
-const DEFAULT_VISIBLE: TipoConteudoQR[] = ["url", "wifi", "whatsapp", "phone", "vcard", "vevent", "email", "sms", "geo"]
+const DEFAULT_VISIBLE: TipoConteudoQR[] = ["url", "wifi", "whatsapp", "whatsappGroup", "phone", "vcard", "vevent", "email", "sms", "geo"]
 
 export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis }: SeletorTipoConteudoProps) {
   const visiveis = tiposVisiveis ?? DEFAULT_VISIBLE

@@ -653,6 +653,43 @@ export function ContentForm({ tipo, valores, onChange, isMobile }: FormularioCon
           </div>
       )
 
+    case "whatsappGroup":
+      return (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="whatsapp-group-link" className="text-sm font-medium text-foreground">
+                Link do Grupo WhatsApp
+              </Label>
+              <Input
+                  id="whatsapp-group-link"
+                  type="url"
+                  value={valores.whatsappGroupLink}
+                  onChange={(e) => onChange("whatsappGroupLink", e.target.value)}
+                  placeholder="https://chat.whatsapp.com/..."
+                  className={inputHeightClass}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Cole o link de convite do grupo do WhatsApp
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="whatsapp-group-message" className="text-sm font-medium text-foreground">
+                Mensagem de Boas-Vindas / Validação
+              </Label>
+              <Textarea
+                  id="whatsapp-group-message"
+                  value={valores.whatsappGroupMensagem}
+                  onChange={(e) => onChange("whatsappGroupMensagem", e.target.value)}
+                  placeholder="Por favor preencha:&#10;Primeiro semestre RA:&#10;Meu nome:&#10;Estou começando o 1º semestre/ou sou do 8º?"
+                  className={isMobile ? `min-h-[100px] ${inputPaddingClass}` : `min-h-[120px] py-2`}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Esta mensagem será exibida junto ao QR code como instruções para o usuário
+              </p>
+            </div>
+          </div>
+      )
+
     case "phone":
       return (
           <div className="space-y-3">
