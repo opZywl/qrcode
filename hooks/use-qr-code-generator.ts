@@ -1643,29 +1643,175 @@ export function useQRCodeGenerator(
         return
       }
 
-      // Tentar copiar como imagem primeiro
-      qrCanvas.toBlob(async (blob) => {
-        if (blob && navigator.clipboard && window.ClipboardItem) {
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({
-                "image/png": blob,
-              }),
-            ])
+      // Criar canvas para export com frame (mesma lógica do download)
+      const exportCanvas = document.createElement("canvas")
+      const ctx = exportCanvas.getContext("2d")
+      if (!ctx) {
+        toast({
+          title: "❌ Erro",
+          description: "Não foi possível criar canvas para cópia",
+          variant: "destructive",
+        })
+        return
+      }
 
-            toast({
-              title: "📋 Imagem Copiada!",
-              description: "QR Code copiado como imagem para a área de transferência",
-            })
-          } catch (error) {
-            // Fallback para texto se imagem falhar
+      const frameActive = qrState.habilitarCustomizacaoFrame && qrState.tipoFrameSelecionado !== "none"
+      const frameHeight =
+          frameActive &&
+          (qrState.tipoFrameSelecionado === "textBottom" ||
+              qrState.tipoFrameSelecionado === "scanMeBottom" ||
+              qrState.tipoFrameSelecionado === "roundedBorderTextBottom" ||
+              qrState.tipoFrameSelecionado === "topBottomText")
+              ? FRAME_TEXT_AREA_HEIGHT
+              : 0
+
+      const totalWidth = qrState.tamanho + (frameActive ? FRAME_PADDING * 2 : 0)
+      const totalHeight = qrState.tamanho + frameHeight + (frameActive ? FRAME_PADDING * 2 : 0)
+
+      exportCanvas.width = totalWidth
+      exportCanvas.height = totalHeight
+
+      // Função para desenhar QR e Frame
+      const drawQRAndFrame = () => {
+        const qrX = frameActive ? FRAME_PADDING : 0
+        const qrY = frameActive ? FRAME_PADDING : 0
+
+        // Desenhar QR Code
+        ctx.drawImage(qrCanvas, qrX, qrY, qrState.tamanho, qrState.tamanho)
+
+        // Desenhar frame se ativo
+        if (frameActive) {
+          ctx.strokeStyle = qrState.corFrente
+          ctx.lineWidth = 2
+
+          if (qrState.tipoFrameSelecionado === "roundedBorderTextBottom") {
+            // Borda arredondada
+            ctx.beginPath()
+            ctx.roundRect(qrX, qrY, qrState.tamanho, qrState.tamanho, FRAME_BORDER_RADIUS)
+            ctx.stroke()
+          } else if (qrState.tipoFrameSelecionado === "decorativeBorder") {
+            // Bordas decorativas nos cantos
+            const cornerSize = 20
+            ctx.strokeStyle = qrState.corFrente
+            ctx.lineWidth = 3
+
+            // Canto superior esquerdo
+            ctx.beginPath()
+            ctx.moveTo(qrX, qrY + cornerSize)
+            ctx.lineTo(qrX, qrY)
+            ctx.lineTo(qrX + cornerSize, qrY)
+            ctx.stroke()
+
+            // Canto superior direito
+            ctx.beginPath()
+            ctx.moveTo(qrX + qrState.tamanho - cornerSize, qrY)
+            ctx.lineTo(qrX + qrState.tamanho, qrY)
+            ctx.lineTo(qrX + qrState.tamanho, qrY + cornerSize)
+            ctx.stroke()
+
+            // Canto inferior esquerdo
+            ctx.beginPath()
+            ctx.moveTo(qrX, qrY + qrState.tamanho - cornerSize)
+            ctx.lineTo(qrX, qrY + qrState.tamanho)
+            ctx.lineTo(qrX + cornerSize, qrY + qrState.tamanho)
+            ctx.stroke()
+
+            // Canto inferior direito
+            ctx.beginPath()
+            ctx.moveTo(qrX + qrState.tamanho - cornerSize, qrY + qrState.tamanho)
+            ctx.lineTo(qrX + qrState.tamanho, qrY + qrState.tamanho)
+            ctx.lineTo(qrX + qrState.tamanho, qrY + qrState.tamanho - cornerSize)
+            ctx.stroke()
+          } else {
+            // Borda simples
+            ctx.strokeRect(qrX, qrY, qrState.tamanho, qrState.tamanho)
+          }
+
+          // Texto do frame
+          if (frameHeight > 0) {
+            const text =
+                qrState.tipoFrameSelecionado === "scanMeBottom" ? "SCAN ME" : qrState.textoFrame || "QR CODE"
+
+            ctx.fillStyle = qrState.corFrente
+            ctx.font = "bold 16px Arial, sans-serif"
+            ctx.textAlign = "center"
+            ctx.textBaseline = "middle"
+
+            if (qrState.tipoFrameSelecionado === "topBottomText") {
+              // Texto em cima e embaixo
+              ctx.fillText("QR CODE", totalWidth / 2, FRAME_PADDING / 2)
+              ctx.fillText(text, totalWidth / 2, qrY + qrState.tamanho + FRAME_PADDING + frameHeight / 2)
+            } else {
+              ctx.fillText(text, totalWidth / 2, qrY + qrState.tamanho + FRAME_PADDING + frameHeight / 2)
+            }
+          }
+        }
+      }
+
+      // Fundo
+      ctx.fillStyle = qrState.corFundo
+      ctx.fillRect(0, 0, totalWidth, totalHeight)
+
+      // Imagem de fundo se houver
+      if (qrState.habilitarCustomizacaoFundo && qrState.imagemFundo) {
+        const img = new Image()
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, totalWidth, totalHeight)
+          drawQRAndFrame()
+          copyToClipboard()
+        }
+        img.onerror = () => {
+          drawQRAndFrame()
+          copyToClipboard()
+        }
+        img.src = qrState.imagemFundo
+      } else {
+        drawQRAndFrame()
+        copyToClipboard()
+      }
+
+      // Função para copiar para clipboard
+      function copyToClipboard() {
+        exportCanvas.toBlob(async (blob) => {
+          if (blob && navigator.clipboard && window.ClipboardItem) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({
+                  "image/png": blob,
+                }),
+              ])
+
+              toast({
+                title: "📋 Imagem Copiada!",
+                description: frameActive
+                  ? "QR Code com moldura copiado para a área de transferência"
+                  : "QR Code copiado como imagem para a área de transferência",
+              })
+            } catch (error) {
+              // Fallback para texto se imagem falhar
+              try {
+                await navigator.clipboard.writeText(qrState.qrValue)
+                toast({
+                  title: "📋 Texto Copiado!",
+                  description: "Conteúdo do QR Code copiado como texto (imagem não suportada)",
+                })
+              } catch (textError) {
+                toast({
+                  title: "❌ Erro ao Copiar",
+                  description: "Não foi possível copiar o QR Code",
+                  variant: "destructive",
+                })
+              }
+            }
+          } else {
+            // Fallback para texto se ClipboardItem não suportado
             try {
               await navigator.clipboard.writeText(qrState.qrValue)
               toast({
                 title: "📋 Texto Copiado!",
-                description: "Conteúdo do QR Code copiado como texto (imagem não suportada)",
+                description: "Conteúdo do QR Code copiado como texto",
               })
-            } catch (textError) {
+            } catch (error) {
               toast({
                 title: "❌ Erro ao Copiar",
                 description: "Não foi possível copiar o QR Code",
@@ -1673,23 +1819,8 @@ export function useQRCodeGenerator(
               })
             }
           }
-        } else {
-          // Fallback para texto se ClipboardItem não suportado
-          try {
-            await navigator.clipboard.writeText(qrState.qrValue)
-            toast({
-              title: "📋 Texto Copiado!",
-              description: "Conteúdo do QR Code copiado como texto",
-            })
-          } catch (error) {
-            toast({
-              title: "❌ Erro ao Copiar",
-              description: "Não foi possível copiar o QR Code",
-              variant: "destructive",
-            })
-          }
-        }
-      }, "image/png")
+        }, "image/png")
+      }
     } catch (error) {
       // Último fallback
       try {
