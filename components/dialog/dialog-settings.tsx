@@ -11,6 +11,7 @@ const TIPOS_DISPONIVEIS: Array<{ valor: TipoConteudoQR; label: string; categoria
     { valor: "url", label: "URL", categoria: "Básico" },
     { valor: "wifi", label: "WiFi", categoria: "Básico" },
     { valor: "whatsapp", label: "WhatsApp", categoria: "Básico" },
+    { valor: "whatsappGroup", label: "Grupo WhatsApp", categoria: "Básico" },
     { valor: "phone", label: "Telefone", categoria: "Básico" },
     { valor: "vcard", label: "Contato", categoria: "Básico" },
     { valor: "vevent", label: "Evento", categoria: "Básico" },
@@ -25,7 +26,7 @@ const TIPOS_DISPONIVEIS: Array<{ valor: TipoConteudoQR; label: string; categoria
     { valor: "cupom", label: "Cupom", categoria: "Avançado" },
 ]
 
-const DEFAULT_VISIBLE: TipoConteudoQR[] = ["url", "wifi", "whatsapp", "phone", "vcard", "vevent", "email", "sms", "geo"]
+const DEFAULT_VISIBLE: TipoConteudoQR[] = ["url", "wifi", "whatsapp", "whatsappGroup", "phone", "vcard", "vevent", "email", "sms", "geo"]
 
 interface DialogConfiguracoesProps {
     aberto: boolean
