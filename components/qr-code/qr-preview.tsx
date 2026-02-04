@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Download, ClipboardCopy, Share2, ImageIcon, FileJson, Sparkles, Eye, Zap } from "lucide-react"
-import type { TipoFrame } from "@/hooks/use-qr-code-state"
+import { Download, ClipboardCopy, Share2, ImageIcon, FileJson, Sparkles, Eye, Zap, MessageCircle } from "lucide-react"
+import type { TipoFrame, TipoConteudoQR } from "@/hooks/use-qr-code-state"
+import { useToast } from "@/hooks/use-toast"
 
 interface PreviewQRCodeProps {
     qrValue: string
@@ -27,6 +28,8 @@ interface PreviewQRCodeProps {
     habilitarCustomizacaoFrame?: boolean
     tipoFrameSelecionado?: TipoFrame
     textoFrame?: string
+    tipoConteudo?: TipoConteudoQR
+    whatsappGroupMensagem?: string
     isMobile: boolean
     onDownload: (formato: "png" | "svg") => void
     onCopy: () => void
@@ -49,12 +52,15 @@ export function QrPreview({
   habilitarCustomizacaoFrame,
   tipoFrameSelecionado = "none",
   textoFrame = "",
+  tipoConteudo,
+  whatsappGroupMensagem,
   isMobile,
   onDownload,
   onCopy,
   onShare,
 }: PreviewQRCodeProps) {
     const qrCanvasRef = useRef<HTMLDivElement>(null)
+    const { toast } = useToast()
 
     const qrConfig = useMemo(() => {
         const displaySize = Math.min(tamanho, isMobile ? 200 : 280)
@@ -316,6 +322,47 @@ export function QrPreview({
                     <p className="text-sm font-semibold text-foreground">PNG/SVG</p>
                 </div>
             </div>
+
+            {tipoConteudo === "whatsappGroup" && whatsappGroupMensagem && whatsappGroupMensagem.trim() && (
+                <div className="w-full p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-300 dark:border-green-700 rounded-xl shadow-md space-y-3">
+                    <div className="flex items-center gap-2">
+                        <MessageCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <Label className="text-sm font-bold text-green-800 dark:text-green-200">
+                            Mensagem de Boas-Vindas / Validação
+                        </Label>
+                    </div>
+                    <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800">
+                        <p className="text-sm text-foreground whitespace-pre-wrap font-mono">
+                            {whatsappGroupMensagem}
+                        </p>
+                    </div>
+                    <Button
+                        onClick={async () => {
+                            try {
+                                await navigator.clipboard.writeText(whatsappGroupMensagem)
+                                toast({
+                                    title: "📋 Mensagem Copiada!",
+                                    description: "Mensagem de boas-vindas copiada para área de transferência",
+                                })
+                            } catch (error) {
+                                toast({
+                                    title: "❌ Erro",
+                                    description: "Não foi possível copiar a mensagem",
+                                    variant: "destructive",
+                                })
+                            }
+                        }}
+                        variant="outline"
+                        className="w-full border-2 border-green-500 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all duration-200"
+                    >
+                        <ClipboardCopy className="w-4 h-4 mr-2" />
+                        <span className="font-medium">Copiar Mensagem</span>
+                    </Button>
+                    <p className="text-xs text-green-700 dark:text-green-300 text-center">
+                        💡 Ao entrar no grupo, copie e envie esta mensagem
+                    </p>
+                </div>
+            )}
 
             <div className="w-full space-y-3">
                 <DropdownMenu>
