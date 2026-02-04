@@ -656,6 +656,24 @@ export function useQRCodeGenerator(
           }
           break
 
+        case "whatsappGroup":
+          if (!qrState.whatsappGroupLink.trim()) {
+            toast({
+              title: "❌ Erro",
+              description: "Link do grupo WhatsApp é obrigatório",
+              variant: "destructive",
+            })
+            setIsLoading(false)
+            return
+          }
+          valorFinalParaCodificar = qrState.whatsappGroupLink
+          inputOriginalParaHistorico = qrState.whatsappGroupLink
+          detalhesEspecificosConteudo = {
+            whatsappGroupLink: qrState.whatsappGroupLink,
+            whatsappGroupMensagem: qrState.whatsappGroupMensagem,
+          }
+          break
+
         case "phone":
           if (!qrState.telefonePara.trim()) {
             toast({
