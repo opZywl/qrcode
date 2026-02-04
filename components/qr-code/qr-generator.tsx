@@ -190,6 +190,8 @@ export function QrGenerator({
                   <QrPreview
                       qrValue={qrState.qrValue}
                       {...qrState}
+                      tipoConteudo={qrState.tipoConteudoAtivo}
+                      whatsappGroupMensagem={qrState.whatsappGroupMensagem}
                       isMobile={true}
                       onDownload={qrGenerator.handleDownloadQRCode}
                       onCopy={qrGenerator.handleCopyQRCodeImage}
@@ -350,6 +352,8 @@ export function QrGenerator({
               <QrPreview
                   qrValue={qrState.qrValue}
                   {...qrState}
+                  tipoConteudo={qrState.tipoConteudoAtivo}
+                  whatsappGroupMensagem={qrState.whatsappGroupMensagem}
                   isMobile={false}
                   onDownload={qrGenerator.handleDownloadQRCode}
                   onCopy={qrGenerator.handleCopyQRCodeImage}
