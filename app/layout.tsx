@@ -26,7 +26,7 @@ const spaceGrotesk = localFont({
 
 export const metadata: Metadata = {
   title: "QR Code Studio",
-  description: "Gerador de QR Code com visual inspirado no portfolio de Lucas Lima.",
+  description: "Create polished QR codes in seconds.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.png",
