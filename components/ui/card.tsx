@@ -9,7 +9,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "relative overflow-hidden rounded-[2rem] border border-border/80 bg-background/70 p-1 text-card-foreground shadow-[0_32px_90px_-50px_rgba(15,23,42,0.28),inset_0_1px_20px_rgba(255,255,255,0.48)] before:absolute before:inset-1 before:rounded-[1.6rem] before:border before:border-border/80 before:bg-[linear-gradient(180deg,rgba(253,253,253,1),rgba(244,246,248,0.98))] before:content-[''] dark:border-dark-3/90 dark:bg-dark-1/95 dark:shadow-[0_0_60px_-20px_rgba(255,255,255,0.12)_inset,0_30px_80px_-50px_rgba(0,0,0,0.72)] dark:before:border-dark-3/95 dark:before:bg-[linear-gradient(180deg,rgba(17,15,16,0.97),rgba(10,10,12,0.96))]",
       className
     )}
     {...props}
@@ -23,7 +23,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("relative z-10 flex flex-col space-y-1.5 p-6", className)}
     {...props}
   />
 ))
@@ -36,7 +36,7 @@ const CardTitle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
+      "text-2xl font-glancyr700 leading-none tracking-tight",
       className
     )}
     {...props}
@@ -60,7 +60,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("relative z-10 p-6 pt-0", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -70,7 +70,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
+    className={cn("relative z-10 flex items-center p-6 pt-0", className)}
     {...props}
   />
 ))

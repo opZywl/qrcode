@@ -1,43 +1,17 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { QRCodeCanvas } from "qrcode.react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
+import { Search, Star, Tag, Trash2 } from "lucide-react"
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  HistoryIcon,
-  Trash2,
-  RefreshCw,
-  LinkIcon,
-  Wifi,
-  User,
-  CalendarDays,
-  Mail,
-  MessageSquare,
-  MapPin,
-  MessageSquareText,
-  Phone,
-  Clock,
-  Palette,
-  Maximize,
-  ImageIcon,
-  Frame,
-  ChevronDown,
-  ChevronRight,
-  Info,
-  Settings,
-  Zap,
-  Smartphone,
-  Monitor,
-  Eye,
-  EyeOff,
-} from "lucide-react"
-import { useState } from "react"
+import { Input } from "@/components/ui/input"
+import { LocalIcon } from "@/components/ui/local-icon"
+import { cn } from "@/lib/utils"
+import type { AppLanguage } from "@/components/language-provider"
 import type { EntradaQRCode } from "@/hooks/use-qr-code-state"
 
 interface SheetHistoricoProps {
@@ -46,7 +20,113 @@ interface SheetHistoricoProps {
   historico: EntradaQRCode[]
   onLoadFromHistory: (entrada: EntradaQRCode) => void
   onClearHistory: () => void
+  onToggleFavorite: (entryId: string) => void
+  onUpdateTags: (entryId: string, tags: string[]) => void
+  onRemoveFromHistory: (entryId: string) => void
   isMobile: boolean
+  language?: AppLanguage
+}
+
+const CONTENT_TYPE_META: Record<string, { icon: string; label: string }> = {
+  url: { icon: "link", label: "URL/Texto" },
+  wifi: { icon: "wifi", label: "Wi-Fi" },
+  vcard: { icon: "user", label: "Contato" },
+  vevent: { icon: "calendar", label: "Evento" },
+  email: { icon: "email", label: "Email" },
+  sms: { icon: "sms", label: "SMS" },
+  geo: { icon: "geo", label: "Localizacao" },
+  whatsapp: { icon: "whatsapp", label: "WhatsApp" },
+  whatsappGroup: { icon: "group", label: "Grupo" },
+  phone: { icon: "phone", label: "Telefone" },
+  pix: { icon: "pix", label: "PIX" },
+  appstore: { icon: "app", label: "App" },
+  spotify: { icon: "media", label: "Midia" },
+  zoom: { icon: "video", label: "Reuniao" },
+  menu: { icon: "menu", label: "Menu" },
+  cupom: { icon: "coupon", label: "Cupom" },
+}
+
+function getTypeMeta(tipo: string, language: AppLanguage = "pt") {
+  const meta = CONTENT_TYPE_META[tipo] ?? { icon: "link", label: tipo }
+  if (language !== "en") {
+    return meta
+  }
+
+  const englishLabels: Record<string, string> = {
+    "URL/Texto": "URL/Text",
+    Contato: "Contact",
+    Evento: "Event",
+    Localizacao: "Location",
+    Grupo: "Group",
+    Telefone: "Phone",
+    Midia: "Media",
+    Reuniao: "Meeting",
+    Cupom: "Coupon",
+  }
+
+  return { ...meta, label: englishLabels[meta.label] ?? meta.label }
+}
+
+function formatAbsoluteDate(timestamp: number, language: AppLanguage = "pt") {
+  return new Date(timestamp).toLocaleString(language === "en" ? "en-US" : "pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function formatRelativeTime(timestamp: number, language: AppLanguage = "pt") {
+  const diff = Date.now() - timestamp
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (language === "en") {
+    if (minutes < 1) return "Now"
+    if (minutes < 60) return `${minutes} min`
+    if (hours < 24) return `${hours} h`
+    return `${days} d`
+  }
+
+  if (minutes < 1) return "Agora"
+  if (minutes < 60) return `${minutes} min`
+  if (hours < 24) return `${hours} h`
+  return `${days} d`
+}
+
+function getCustomizationBadges(entrada: EntradaQRCode, language: AppLanguage = "pt") {
+  const labels =
+    language === "en"
+      ? { logo: "Logo", background: "Background", frame: "Frame" }
+      : { logo: "Logo", background: "Fundo", frame: "Moldura" }
+
+  return [
+    entrada.habilitarCustomizacaoLogo && entrada.logoDataUri
+      ? { label: labels.logo, icon: "image-plus" }
+      : null,
+    entrada.habilitarCustomizacaoFundo && entrada.imagemFundo
+      ? { label: labels.background, icon: "image" }
+      : null,
+    entrada.habilitarCustomizacaoFrame &&
+    entrada.tipoFrameSelecionado &&
+    entrada.tipoFrameSelecionado !== "none"
+      ? { label: labels.frame, icon: "frame" }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; icon: string }>
+}
+
+function normalizeTagsInput(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .map((tag) => tag.slice(0, 24)),
+    ),
+  ).slice(0, 8)
 }
 
 export function HistoryPanel({
@@ -55,494 +135,425 @@ export function HistoryPanel({
   historico,
   onLoadFromHistory,
   onClearHistory,
+  onToggleFavorite,
+  onUpdateTags,
+  onRemoveFromHistory,
   isMobile,
+  language = "pt",
 }: SheetHistoricoProps) {
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
-  const [viewMode, setViewMode] = useState<"compact" | "detailed">("compact")
+  const copy =
+    language === "en"
+      ? {
+          title: "History",
+          subtitle: "Search records, favorite the best ones and organize everything with tags.",
+          searchPlaceholder: "Search by content, link or tag",
+          compact: "Compact",
+          detailed: "Detailed",
+          favorites: "Favorites",
+          clear: "Clear",
+          all: "All",
+          emptyTitle: "No QR saved yet",
+          emptyDescription: "Generate a QR code to create the first history record.",
+          noResultsTitle: "Nothing found",
+          noResultsDescription: "Adjust the search or clear the filters to see the records again.",
+          clearFilters: "Clear filters",
+          favorite: "Favorite",
+          colors: "Colors",
+          record: "Record",
+          created: "Created",
+          content: "Content",
+          tags: "Tags",
+          saveTags: "Save tags",
+          tagsPlaceholder: "Ex.: event, client, wifi",
+          reapply: "Reapply settings",
+          removeHistory: "Remove history item",
+          close: "Close",
+          qr: "QR",
+          background: "Background",
+          error: "Error",
+          margin: "Margin",
+          createdNow: "Created",
+          titleFallback: "Untitled",
+        }
+      : {
+          title: "Historico",
+          subtitle: "Busque registros, favorite os melhores e organize com tags.",
+          searchPlaceholder: "Buscar por conteudo, link ou tag",
+          compact: "Compacto",
+          detailed: "Detalhado",
+          favorites: "Favoritos",
+          clear: "Limpar",
+          all: "Todas",
+          emptyTitle: "Nenhum QR salvo ainda",
+          emptyDescription: "Gere um QR Code para criar o primeiro registro no historico.",
+          noResultsTitle: "Nada encontrado",
+          noResultsDescription: "Ajuste a busca ou limpe os filtros para ver novamente os registros.",
+          clearFilters: "Limpar filtros",
+          favorite: "Favorito",
+          colors: "Cores",
+          record: "Registro",
+          created: "Criado",
+          content: "Conteudo",
+          tags: "Tags",
+          saveTags: "Salvar tags",
+          tagsPlaceholder: "Ex.: evento, cliente, wifi",
+          reapply: "Reaplicar configuracoes",
+          removeHistory: "Remover item do historico",
+          close: "Fechar",
+          qr: "QR",
+          background: "Fundo",
+          error: "Erro",
+          margin: "Margem",
+          createdNow: "Criado",
+          titleFallback: "Sem titulo",
+        }
 
-  const toggleExpanded = (id: string) => {
-    const newExpanded = new Set(expandedItems)
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id)
-    } else {
-      newExpanded.add(id)
-    }
-    setExpandedItems(newExpanded)
-  }
+  const [viewMode, setViewMode] = useState<"compact" | "detailed">("detailed")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({})
 
-  const getIconForContentType = (tipo: string) => {
-    switch (tipo) {
-      case "url":
-        return LinkIcon
-      case "wifi":
-        return Wifi
-      case "vcard":
-        return User
-      case "vevent":
-        return CalendarDays
-      case "email":
-        return Mail
-      case "sms":
-        return MessageSquare
-      case "geo":
-        return MapPin
-      case "whatsapp":
-        return MessageSquareText
-      case "phone":
-        return Phone
-      default:
-        return LinkIcon
-    }
-  }
-
-  const getTypeLabel = (tipo: string) => {
-    switch (tipo) {
-      case "url":
-        return "URL/Texto"
-      case "wifi":
-        return "WiFi"
-      case "vcard":
-        return "Contato"
-      case "vevent":
-        return "Evento"
-      case "email":
-        return "Email"
-      case "sms":
-        return "SMS"
-      case "geo":
-        return "Localização"
-      case "whatsapp":
-        return "WhatsApp"
-      case "phone":
-        return "Telefone"
-      default:
-        return tipo
-    }
-  }
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp)
-    return date.toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
-  }
-
-  const formatRelativeTime = (timestamp: number) => {
-    const now = Date.now()
-    const diff = now - timestamp
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-
-    if (minutes < 1) return "Agora mesmo"
-    if (minutes < 60) return `${minutes}min atrás`
-    if (hours < 24) return `${hours}h atrás`
-    return `${days}d atrás`
-  }
-
-  const getCustomizationBadges = (entrada: EntradaQRCode) => {
-    const badges = []
-    if (entrada.logoDataUri) badges.push({ label: "Logo", color: "bg-purple-500", icon: ImageIcon })
-    if (entrada.imagemFundo) badges.push({ label: "Fundo", color: "bg-blue-500", icon: ImageIcon })
-    if (entrada.tipoFrameSelecionado && entrada.tipoFrameSelecionado !== "none")
-      badges.push({ label: "Frame", color: "bg-green-500", icon: Frame })
-    return badges
-  }
-
-  const getQualityLevel = (nivel: string) => {
-    switch (nivel) {
-      case "L":
-        return { label: "Baixo", color: "bg-red-500", percentage: "~7%" }
-      case "M":
-        return { label: "Médio", color: "bg-yellow-500", percentage: "~15%" }
-      case "Q":
-        return { label: "Alto", color: "bg-blue-500", percentage: "~25%" }
-      case "H":
-        return { label: "Muito Alto", color: "bg-green-500", percentage: "~30%" }
-      default:
-        return { label: nivel, color: "bg-gray-500", percentage: "" }
-    }
-  }
-
-  const getDeviceIcon = (tamanho: number) => {
-    return tamanho <= 200 ? Smartphone : Monitor
-  }
-
-  const renderDetailedMetadata = (entrada: EntradaQRCode) => {
-    const quality = getQualityLevel(entrada.nivel)
-    const customBadges = getCustomizationBadges(entrada)
-    const DeviceIcon = getDeviceIcon(entrada.tamanho)
-
-    return (
-      <div className="space-y-4 pt-3 border-t border-muted">
-        {/* Metadados Técnicos */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <Settings className="w-3 h-3" />
-              Configurações
-            </h5>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Tamanho:</span>
-                <div className="flex items-center gap-1">
-                  <DeviceIcon className="w-3 h-3 text-muted-foreground" />
-                  <span className="font-mono">{entrada.tamanho}px</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Margem:</span>
-                <span className="font-mono">{entrada.margem}px</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Correção:</span>
-                <div className="flex items-center gap-1">
-                  <div className={`w-2 h-2 rounded-full ${quality.color}`} />
-                  <span className="font-mono">{entrada.nivel}</span>
-                  <span className="text-muted-foreground">({quality.percentage})</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <Palette className="w-3 h-3" />
-              Cores
-            </h5>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">QR Code:</span>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="w-3 h-3 rounded border border-border/50"
-                    style={{ backgroundColor: entrada.corFrente }}
-                  />
-                  <span className="font-mono text-xs">{entrada.corFrente}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Fundo:</span>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="w-3 h-3 rounded border border-border/50"
-                    style={{ backgroundColor: entrada.corFundo }}
-                  />
-                  <span className="font-mono text-xs">{entrada.corFundo}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Customizações */}
-        {customBadges.length > 0 && (
-          <div className="space-y-2">
-            <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <Zap className="w-3 h-3" />
-              Personalizações
-            </h5>
-            <div className="flex flex-wrap gap-1">
-              {customBadges.map((badge, index) => {
-                const IconComponent = badge.icon
-                return (
-                  <Badge key={index} variant="outline" className="text-xs px-2 py-1">
-                    <IconComponent className="w-3 h-3 mr-1" />
-                    {badge.label}
-                  </Badge>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Dados Específicos do Tipo */}
-        {entrada.tipoConteudo !== "url" && (
-          <div className="space-y-2">
-            <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <Info className="w-3 h-3" />
-              Dados Específicos
-            </h5>
-            <div className="text-xs space-y-1">
-              {entrada.tipoConteudo === "wifi" && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">SSID:</span>
-                    <span className="font-mono">{entrada.wifiSsid}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Segurança:</span>
-                    <span className="font-mono">{entrada.wifiEncriptacao}</span>
-                  </div>
-                  {entrada.wifiOculto && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Rede:</span>
-                      <span className="text-amber-600">Oculta</span>
-                    </div>
-                  )}
-                </>
-              )}
-              {entrada.tipoConteudo === "vcard" && (
-                <>
-                  {entrada.vcardOrganizacao && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Empresa:</span>
-                      <span className="font-mono">{entrada.vcardOrganizacao}</span>
-                    </div>
-                  )}
-                  {entrada.vcardTelefone && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Telefone:</span>
-                      <span className="font-mono">{entrada.vcardTelefone}</span>
-                    </div>
-                  )}
-                  {entrada.vcardEmail && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Email:</span>
-                      <span className="font-mono">{entrada.vcardEmail}</span>
-                    </div>
-                  )}
-                </>
-              )}
-              {entrada.tipoConteudo === "geo" && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Latitude:</span>
-                    <span className="font-mono">{entrada.geoLatitude}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Longitude:</span>
-                    <span className="font-mono">{entrada.geoLongitude}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Timestamp Detalhado */}
-        <div className="space-y-2">
-          <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Criação
-          </h5>
-          <div className="text-xs space-y-1">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Data/Hora:</span>
-              <span className="font-mono">{formatDate(entrada.timestamp)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Há:</span>
-              <span className="text-primary">{formatRelativeTime(entrada.timestamp)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+  useEffect(() => {
+    setTagDrafts(
+      historico.reduce<Record<string, string>>((acc, entrada) => {
+        acc[entrada.id] = (entrada.tags ?? []).join(", ")
+        return acc
+      }, {}),
     )
+  }, [historico])
+
+  const availableTags = useMemo(() => {
+    return Array.from(
+      new Set(
+        historico.flatMap((entrada) => entrada.tags ?? []).filter(Boolean),
+      ),
+    ).sort((a, b) => a.localeCompare(b, language === "en" ? "en-US" : "pt-BR"))
+  }, [historico, language])
+
+  const filteredHistory = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase()
+
+    return historico.filter((entrada) => {
+      if (favoritesOnly && !entrada.favorite) {
+        return false
+      }
+
+      if (selectedTag && !(entrada.tags ?? []).includes(selectedTag)) {
+        return false
+      }
+
+      if (!query) {
+        return true
+      }
+
+      const typeLabel = getTypeMeta(entrada.tipoConteudo, language).label.toLowerCase()
+      const haystack = [
+        entrada.inputOriginal,
+        entrada.valorQR,
+        typeLabel,
+        ...(entrada.tags ?? []),
+      ]
+        .join(" ")
+        .toLowerCase()
+
+      return haystack.includes(query)
+    })
+  }, [favoritesOnly, historico, language, searchTerm, selectedTag])
+
+  const handleTagSave = (entryId: string) => {
+    onUpdateTags(entryId, normalizeTagsInput(tagDrafts[entryId] ?? ""))
+  }
+
+  const resetFilters = () => {
+    setSearchTerm("")
+    setFavoritesOnly(false)
+    setSelectedTag(null)
   }
 
   return (
     <Sheet open={aberto} onOpenChange={onAbertoChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={`${isMobile ? "h-[85vh] rounded-t-lg" : "sm:max-w-lg w-full"} flex flex-col p-0 bg-background border-t-2 border-primary/20`}
+        className={cn(
+          "flex flex-col p-0",
+          isMobile ? "h-[88vh] rounded-t-[1.6rem]" : "w-full sm:max-w-[620px]",
+        )}
       >
-        <SheetHeader className="p-4 border-b bg-background shrink-0">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                <HistoryIcon className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <SheetTitle className="text-lg text-foreground flex items-center gap-2">
-                  Histórico
-                  {historico.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {historico.length} item{historico.length > 1 ? "s" : ""}
-                    </Badge>
-                  )}
+        <SheetHeader className="shrink-0 border-b border-border/60 bg-background/90 px-4 pb-4 pt-4 pr-12 backdrop-blur-xl">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="studio-icon-shell h-10 w-10 rounded-[1rem]">
+                <LocalIcon name="history" className="h-4 w-4 text-primary" />
+              </span>
+              <div className="min-w-0">
+                <SheetTitle className="flex items-center gap-2 text-[1rem] font-glancyr700 uppercase tracking-tight text-foreground">
+                  {copy.title}
+                  <Badge variant="secondary" className="px-2 py-0.5 text-[10px]">
+                    {historico.length}
+                  </Badge>
                 </SheetTitle>
-                <DialogDescription className="text-muted-foreground text-left">
-                  Histórico completo com metadados técnicos
+                <DialogDescription className="mt-1 text-left text-[11px] text-muted-foreground">
+                  {copy.subtitle}
                 </DialogDescription>
               </div>
             </div>
-          </div>
 
-          {/* Controles de Visualização */}
-          {historico.length > 0 && (
-            <div className="flex items-center justify-between pt-3">
-              <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "compact" | "detailed")}>
-                <TabsList className="grid w-fit grid-cols-2">
-                  <TabsTrigger value="compact" className="text-xs">
-                    <Eye className="w-3 h-3 mr-1" />
-                    Compacto
-                  </TabsTrigger>
-                  <TabsTrigger value="detailed" className="text-xs">
-                    <EyeOff className="w-3 h-3 mr-1" />
-                    Detalhado
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={copy.searchPlaceholder}
+                className="h-10 pl-10 text-[12px]"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/70 p-1">
+                <Button
+                  type="button"
+                  variant={viewMode === "compact" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("compact")}
+                  className="h-7 rounded-full px-3 text-[11px]"
+                >
+                  <LocalIcon name="eye" className="h-3 w-3" />
+                  {copy.compact}
+                </Button>
+                <Button
+                  type="button"
+                  variant={viewMode === "detailed" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("detailed")}
+                  className="h-7 rounded-full px-3 text-[11px]"
+                >
+                  <LocalIcon name="eye-off" className="h-3 w-3" />
+                  {copy.detailed}
+                </Button>
+              </div>
 
               <Button
+                type="button"
+                variant={favoritesOnly ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setFavoritesOnly((current) => !current)}
+                className="h-8 gap-1.5 rounded-full text-[11px]"
+              >
+                <Star className={cn("h-3.5 w-3.5", favoritesOnly && "fill-current text-amber-500")} />
+                {copy.favorites}
+              </Button>
+
+              <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={onClearHistory}
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/50 h-9"
+                disabled={historico.length === 0}
+                className="ml-auto h-8 gap-1.5 rounded-full text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Limpar
+                <LocalIcon name="trash" className="h-3.5 w-3.5" />
+                {copy.clear}
               </Button>
             </div>
-          )}
+
+            {availableTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge
+                  variant={selectedTag === null ? "secondary" : "outline"}
+                  className="cursor-pointer normal-case tracking-normal"
+                  onClick={() => setSelectedTag(null)}
+                >
+                  {copy.all}
+                </Badge>
+                {availableTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTag === tag ? "secondary" : "outline"}
+                    className="cursor-pointer gap-1 normal-case tracking-normal"
+                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                  >
+                    <Tag className="h-3 w-3" />
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
         </SheetHeader>
 
-        <div className="flex-grow flex flex-col min-h-0">
-          {historico.length > 0 ? (
-            <ScrollArea className="flex-grow w-full px-4 pb-4 custom-scrollbar">
-              <div className="space-y-4 pt-4">
-                {historico.map((entrada) => {
-                  const IconComponent = getIconForContentType(entrada.tipoConteudo)
-                  const customBadges = getCustomizationBadges(entrada)
-                  const isExpanded = expandedItems.has(entrada.id)
+        <div className="min-h-0 flex-1">
+          {historico.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+              <div className="studio-icon-shell mb-4 h-12 w-12 rounded-full animate-float-soft">
+                <LocalIcon name="history" className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-[14px] font-semibold text-foreground">{copy.emptyTitle}</p>
+              <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
+                {copy.emptyDescription}
+              </p>
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+              <div className="studio-icon-shell mb-4 h-12 w-12 rounded-full">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-[14px] font-semibold text-foreground">{copy.noResultsTitle}</p>
+              <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
+                {copy.noResultsDescription}
+              </p>
+              <Button type="button" variant="outline" onClick={resetFilters} className="mt-4 h-9 text-[12px]">
+                {copy.clearFilters}
+              </Button>
+            </div>
+          ) : (
+            <ScrollArea className="h-full px-3 pb-3">
+              <div className="space-y-3 pt-3">
+                {filteredHistory.map((entrada) => {
+                  const typeMeta = getTypeMeta(entrada.tipoConteudo, language)
+                  const customizationBadges = getCustomizationBadges(entrada, language)
+                  const previewSize = isMobile ? 56 : 68
 
                   return (
-                    <Card
-                      key={entrada.id}
-                      className="p-4 shadow-sm bg-card border border-border/50 hover:border-primary/30 transition-all duration-200"
-                    >
-                      <div className="space-y-3">
-                        {/* Header com tipo e data */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-md bg-primary/10">
-                              <IconComponent className="w-4 h-4 text-primary" />
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-foreground">
-                                {getTypeLabel(entrada.tipoConteudo)}
-                              </span>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="w-3 h-3" />
-                                {viewMode === "compact"
-                                  ? formatRelativeTime(entrada.timestamp)
-                                  : formatDate(entrada.timestamp)}
+                    <div key={entrada.id} className="studio-tile transition-all duration-200 hover:border-primary/30">
+                      <div className="relative z-[1] space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <span className="studio-icon-shell h-9 w-9 rounded-[0.9rem]">
+                              <LocalIcon name={typeMeta.icon} className="h-4 w-4 text-primary" />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-semibold text-foreground">{typeMeta.label}</p>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                <Badge variant="outline" className="normal-case tracking-normal">
+                                  {formatRelativeTime(entrada.timestamp, language)}
+                                </Badge>
+                                {entrada.favorite && (
+                                  <Badge variant="secondary" className="gap-1 normal-case tracking-normal">
+                                    <Star className="h-3 w-3 fill-current text-amber-500" />
+                                  {copy.favorite}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {customBadges.length > 0 && (
-                              <div className="flex gap-1">
-                                {customBadges.map((badge, index) => (
-                                  <div
-                                    key={index}
-                                    className={`w-2 h-2 rounded-full ${badge.color}`}
-                                    title={badge.label}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                            {viewMode === "detailed" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleExpanded(entrada.id)}
-                                className="h-6 w-6 p-0"
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4" />
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onToggleFavorite(entrada.id)}
+                              className="h-8 w-8 rounded-full"
+                              aria-label={entrada.favorite ? copy.favorites : copy.favorite}
+                            >
+                              <Star
+                                className={cn(
+                                  "h-4 w-4 text-muted-foreground",
+                                  entrada.favorite && "fill-current text-amber-500",
                                 )}
-                              </Button>
-                            )}
+                              />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onRemoveFromHistory(entrada.id)}
+                              className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              aria-label={copy.removeHistory}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
 
-                        {/* Conteúdo principal */}
                         <div className="flex gap-3">
-                          {/* QR Code Preview */}
                           <div className="shrink-0">
                             <div
-                              className="p-1 rounded border border-border/50 bg-background"
-                              style={{
-                                backgroundColor: entrada.imagemFundo ? "transparent" : entrada.corFundo,
-                              }}
+                              className="overflow-hidden rounded-[0.9rem] border border-border/60 p-1.5"
+                              style={
+                                entrada.imagemFundo
+                                  ? {
+                                      backgroundImage: `url(${entrada.imagemFundo})`,
+                                      backgroundPosition: "center",
+                                      backgroundSize: "cover",
+                                    }
+                                  : {
+                                      backgroundColor: entrada.corFundo,
+                                    }
+                              }
                             >
                               <QRCodeCanvas
                                 value={entrada.valorQR}
-                                size={isMobile ? 56 : 72}
+                                size={previewSize}
                                 fgColor={entrada.corFrente}
                                 bgColor={entrada.imagemFundo ? "transparent" : entrada.corFundo}
                                 level={entrada.nivel}
-                                margin={1}
+                                marginSize={1}
                                 includeMargin={true}
                                 imageSettings={
                                   entrada.logoDataUri
                                     ? {
                                         src: entrada.logoDataUri,
-                                        height: (isMobile ? 56 : 72) * (entrada.logoTamanhoRatio || 0.2),
-                                        width: (isMobile ? 56 : 72) * (entrada.logoTamanhoRatio || 0.2),
+                                        height: previewSize * (entrada.logoTamanhoRatio || 0.2),
+                                        width: previewSize * (entrada.logoTamanhoRatio || 0.2),
                                         excavate: entrada.escavarLogo ?? true,
                                       }
                                     : undefined
                                 }
-                                className="rounded-sm"
                               />
                             </div>
                           </div>
 
-                          {/* Informações */}
-                          <div className="flex-grow min-w-0 space-y-2">
-                            {/* Conteúdo original */}
+                          <div className="min-w-0 flex-1 space-y-2">
                             <div>
-                              <p className="text-sm font-medium text-foreground truncate" title={entrada.inputOriginal}>
-                                {entrada.inputOriginal}
+                              <p
+                                className="truncate text-[13px] font-semibold text-foreground"
+                                title={entrada.inputOriginal}
+                              >
+                                {entrada.inputOriginal || copy.titleFallback}
                               </p>
-                              <p className="text-xs text-muted-foreground font-mono truncate" title={entrada.valorQR}>
+                              <p
+                                className="mt-1 break-all text-[11px] text-muted-foreground"
+                                title={entrada.valorQR}
+                              >
                                 {entrada.valorQR}
                               </p>
                             </div>
 
-                            {/* Especificações técnicas compactas */}
-                            {viewMode === "compact" && (
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div className="flex items-center gap-1">
-                                  <Palette className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-muted-foreground">Cores:</span>
-                                  <div className="flex gap-1">
-                                    <div
-                                      className="w-3 h-3 rounded-full border border-border/50"
-                                      style={{ backgroundColor: entrada.corFrente }}
-                                      title={`Frente: ${entrada.corFrente}`}
-                                    />
-                                    <div
-                                      className="w-3 h-3 rounded-full border border-border/50"
-                                      style={{ backgroundColor: entrada.corFundo }}
-                                      title={`Fundo: ${entrada.corFundo}`}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Maximize className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-muted-foreground">{entrada.tamanho}px</span>
-                                </div>
-                              </div>
-                            )}
+                            <div className="flex flex-wrap gap-1.5">
+                              <Badge variant="outline" className="normal-case tracking-normal">
+                                {entrada.tamanho}px
+                              </Badge>
+                              <Badge variant="outline" className="normal-case tracking-normal">
+                                Erro {entrada.nivel}
+                              </Badge>
+                              <Badge variant="outline" className="normal-case tracking-normal">
+                                Margem {entrada.margem}
+                              </Badge>
+                              {customizationBadges.map((badge) => (
+                                <Badge
+                                  key={`${entrada.id}-${badge.label}`}
+                                  variant="outline"
+                                  className="gap-1 normal-case tracking-normal"
+                                >
+                                  <LocalIcon name={badge.icon} className="h-3 w-3" />
+                                  {badge.label}
+                                </Badge>
+                              ))}
+                            </div>
 
-                            {/* Customizações */}
-                            {customBadges.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {customBadges.map((badge, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5">
-                                    <badge.icon className="w-3 h-3 mr-1" />
-                                    {badge.label}
+                            {(entrada.tags ?? []).length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {(entrada.tags ?? []).map((tag) => (
+                                  <Badge
+                                    key={`${entrada.id}-${tag}`}
+                                    variant={selectedTag === tag ? "secondary" : "outline"}
+                                    className="cursor-pointer gap-1 normal-case tracking-normal"
+                                    onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                                  >
+                                    <Tag className="h-3 w-3" />
+                                    {tag}
                                   </Badge>
                                 ))}
                               </div>
@@ -550,41 +561,118 @@ export function HistoryPanel({
                           </div>
                         </div>
 
-                        {/* Metadados Detalhados (Collapsible) */}
-                        {viewMode === "detailed" && isExpanded && renderDetailedMetadata(entrada)}
+                        {viewMode === "detailed" && (
+                          <div className="grid gap-3 rounded-[1rem] border border-border/60 bg-background/60 p-3 dark:border-dark-5/25 dark:bg-dark-1/50">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                  {copy.colors}
+                                </p>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-muted-foreground">{copy.qr}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className="h-3.5 w-3.5 rounded-full border border-border/60"
+                                        style={{ backgroundColor: entrada.corFrente }}
+                                      />
+                                      <span className="font-mono">{entrada.corFrente}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-muted-foreground">{copy.background}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className="h-3.5 w-3.5 rounded-full border border-border/60"
+                                        style={{ backgroundColor: entrada.corFundo }}
+                                      />
+                                      <span className="font-mono">{entrada.corFundo}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
 
-                        <Separator className="my-2" />
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                  {copy.record}
+                                </p>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-muted-foreground">{copy.created}</span>
+                                    <span className="font-mono">{formatAbsoluteDate(entrada.timestamp, language)}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-muted-foreground">{copy.content}</span>
+                                    <span className="font-mono">{typeMeta.label}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
 
-                        {/* Botão de ação */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full h-8 text-primary hover:bg-primary/10 hover:border-primary/50 border-primary/30"
-                          onClick={() => onLoadFromHistory(entrada)}
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-                          Reutilizar Configurações
-                        </Button>
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+                                <Tag className="h-3.5 w-3.5 text-primary" />
+                                {copy.tags}
+                              </label>
+                              <div className="flex flex-col gap-2 sm:flex-row">
+                                <Input
+                                  value={tagDrafts[entrada.id] ?? ""}
+                                  onChange={(event) =>
+                                    setTagDrafts((current) => ({
+                                      ...current,
+                                      [entrada.id]: event.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      event.preventDefault()
+                                      handleTagSave(entrada.id)
+                                    }
+                                  }}
+                                  placeholder={copy.tagsPlaceholder}
+                                  className="h-9 text-[12px]"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => handleTagSave(entrada.id)}
+                                  className="h-9 gap-1.5 text-[12px]"
+                                >
+                                  <LocalIcon name="check" className="h-3.5 w-3.5" />
+                                  {copy.saveTags}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onLoadFromHistory(entrada)}
+                            className="h-9 flex-1 gap-2 text-[12px] text-primary hover:border-primary/40 hover:bg-primary/8"
+                          >
+                            <LocalIcon name="reset" className="h-3.5 w-3.5" />
+                            {copy.reapply}
+                          </Button>
+                        </div>
                       </div>
-                    </Card>
+                    </div>
                   )
                 })}
               </div>
             </ScrollArea>
-          ) : (
-            <div className="text-center py-8 sm:py-10 flex-grow flex flex-col justify-center items-center">
-              <HistoryIcon className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-base font-medium text-muted-foreground mb-2">Nenhum QR Code no histórico</p>
-              <p className="text-sm text-muted-foreground">Gere seu primeiro QR Code para começar</p>
-            </div>
           )}
         </div>
 
-        <SheetClose asChild className="mt-auto shrink-0 p-4 border-t">
-          <Button variant="outline" className="w-full h-9">
-            Fechar
-          </Button>
-        </SheetClose>
+        <div className="shrink-0 border-t border-border/60 bg-background/90 p-4">
+          <SheetClose asChild>
+            <Button variant="outline" className="h-10 w-full text-[12px]">
+              {copy.close}
+            </Button>
+          </SheetClose>
+        </div>
       </SheetContent>
     </Sheet>
   )

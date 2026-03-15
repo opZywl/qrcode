@@ -1,39 +1,40 @@
 "use client"
 
 import type React from "react"
-
-import { useRef, useMemo } from "react"
-import { QRCodeCanvas } from "qrcode.react"
+import { useMemo, useRef, useState } from "react"
+import { motion } from "framer-motion"
+import { QRCodeCanvas, QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Download, ClipboardCopy, Share2, ImageIcon, FileJson, Sparkles, Eye, Zap, MessageCircle } from "lucide-react"
+import { LocalIcon } from "@/components/ui/local-icon"
+import type { AppLanguage } from "@/components/language-provider"
 import type { TipoFrame, TipoConteudoQR } from "@/hooks/use-qr-code-state"
-import { useToast } from "@/hooks/use-toast"
 
 interface PreviewQRCodeProps {
-    qrValue: string
-    corFrente: string
-    corFundo: string
-    tamanho: number
-    nivelCorrecaoErro: "L" | "M" | "Q" | "H"
-    zonaQuieta: number
-    logoDataUri?: string
-    logoTamanhoRatio?: number
-    escavarLogo?: boolean
-    imagemFundo?: string
-    habilitarCustomizacaoLogo?: boolean
-    habilitarCustomizacaoFundo?: boolean
-    habilitarCustomizacaoFrame?: boolean
-    tipoFrameSelecionado?: TipoFrame
-    textoFrame?: string
-    tipoConteudo?: TipoConteudoQR
-    whatsappGroupMensagem?: string
-    isMobile: boolean
-    onDownload: (formato: "png" | "svg") => void
-    onCopy: () => void
-    onShare: () => void
+  qrValue: string
+  corFrente: string
+  corFundo: string
+  tamanho: number
+  nivelCorrecaoErro: "L" | "M" | "Q" | "H"
+  zonaQuieta: number
+  logoDataUri?: string
+  logoTamanhoRatio?: number
+  escavarLogo?: boolean
+  imagemFundo?: string
+  habilitarCustomizacaoLogo?: boolean
+  habilitarCustomizacaoFundo?: boolean
+  habilitarCustomizacaoFrame?: boolean
+  tipoFrameSelecionado?: TipoFrame
+  textoFrame?: string
+  tipoConteudo?: TipoConteudoQR
+  whatsappGroupMensagem?: string
+  isMobile: boolean
+  language?: AppLanguage
+  onDownload: (formato: "png" | "svg") => void
+  onCopy: () => Promise<void> | void
+  onShare: () => Promise<void> | void
 }
 
 export function QrPreview({
@@ -59,407 +60,391 @@ export function QrPreview({
   onCopy,
   onShare,
 }: PreviewQRCodeProps) {
-    const qrCanvasRef = useRef<HTMLDivElement>(null)
-    const { toast } = useToast()
+  const qrCanvasRef = useRef<HTMLDivElement>(null)
+  const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle")
 
-    const qrConfig = useMemo(() => {
-        const displaySize = Math.min(tamanho, isMobile ? 200 : 280)
-        const useActualBackground = habilitarCustomizacaoFundo && imagemFundo
-        const qrCanvasActualBgColor = useActualBackground ? "transparent" : corFundo
-        const logoActuallyActive = habilitarCustomizacaoLogo && logoDataUri
-        const frameActive = habilitarCustomizacaoFrame && tipoFrameSelecionado !== "none"
+  const qrConfig = useMemo(() => {
+    const displaySize = Math.min(tamanho, isMobile ? 214 : 272)
+    const useActualBackground = Boolean(habilitarCustomizacaoFundo && imagemFundo)
+    const qrCanvasActualBgColor = useActualBackground ? "transparent" : corFundo
+    const logoActuallyActive = Boolean(habilitarCustomizacaoLogo && logoDataUri)
+    const frameActive = Boolean(habilitarCustomizacaoFrame && tipoFrameSelecionado !== "none")
 
-        return {
-            displaySize,
-            useActualBackground,
-            qrCanvasActualBgColor,
-            logoActuallyActive,
-            frameActive,
+    return {
+      displaySize,
+      useActualBackground,
+      qrCanvasActualBgColor,
+      logoActuallyActive,
+      frameActive,
+    }
+  }, [
+    tamanho,
+    isMobile,
+    habilitarCustomizacaoFundo,
+    imagemFundo,
+    corFundo,
+    habilitarCustomizacaoLogo,
+    logoDataUri,
+    habilitarCustomizacaoFrame,
+    tipoFrameSelecionado,
+  ])
+
+  const frameStyles = useMemo(() => {
+    const { frameActive, displaySize } = qrConfig
+    const frameSize = frameActive ? displaySize + 72 : displaySize
+    const framePadding = frameActive ? 36 : 0
+
+    const getQrWrapperStyle = (): React.CSSProperties => {
+      const style: React.CSSProperties = {
+        padding: frameActive ? `${framePadding}px` : "0px",
+        border: frameActive ? "1.5px solid hsl(var(--primary) / 0.3)" : "1px solid hsl(var(--border) / 0.82)",
+        borderRadius: frameActive && tipoFrameSelecionado.includes("rounded") ? "24px" : "20px",
+        display: "inline-block",
+        position: "relative",
+        backgroundColor: frameActive
+          ? "hsl(var(--background))"
+          : qrConfig.useActualBackground
+            ? "transparent"
+            : corFundo,
+        boxShadow: frameActive
+          ? "0 30px 70px -34px rgba(15, 23, 42, 0.42)"
+          : "0 24px 60px -38px rgba(15, 23, 42, 0.3)",
+        width: frameActive ? `${frameSize}px` : "auto",
+        height: frameActive ? `${frameSize}px` : "auto",
+        transition: "all 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
+        overflow: "hidden",
+      }
+
+      if (qrConfig.useActualBackground && !frameActive) {
+        style.backgroundImage = `url(${imagemFundo})`
+        style.backgroundSize = "cover"
+        style.backgroundPosition = "center"
+      }
+
+      return style
+    }
+
+    return { getQrWrapperStyle }
+  }, [qrConfig, tipoFrameSelecionado, corFundo, imagemFundo])
+
+  const customizations = useMemo(() => {
+    const values: Array<{ label: string; icon: string }> = []
+
+    if (qrConfig.logoActuallyActive) values.push({ label: "Logo", icon: "image-plus" })
+    if (qrConfig.useActualBackground) values.push({ label: "Fundo", icon: "image" })
+    if (qrConfig.frameActive) values.push({ label: "Moldura", icon: "frame" })
+
+    return values
+  }, [qrConfig])
+
+  const qrCanvasWrapperStyle: React.CSSProperties = {
+    backgroundColor: qrConfig.qrCanvasActualBgColor,
+    display: "inline-block",
+    maxWidth: "100%",
+    borderRadius: qrConfig.frameActive ? "16px" : "18px",
+    padding: "0px",
+    position: qrConfig.frameActive ? "relative" : "static",
+    overflow: "hidden",
+  }
+
+  const logoImageSettings =
+    qrConfig.logoActuallyActive && logoDataUri
+      ? {
+          src: logoDataUri,
+          height: qrConfig.displaySize * logoTamanhoRatio,
+          width: qrConfig.displaySize * logoTamanhoRatio,
+          excavate: escavarLogo,
         }
-    }, [
-        tamanho,
-        isMobile,
-        habilitarCustomizacaoFundo,
-        imagemFundo,
-        corFundo,
-        habilitarCustomizacaoLogo,
-        logoDataUri,
-        habilitarCustomizacaoFrame,
-        tipoFrameSelecionado,
-    ])
+      : undefined
 
-    const frameStyles = useMemo(() => {
-        const { frameActive, displaySize } = qrConfig
-        const frameSize = frameActive ? displaySize + 80 : displaySize
-        const framePadding = frameActive ? 40 : 0
-
-        const getQrWrapperStyle = (): React.CSSProperties => {
-            const style: React.CSSProperties = {
-                padding: frameActive ? `${framePadding}px` : "0px",
-                border: frameActive ? "2px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
-                borderRadius: frameActive && tipoFrameSelecionado?.includes("rounded") ? "20px" : "8px",
-                display: "inline-block",
-                position: "relative",
-                backgroundColor: frameActive
-                    ? "hsl(var(--background))"
-                    : qrConfig.useActualBackground
-                        ? "transparent"
-                        : corFundo,
-                boxShadow: frameActive
-                    ? "0 8px 32px rgba(0,0,0,0.1), 0 0 20px hsl(var(--primary) / 0.2)"
-                    : "0 2px 8px rgba(0,0,0,0.05)",
-                width: frameActive ? `${frameSize}px` : "auto",
-                height: frameActive ? `${frameSize}px` : "auto",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            }
-
-            if (qrConfig.useActualBackground && !frameActive) {
-                style.backgroundImage = `url(${imagemFundo})`
-                style.backgroundSize = "cover"
-                style.backgroundPosition = "center"
-            }
-
-            return style
+  const exportLogoImageSettings =
+    qrConfig.logoActuallyActive && logoDataUri
+      ? {
+          src: logoDataUri,
+          height: tamanho * logoTamanhoRatio,
+          width: tamanho * logoTamanhoRatio,
+          excavate: escavarLogo,
         }
+      : undefined
 
-        return { getQrWrapperStyle, frameSize, framePadding }
-    }, [qrConfig, tipoFrameSelecionado, corFundo, imagemFundo])
+  const handleCopy = async () => {
+    try {
+      await Promise.resolve(onCopy())
+      setCopyStatus("success")
+    } catch {
+      setCopyStatus("error")
+    } finally {
+      window.setTimeout(() => setCopyStatus("idle"), 2200)
+    }
+  }
 
-    if (!qrValue) {
-        if (isMobile) {
-            return (
-                <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed rounded-lg bg-muted h-64 w-full max-w-xs">
-                    <ImageIcon className="w-16 h-16 text-muted-foreground mb-4" />
-                    <p className="text-sm text-muted-foreground">Nenhum QR Code gerado</p>
-                    <p className="text-xs text-muted-foreground">Use o botão abaixo para criar um</p>
-                </div>
-            )
-        }
+  const renderFrameText = () => {
+    if (!qrConfig.frameActive) {
+      return null
+    }
+
+    const text = tipoFrameSelecionado === "scanMeBottom" ? "SCAN ME" : textoFrame || "QR CODE"
+
+    const bottomChip = (
+      <div className="absolute inset-x-0 bottom-3 text-center">
+        <span className="portfolio-chip bg-background/90 text-foreground">{text}</span>
+      </div>
+    )
+
+    switch (tipoFrameSelecionado) {
+      case "scanMeBottom":
+        return (
+          <div className="absolute inset-x-0 bottom-3 text-center">
+            <span className="portfolio-chip bg-background/90 text-foreground">
+              <LocalIcon name="scan" className="h-3 w-3" />
+              SCAN ME
+            </span>
+          </div>
+        )
+      case "topBottomText":
+        return (
+          <>
+            <div className="absolute inset-x-0 top-3 text-center">
+              <span className="portfolio-chip bg-background/90 text-foreground">QR CODE</span>
+            </div>
+            {bottomChip}
+          </>
+        )
+      case "decorativeBorder":
+        return (
+          <>
+            <div className="absolute left-2 top-2 h-5 w-5 rounded-tl-xl border-l-2 border-t-2 border-primary" />
+            <div className="absolute right-2 top-2 h-5 w-5 rounded-tr-xl border-r-2 border-t-2 border-primary" />
+            <div className="absolute bottom-2 left-2 h-5 w-5 rounded-bl-xl border-b-2 border-l-2 border-primary" />
+            <div className="absolute bottom-2 right-2 h-5 w-5 rounded-br-xl border-b-2 border-r-2 border-primary" />
+            {bottomChip}
+          </>
+        )
+      case "modernFrame":
+        return <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-br from-primary/12 to-transparent" />
+      case "classicFrame":
+        return <div className="pointer-events-none absolute inset-[10px] rounded-[22px] border-2 border-double border-primary/30" />
+      case "textBottom":
+      case "roundedBorderTextBottom":
+        return bottomChip
+      default:
         return null
     }
+  }
 
-    const { displaySize, qrCanvasActualBgColor, logoActuallyActive, frameActive } = qrConfig
+  const statItems = [
+    { label: "Tamanho", value: `${tamanho}px`, icon: "size" },
+    { label: "Correcao", value: nivelCorrecaoErro, icon: "shield" },
+    { label: "Margem", value: `${zonaQuieta}`, icon: "frame" },
+    { label: "Export", value: "PNG / SVG", icon: "download" },
+  ]
 
-    const qrCanvasWrapperStyle: React.CSSProperties = {
-        backgroundColor: qrCanvasActualBgColor,
-        display: "inline-block",
-        maxWidth: "100%",
-        borderRadius: frameActive ? "4px" : "calc(0.375rem - 1px)",
-        padding: "0px",
-        position: frameActive ? "relative" : "static",
-    }
-
-    const renderFrameText = () => {
-        if (!frameActive) return null
-
-        const text = tipoFrameSelecionado === "scanMeBottom" ? "SCAN ME" : textoFrame || "QR CODE"
-
-        const frameTextConfigs = {
-            textBottom: {
-                position: "bottom-2 left-0 right-0 text-center",
-                content: (
-                    <span className="text-sm font-bold text-primary bg-background/90 px-3 py-1 rounded-full border border-primary/20 shadow-sm">
-            {text}
-          </span>
-                ),
-            },
-            scanMeBottom: {
-                position: "bottom-2 left-0 right-0 text-center",
-                content: (
-                    <span className="text-sm font-bold text-primary bg-background/90 px-3 py-1 rounded-full border border-primary/20 shadow-sm animate-pulse">
-            <Zap className="w-3 h-3 inline mr-1" />
-            SCAN ME
-          </span>
-                ),
-            },
-            roundedBorderTextBottom: {
-                position: "bottom-2 left-0 right-0 text-center",
-                content: (
-                    <span className="text-sm font-bold text-primary bg-background/90 px-3 py-1 rounded-full border border-primary/20 shadow-sm">
-            {text}
-          </span>
-                ),
-            },
-            topBottomText: {
-                position: "",
-                content: (
-                    <>
-                        <div className="absolute top-2 left-0 right-0 text-center">
-              <span className="text-xs font-semibold text-primary bg-background/90 px-2 py-1 rounded border border-primary/20 shadow-sm">
-                QR CODE
-              </span>
-                        </div>
-                        <div className="absolute bottom-2 left-0 right-0 text-center">
-              <span className="text-xs font-semibold text-primary bg-background/90 px-2 py-1 rounded border border-primary/20 shadow-sm">
-                {text}
-              </span>
-                        </div>
-                    </>
-                ),
-            },
-            decorativeBorder: {
-                position: "",
-                content: (
-                    <>
-                        <div className="absolute top-1 left-1 w-4 h-4 border-l-2 border-t-2 border-primary rounded-tl-lg shadow-sm"></div>
-                        <div className="absolute top-1 right-1 w-4 h-4 border-r-2 border-t-2 border-primary rounded-tr-lg shadow-sm"></div>
-                        <div className="absolute bottom-1 left-1 w-4 h-4 border-l-2 border-b-2 border-primary rounded-bl-lg shadow-sm"></div>
-                        <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-primary rounded-br-lg shadow-sm"></div>
-                        <div className="absolute bottom-2 left-0 right-0 text-center">
-              <span className="text-xs font-bold text-primary bg-background/90 px-2 py-1 rounded border border-primary/20 shadow-sm">
-                {text}
-              </span>
-                        </div>
-                    </>
-                ),
-            },
-            modernFrame: {
-                position: "",
-                content: (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 pointer-events-none" />
-                ),
-            },
-            classicFrame: {
-                position: "",
-                content: (
-                    <div className="absolute inset-1 border-2 border-double border-primary/30 rounded-lg pointer-events-none" />
-                ),
-            },
-        }
-
-        const config = frameTextConfigs[tipoFrameSelecionado as keyof typeof frameTextConfigs]
-        if (!config) return null
-
-        if (config.position) {
-            return <div className={`absolute ${config.position}`}>{config.content}</div>
-        }
-
-        return config.content
-    }
-
-    const getCustomizations = () => {
-        const customizations = []
-        if (logoActuallyActive) customizations.push("Logo")
-        if (qrConfig.useActualBackground) customizations.push("Fundo")
-        if (frameActive) customizations.push("Moldura")
-        return customizations
-    }
-
-    const customizations = getCustomizations()
-
-    return (
-        <div className="mt-6 p-4 sm:p-6 border-2 border-dashed border-primary/30 rounded-xl bg-gradient-to-br from-card/50 to-muted/30 backdrop-blur-sm flex flex-col items-center space-y-6 shadow-lg transition-all duration-300 hover:shadow-xl">
-            <div className="w-full space-y-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-primary" />
-                        <Label className="text-sm font-semibold text-foreground">Preview do QR Code</Label>
-                    </div>
-                    {customizations.length > 0 && (
-                        <div className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-primary" />
-                            <Badge variant="secondary" className="text-xs animate-pulse">
-                                {customizations.join(", ")}
-                            </Badge>
-                        </div>
-                    )}
-                </div>
-
-                <div className="p-3 border rounded-lg bg-muted/50 w-full transition-all duration-200 hover:bg-muted/70">
-                    <Label className="text-xs text-muted-foreground block mb-1">Conteúdo Codificado:</Label>
-                    <p
-                        className="text-sm font-mono break-all text-foreground bg-background/50 p-2 rounded border transition-all duration-200 hover:bg-background/70"
-                        title={qrValue}
-                    >
-                        {qrValue}
-                    </p>
-                </div>
-            </div>
-
-            <div className="relative transition-all duration-300 hover:scale-105">
-                <div className="qr-code-outer-wrapper" style={frameStyles.getQrWrapperStyle()}>
-                    <div ref={qrCanvasRef} className="qr-code-canvas-wrapper" style={qrCanvasWrapperStyle}>
-                        <QRCodeCanvas
-                            value={qrValue}
-                            size={displaySize}
-                            fgColor={corFrente}
-                            bgColor={qrCanvasActualBgColor}
-                            level={nivelCorrecaoErro}
-                            margin={zonaQuieta}
-                            includeMargin={true}
-                            imageSettings={
-                                logoActuallyActive
-                                    ? {
-                                        src: logoDataUri,
-                                        height: displaySize * logoTamanhoRatio,
-                                        width: displaySize * logoTamanhoRatio,
-                                        excavate: escavarLogo,
-                                    }
-                                    : undefined
-                            }
-                            style={{ maxWidth: "100%", height: "auto", display: "block" }}
-                        />
-                    </div>
-                    {renderFrameText()}
-                </div>
-            </div>
-
-            <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
-                    <p className="text-xs text-muted-foreground">Tamanho</p>
-                    <p className="text-sm font-semibold text-foreground">{tamanho}px</p>
-                </div>
-                <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
-                    <p className="text-xs text-muted-foreground">Correção</p>
-                    <p className="text-sm font-semibold text-foreground">{nivelCorrecaoErro}</p>
-                </div>
-                <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
-                    <p className="text-xs text-muted-foreground">Margem</p>
-                    <p className="text-sm font-semibold text-foreground">{zonaQuieta}</p>
-                </div>
-                <div className="p-2 bg-muted/30 rounded border transition-all duration-200 hover:bg-muted/50">
-                    <p className="text-xs text-muted-foreground">Formato</p>
-                    <p className="text-sm font-semibold text-foreground">PNG/SVG</p>
-                </div>
-            </div>
-
-            {tipoConteudo === "whatsappGroup" && whatsappGroupMensagem && whatsappGroupMensagem.trim() && (
-                <div className="w-full p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-300 dark:border-green-700 rounded-xl shadow-md space-y-3">
-                    <div className="flex items-center gap-2">
-                        <MessageCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        <Label className="text-sm font-bold text-green-800 dark:text-green-200">
-                            Mensagem de Boas-Vindas / Validação
-                        </Label>
-                    </div>
-                    <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border border-green-200 dark:border-green-800">
-                        <p className="text-sm text-foreground whitespace-pre-wrap font-mono">
-                            {whatsappGroupMensagem}
-                        </p>
-                    </div>
-                    <Button
-                        onClick={async () => {
-                            try {
-                                await navigator.clipboard.writeText(whatsappGroupMensagem)
-                                toast({
-                                    title: "📋 Mensagem Copiada!",
-                                    description: "Mensagem de boas-vindas copiada para área de transferência",
-                                })
-                            } catch (error) {
-                                toast({
-                                    title: "❌ Erro",
-                                    description: "Não foi possível copiar a mensagem",
-                                    variant: "destructive",
-                                })
-                            }
-                        }}
-                        variant="outline"
-                        className="w-full border-2 border-green-500 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all duration-200"
-                    >
-                        <ClipboardCopy className="w-4 h-4 mr-2" />
-                        <span className="font-medium">Copiar Mensagem</span>
-                    </Button>
-                    <p className="text-xs text-green-700 dark:text-green-300 text-center">
-                        💡 Ao entrar no grupo, copie e envie esta mensagem
-                    </p>
-                </div>
-            )}
-
-            <div className="w-full space-y-3">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="outline"
-                            className="w-full h-12 border-2 border-primary/40 hover:border-primary/70 hover:bg-primary/10 transition-all duration-200 bg-gradient-to-r from-background to-muted/30 hover:scale-105"
-                        >
-                            <Download className="w-5 h-5 mr-2 text-primary" />
-                            <span className="font-semibold">Baixar QR Code</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" className={isMobile ? "w-[calc(100vw-4rem)]" : ""}>
-                        <DropdownMenuItem onClick={() => onDownload("png")} className="cursor-pointer">
-                            <ImageIcon className="w-4 h-4 mr-2" />
-                            <span>PNG (Recomendado)</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDownload("svg")} className="cursor-pointer">
-                            <FileJson className="w-4 h-4 mr-2" />
-                            <span>SVG (Vetorial)</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <Button
-                        onClick={async (e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-
-                            const button = e.currentTarget as HTMLButtonElement
-                            const originalContent = button.innerHTML
-                            const originalClassName = button.className
-
-                            try {
-                                await onCopy()
-
-                                button.innerHTML = `
-                  <div class="flex items-center justify-center w-full">
-                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span class="font-medium">Copiado!</span>
-                  </div>
-                `
-                                button.className =
-                                    "h-12 border-2 border-green-500 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 dark:border-green-400 transition-all duration-300 rounded-lg shadow-md"
-
-                                setTimeout(() => {
-                                    button.innerHTML = originalContent
-                                    button.className = originalClassName
-                                }, 2500)
-                            } catch (error) {
-                                console.error("Erro ao copiar:", error)
-
-                                button.innerHTML = `
-                  <div class="flex items-center justify-center w-full">
-                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    <span class="font-medium">Erro!</span>
-                  </div>
-                `
-                                button.className =
-                                    "h-12 border-2 border-red-500 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200 dark:border-red-400 transition-all duration-300 rounded-lg shadow-md"
-
-                                setTimeout(() => {
-                                    button.innerHTML = originalContent
-                                    button.className = originalClassName
-                                }, 2500)
-                            }
-                        }}
-                        variant="outline"
-                        className="h-12 border-2 border-blue-400/40 hover:border-blue-500/70 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200 hover:scale-105"
-                    >
-                        <ClipboardCopy className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
-                        <span className="font-medium">Copiar</span>
-                    </Button>
-
-                    <Button
-                        onClick={onShare}
-                        variant="outline"
-                        className="h-12 border-2 border-green-400/40 hover:border-green-500/70 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all duration-200 hover:scale-105"
-                    >
-                        <Share2 className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
-                        <span className="font-medium">Compartilhar</span>
-                    </Button>
-                </div>
-            </div>
-
-            {(logoActuallyActive || qrConfig.useActualBackground) && (
-                <div className="w-full p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg transition-all duration-200 hover:bg-amber-100 dark:hover:bg-amber-950/30">
-                    <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
-                        ⚠️ Personalizações podem afetar a leitura do QR Code. Teste antes de usar.
-                    </p>
-                </div>
-            )}
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-2.5">
+        <div className="space-y-1.5">
+          <div className="portfolio-chip w-fit">
+            <LocalIcon name="eye" className="h-3 w-3" />
+            Preview
+          </div>
+          <div>
+            <h3 className="font-glancyr700 text-[1.18rem] uppercase leading-none tracking-tight text-foreground">
+              QR Output
+            </h3>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              Visual final com exportacao pronta em PNG e SVG.
+            </p>
+          </div>
         </div>
-    )
+
+        {customizations.length > 0 && (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {customizations.map((customization) => (
+              <Badge key={customization.label} variant="outline" className="gap-2">
+                <LocalIcon name={customization.icon} className="h-3 w-3" />
+                {customization.label}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {qrValue ? (
+        <>
+          <div className="studio-tile">
+            <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Conteudo codificado
+            </Label>
+            <p
+              className="relative z-[1] rounded-[1rem] border border-border/70 bg-background/80 px-3.5 py-2.5 font-mono text-[13px] text-foreground shadow-inner dark:border-dark-5/30 dark:bg-dark-1/70 sm:text-sm"
+              title={qrValue}
+            >
+              {qrValue}
+            </p>
+          </div>
+
+          <div className="flex justify-center">
+            <motion.div
+              layout
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1, y: [0, -4, 0] }}
+              transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+              className="relative"
+              data-qr-export-root
+            >
+              <div className="qr-code-outer-wrapper" style={frameStyles.getQrWrapperStyle()}>
+                <div ref={qrCanvasRef} className="qr-code-canvas-wrapper" style={qrCanvasWrapperStyle}>
+                  <QRCodeCanvas
+                    id="qr-preview-canvas"
+                    value={qrValue}
+                    size={qrConfig.displaySize}
+                    fgColor={corFrente}
+                    bgColor={qrConfig.qrCanvasActualBgColor}
+                    level={nivelCorrecaoErro}
+                    marginSize={zonaQuieta}
+                    includeMargin={true}
+                    imageSettings={logoImageSettings}
+                    style={{ display: "block", height: "auto", maxWidth: "100%" }}
+                  />
+                </div>
+
+                <div className="hidden">
+                  <QRCodeCanvas
+                    id="qr-export-canvas"
+                    value={qrValue}
+                    size={tamanho}
+                    fgColor={corFrente}
+                    bgColor={qrConfig.qrCanvasActualBgColor}
+                    level={nivelCorrecaoErro}
+                    marginSize={zonaQuieta}
+                    includeMargin={true}
+                    imageSettings={exportLogoImageSettings}
+                  />
+                  <QRCodeSVG
+                    id="qr-export-svg"
+                    value={qrValue}
+                    size={tamanho}
+                    fgColor={corFrente}
+                    bgColor={corFundo}
+                    level={nivelCorrecaoErro}
+                    marginSize={zonaQuieta}
+                    includeMargin={true}
+                    imageSettings={exportLogoImageSettings}
+                  />
+                </div>
+
+                {renderFrameText()}
+
+                <motion.div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-[14%] top-6 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent"
+                  animate={{ y: [0, qrConfig.displaySize * 0.72, 0], opacity: [0.12, 0.52, 0.12] }}
+                  transition={{ duration: 3.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                />
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {statItems.map((item, index) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, delay: 0.04 + index * 0.03 }}
+                className="studio-tile !px-3 !py-2.5"
+              >
+                <div className="relative z-[1] flex items-center gap-2">
+                  <span className="studio-icon-shell h-7 w-7 rounded-full">
+                    <LocalIcon name={item.icon} className="h-3.5 w-3.5 text-primary" />
+                  </span>
+                  <div>
+                    <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground">{item.label}</p>
+                    <p className="mt-0.5 text-[12.5px] font-semibold text-foreground">{item.value}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {tipoConteudo === "whatsappGroup" && whatsappGroupMensagem && whatsappGroupMensagem.trim() && (
+            <div className="studio-tile border-emerald-400/30 bg-emerald-50/60 dark:border-emerald-500/25 dark:bg-emerald-950/10">
+              <div className="relative z-[1]">
+                <div className="mb-3 flex items-center gap-2">
+                  <LocalIcon name="whatsapp" className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                  <Label className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                    Mensagem de boas-vindas
+                  </Label>
+                </div>
+                <div className="rounded-[1rem] border border-emerald-300/30 bg-white/80 p-3 dark:border-emerald-500/20 dark:bg-dark-1/70">
+                  <p className="whitespace-pre-wrap font-mono text-sm text-foreground">{whatsappGroupMensagem}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-10 w-full gap-2.5">
+                  <span className="studio-icon-shell h-6 w-6 rounded-full">
+                    <LocalIcon name="download" className="h-3.5 w-3.5 text-primary" />
+                  </span>
+                  Baixar QR Code
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className={isMobile ? "w-[calc(100vw-4rem)]" : ""}>
+                <DropdownMenuItem onClick={() => onDownload("png")} className="cursor-pointer gap-2">
+                  <LocalIcon name="image" className="h-4 w-4" />
+                  PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDownload("svg")} className="cursor-pointer gap-2">
+                  <LocalIcon name="frame" className="h-4 w-4" />
+                  SVG
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="h-10 gap-2.5" onClick={handleCopy}>
+                <span className="studio-icon-shell h-6 w-6 rounded-full">
+                  <LocalIcon name="copy" className="h-3.5 w-3.5 text-primary" />
+                </span>
+                {copyStatus === "idle" && "Copiar"}
+                {copyStatus === "success" && "Copiado!"}
+                {copyStatus === "error" && "Erro"}
+              </Button>
+
+              <Button variant="outline" className="h-10 gap-2.5" onClick={() => void Promise.resolve(onShare())}>
+                <span className="studio-icon-shell h-6 w-6 rounded-full">
+                  <LocalIcon name="share" className="h-3.5 w-3.5 text-primary" />
+                </span>
+                Compartilhar
+              </Button>
+            </div>
+          </div>
+
+          {(qrConfig.logoActuallyActive || qrConfig.useActualBackground) && (
+            <div className="rounded-[1.4rem] border border-amber-400/30 bg-amber-50/70 px-4 py-3 text-center text-xs text-amber-700 dark:border-amber-400/20 dark:bg-amber-950/10 dark:text-amber-300">
+              Personalizacoes visuais podem afetar a leitura. Teste o QR Code antes de publicar.
+            </div>
+          )}
+        </>
+      ) : (
+          <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="studio-tile flex min-h-[260px] flex-col items-center justify-center px-5 py-6 text-center"
+        >
+          <div className="studio-icon-shell mb-3.5 h-12 w-12 rounded-full animate-float-soft">
+            <LocalIcon name="image" className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h4 className="font-glancyr700 text-[1.05rem] uppercase tracking-tight text-foreground">Nada gerado ainda</h4>
+          <p className="mt-1.5 max-w-sm text-[12px] text-muted-foreground">
+            Preencha os campos, ajuste o visual e gere o QR Code para ver o preview final aqui.
+          </p>
+        </motion.div>
+      )}
+    </div>
+  )
 }

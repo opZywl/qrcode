@@ -1,9 +1,27 @@
 "use client"
 
 import * as React from "react"
-import { Github, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { LocalIcon } from "@/components/ui/local-icon"
+
+const links = [
+  {
+    title: "Repositorio do projeto",
+    description: "Acesse o codigo fonte completo",
+    href: "https://github.com/opZywl/qrcode",
+  },
+  {
+    title: "Criador",
+    description: "Perfil do desenvolvedor",
+    href: "https://github.com/opZywl",
+  },
+  {
+    title: "Relatar problema",
+    description: "Abrir uma nova issue",
+    href: "https://github.com/opZywl/qrcode/issues/new",
+  },
+]
 
 export function GithubPopup() {
   const [montado, setMontado] = React.useState(false)
@@ -11,7 +29,7 @@ export function GithubPopup() {
   React.useEffect(() => setMontado(true), [])
 
   if (!montado) {
-    return <div style={{ width: "40px", height: "40px" }} />
+    return <div className="h-10 w-10 rounded-full border border-border/60 bg-background/40" />
   }
 
   return (
@@ -20,63 +38,48 @@ export function GithubPopup() {
         <Button
           variant="outline"
           size="icon"
-          className="relative hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 bg-transparent"
+          className="studio-icon-shell rounded-full bg-transparent hover:border-primary/35 hover:bg-primary/5"
         >
-          <Github className="h-[1.2rem] w-[1.2rem] text-primary" />
+          <img
+            src="/portfolio/images/github.svg"
+            alt=""
+            className="h-[1.1rem] w-[1.1rem] object-contain invert dark:invert-0"
+          />
           <span className="sr-only">GitHub</span>
         </Button>
       </DialogTrigger>
+
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Github className="h-5 w-5" />
+        <DialogHeader className="studio-hairline pb-4">
+          <DialogTitle className="flex items-center gap-3">
+            <span className="studio-icon-shell h-10 w-10 rounded-full">
+              <img
+                src="/portfolio/images/github.svg"
+                alt=""
+                className="h-[1.15rem] w-[1.15rem] object-contain invert dark:invert-0"
+              />
+            </span>
             GitHub
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-auto p-4 bg-transparent"
-              onClick={() => window.open("https://github.com/opZywl/qrcode", "_blank")}
-            >
-              <div className="flex flex-col items-start gap-1">
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  <span className="font-medium">Repositório do projeto</span>
-                </div>
-                <span className="text-sm text-muted-foreground">Acesse o código fonte completo</span>
-              </div>
-            </Button>
 
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-auto p-4 bg-transparent"
-              onClick={() => window.open("https://github.com/opZywl", "_blank")}
+        <div className="space-y-3">
+          {links.map((link) => (
+            <button
+              key={link.href}
+              type="button"
+              onClick={() => window.open(link.href, "_blank")}
+              className="studio-tile flex w-full items-center justify-between gap-4 text-left transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary/35"
             >
-              <div className="flex flex-col items-start gap-1">
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  <span className="font-medium">Criador</span>
-                </div>
-                <span className="text-sm text-muted-foreground">Perfil do desenvolvedor</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">{link.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{link.description}</p>
               </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-auto p-4 bg-transparent"
-              onClick={() => window.open("https://github.com/opZywl/qrcode/issues/new", "_blank")}
-            >
-              <div className="flex flex-col items-start gap-1">
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  <span className="font-medium">Relatar um problema ou sugestão</span>
-                </div>
-                <span className="text-sm text-muted-foreground">Abrir uma nova issue</span>
-              </div>
-            </Button>
-          </div>
+              <span className="studio-icon-shell h-10 w-10 rounded-full">
+                <LocalIcon name="share" className="h-4 w-4 text-primary" />
+              </span>
+            </button>
+          ))}
         </div>
       </DialogContent>
     </Dialog>
