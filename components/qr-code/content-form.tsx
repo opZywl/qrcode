@@ -7,9 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { Loader2, Navigation } from "lucide-react"
+import { LocalIcon } from "@/components/ui/local-icon"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import type { AppLanguage } from "@/components/language-provider"
 import type { TipoConteudoQR, TipoEncriptacaoWifi } from "@/hooks/use-qr-code-state"
 
 interface FormularioConteudoProps {
@@ -17,6 +18,7 @@ interface FormularioConteudoProps {
   valores: any
   onChange: (campo: string, valor: any) => void
   isMobile: boolean
+  language?: AppLanguage
 }
 
 export function ContentForm({ tipo, valores, onChange, isMobile }: FormularioConteudoProps) {
@@ -605,12 +607,12 @@ export function ContentForm({ tipo, valores, onChange, isMobile }: FormularioCon
               >
                 {localizandoGPS ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <LocalIcon name="reset" className="w-4 h-4 mr-2 animate-spin" />
                       Localizando...
                     </>
                 ) : (
                     <>
-                      <Navigation className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
+                      <LocalIcon name="geo" className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                       <span className="font-medium">Localizar em Tempo Real</span>
                     </>
                 )}

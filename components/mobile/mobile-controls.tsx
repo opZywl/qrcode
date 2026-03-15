@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Settings, RefreshCw, Sparkles, RotateCcw, Trash2, Zap } from "lucide-react"
+import { LocalIcon } from "@/components/ui/local-icon"
 import { TypeSelector } from "../qr-code/type-selector"
 import { ContentForm } from "../qr-code/content-form"
 import { MobileStylePanel } from "./mobile-style-panel"
 import { DialogReset } from "../dialog/dialog-reset"
 import { DialogDescription } from "@/components/ui/dialog"
-import type { TipoConteudoQR } from "@/hooks/use-qr-code-state"
+import type { AppLanguage } from "@/components/language-provider"
+import type { TipoConteudoQR, VisualTemplateQRCode } from "@/hooks/use-qr-code-state"
 
 interface SheetControlesMobileProps {
   aberto: boolean
@@ -22,6 +23,11 @@ interface SheetControlesMobileProps {
   onResetGranular: (tipo?: string) => void
   isLoading: boolean
   tiposVisiveis?: TipoConteudoQR[]
+  visualTemplates: VisualTemplateQRCode[]
+  onSaveVisualTemplate: (name: string, templateId?: string) => void
+  onApplyVisualTemplate: (template: VisualTemplateQRCode) => void
+  onDeleteVisualTemplate: (templateId: string) => void
+  language?: AppLanguage
 }
 
 export function SheetControlesMobile({
@@ -32,6 +38,11 @@ export function SheetControlesMobile({
    onResetGranular,
    isLoading,
    tiposVisiveis,
+   visualTemplates,
+   onSaveVisualTemplate,
+   onApplyVisualTemplate,
+   onDeleteVisualTemplate,
+   language = "pt",
 }: SheetControlesMobileProps) {
   const [dialogResetAberto, setDialogResetAberto] = useState(false)
   const [tipoReset, setTipoReset] = useState<"content" | "appearance" | "all">("all")
@@ -135,14 +146,14 @@ export function SheetControlesMobile({
             <SheetHeader className="p-4 border-b bg-background shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                  <Settings className="w-5 h-5 text-primary" />
+                  <LocalIcon name="settings" className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <SheetTitle className="text-lg text-foreground flex items-center gap-2">
                     Gerador QR Code
                     {activeCustomizations.length > 0 && (
                         <Badge variant="secondary" className="text-xs">
-                          <Sparkles className="w-3 h-3 mr-1" />
+                          <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
                           {activeCustomizations.length} ativa{activeCustomizations.length > 1 ? "s" : ""}
                         </Badge>
                     )}
@@ -170,7 +181,7 @@ export function SheetControlesMobile({
                             onClick={() => handleResetClick("content")}
                             className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <Trash2 className="w-3 h-3 mr-1" />
+                          <LocalIcon name="trash" className="w-3 h-3 mr-1" />
                           Limpar
                         </Button>
                     )}
@@ -179,6 +190,7 @@ export function SheetControlesMobile({
                       tipoAtivo={qrState.tipoConteudoAtivo}
                       onTipoChange={(tipo) => qrState.updateField("tipoConteudoAtivo", tipo)}
                       tiposVisiveis={tiposVisiveis}
+                      language={language}
                   />
                 </div>
 
@@ -201,6 +213,7 @@ export function SheetControlesMobile({
                         valores={qrState}
                         onChange={qrState.updateField}
                         isMobile={true}
+                        language={language}
                     />
                   </div>
                 </div>
@@ -228,7 +241,7 @@ export function SheetControlesMobile({
                             onClick={() => handleResetClick("appearance")}
                             className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <RotateCcw className="w-3 h-3 mr-1" />
+                          <LocalIcon name="reset" className="w-3 h-3 mr-1" />
                           Reset
                         </Button>
                     )}
@@ -240,6 +253,11 @@ export function SheetControlesMobile({
                       onResetGranular={onResetGranular}
                       valoresAccordion={qrState.valoresAccordionMobile}
                       onValoresAccordionChange={(values) => qrState.updateField("valoresAccordionMobile", values)}
+                      visualTemplates={visualTemplates}
+                      onSaveVisualTemplate={onSaveVisualTemplate}
+                      onApplyVisualTemplate={onApplyVisualTemplate}
+                      onDeleteVisualTemplate={onDeleteVisualTemplate}
+                      language={language}
                   />
                 </div>
 
@@ -258,7 +276,7 @@ export function SheetControlesMobile({
                         disabled={!hasContentData()}
                         className="text-xs"
                     >
-                      <Trash2 className="w-3 h-3 mr-1" />
+                      <LocalIcon name="trash" className="w-3 h-3 mr-1" />
                       Limpar Dados
                     </Button>
                     <Button
@@ -268,7 +286,7 @@ export function SheetControlesMobile({
                         disabled={!hasCustomizations()}
                         className="text-xs"
                     >
-                      <RotateCcw className="w-3 h-3 mr-1" />
+                      <LocalIcon name="reset" className="w-3 h-3 mr-1" />
                       Reset Visual
                     </Button>
                   </div>
@@ -297,12 +315,12 @@ export function SheetControlesMobile({
                 >
                   {isLoading ? (
                       <>
-                        <RefreshCw className="animate-spin mr-2 w-5 h-5" />
+                        <LocalIcon name="reset" className="animate-spin mr-2 w-5 h-5" />
                         Gerando...
                       </>
                   ) : (
                       <>
-                        <Zap className="mr-2 w-5 h-5 animate-text-glow-primary" />
+                        <LocalIcon name="qr" className="mr-2 w-5 h-5 animate-text-glow-primary" />
                         Gerar QR Code
                       </>
                   )}
@@ -318,6 +336,7 @@ export function SheetControlesMobile({
             onAbertoChange={setDialogResetAberto}
             onConfirmar={handleConfirmarReset}
             tipo={tipoReset}
+            language={language}
         />
       </>
   )

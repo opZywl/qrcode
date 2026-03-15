@@ -3,11 +3,13 @@
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar" // Removido AvatarImage
-import { ExternalLink } from "lucide-react"
+import { LocalIcon } from "@/components/ui/local-icon"
+import type { AppLanguage } from "@/components/language-provider"
 
 interface PopupPortfolioMobileProps {
     aberto: boolean
     onAbertoChange: (aberto: boolean) => void
+    language?: AppLanguage
 }
 
 export function DevPopup({ aberto, onAbertoChange }: PopupPortfolioMobileProps) {
@@ -42,7 +44,7 @@ export function DevPopup({ aberto, onAbertoChange }: PopupPortfolioMobileProps) 
                         }}
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 transition-all duration-200 hover:scale-105"
                     >
-                        <ExternalLink size={16} className="mr-2" />
+                        <LocalIcon name="globe" className="h-4 w-4 mr-2" />
                         Ver Portfolio
                     </Button>
                 </div>

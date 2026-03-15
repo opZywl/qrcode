@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -8,8 +9,9 @@ import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Palette, ShieldCheck, Maximize, ImageIcon, ImagePlus, Trash2, Frame, Sparkles, RotateCcw } from "lucide-react"
-import type { NivelCorrecaoErro } from "@/hooks/use-qr-code-state"
+import { LocalIcon } from "@/components/ui/local-icon"
+import type { AppLanguage } from "@/components/language-provider"
+import type { NivelCorrecaoErro, VisualTemplateQRCode } from "@/hooks/use-qr-code-state"
 
 interface PersonalizacaoAparenciaMobileProps {
   valores: any
@@ -17,6 +19,11 @@ interface PersonalizacaoAparenciaMobileProps {
   onResetGranular: (tipo: string) => void
   valoresAccordion: string[]
   onValoresAccordionChange: (values: string[]) => void
+  visualTemplates: VisualTemplateQRCode[]
+  onSaveVisualTemplate: (name: string, templateId?: string) => void
+  onApplyVisualTemplate: (template: VisualTemplateQRCode) => void
+  onDeleteVisualTemplate: (templateId: string) => void
+  language?: AppLanguage
 }
 
 export function MobileStylePanel({
@@ -25,7 +32,34 @@ export function MobileStylePanel({
   onResetGranular,
   valoresAccordion,
   onValoresAccordionChange,
+  visualTemplates,
+  onSaveVisualTemplate,
+  onApplyVisualTemplate,
+  onDeleteVisualTemplate,
+  language = "pt",
 }: PersonalizacaoAparenciaMobileProps) {
+  const [templateName, setTemplateName] = useState("")
+  const copy =
+    language === "en"
+      ? {
+          templates: "Visual templates",
+          saveCurrent: "Save current theme",
+          apply: "Apply",
+          update: "Update",
+          remove: "Delete",
+          none: "No saved template",
+          noneDescription: "Save full styles to reuse later.",
+        }
+      : {
+          templates: "Templates Visuais",
+          saveCurrent: "Salvar tema atual",
+          apply: "Aplicar",
+          update: "Atualizar",
+          remove: "Excluir",
+          none: "Nenhum template salvo",
+          noneDescription: "Guarde estilos completos para reutilizar depois.",
+        }
+
   const hasBasicCustomizations = () => {
     return (
       valores.corFrente !== "#000000" ||
@@ -48,6 +82,18 @@ export function MobileStylePanel({
     return valores.tipoFrameSelecionado && valores.tipoFrameSelecionado !== "none"
   }
 
+  const handleSaveTemplate = () => {
+    onSaveVisualTemplate(templateName)
+    setTemplateName("")
+  }
+
+  const formatTemplateDate = (timestamp: number) =>
+    new Date(timestamp).toLocaleDateString(language === "en" ? "en-US" : "pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })
+
   return (
     <Accordion type="multiple" value={valoresAccordion} onValueChange={onValoresAccordionChange} className="space-y-2">
       {/* Cores e Tamanho */}
@@ -59,12 +105,12 @@ export function MobileStylePanel({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <div className="p-1.5 rounded-md bg-slate-500/10">
-                <Palette className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <LocalIcon name="palette" className="w-4 h-4 text-slate-600 dark:text-slate-400" />
               </div>
               <span className="font-medium">Cores e Tamanho</span>
               {hasBasicCustomizations() && (
                 <Badge variant="secondary" className="text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" />
+                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
                   Ativo
                 </Badge>
               )}
@@ -79,7 +125,7 @@ export function MobileStylePanel({
                 }}
                 className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
               >
-                <RotateCcw className="w-3 h-3" />
+                <LocalIcon name="reset" className="w-3 h-3" />
               </Button>
             )}
           </div>
@@ -145,7 +191,7 @@ export function MobileStylePanel({
                   htmlFor="error-correction"
                   className="text-sm font-medium text-foreground flex items-center gap-2"
                 >
-                  <ShieldCheck className="w-4 h-4 text-green-600" />
+                  <LocalIcon name="shield" className="w-4 h-4 text-green-600" />
                   Correção de Erro
                 </Label>
                 <Select
@@ -186,7 +232,7 @@ export function MobileStylePanel({
 
               <div className="space-y-2">
                 <Label htmlFor="quiet-zone" className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Maximize className="w-4 h-4 text-primary" />
+                  <LocalIcon name="frame" className="w-4 h-4 text-primary" />
                   Margem
                 </Label>
                 <Input
@@ -214,12 +260,12 @@ export function MobileStylePanel({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <div className="p-1.5 rounded-md bg-purple-500/10">
-                <ImagePlus className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <LocalIcon name="image-plus" className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
               <span className="font-medium">Logo Personalizado</span>
               {hasLogoCustomizations() && (
                 <Badge variant="secondary" className="text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" />
+                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
                   Ativo
                 </Badge>
               )}
@@ -234,7 +280,7 @@ export function MobileStylePanel({
                 }}
                 className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
               >
-                <Trash2 className="w-3 h-3" />
+                <LocalIcon name="trash" className="w-3 h-3" />
               </Button>
             )}
           </div>
@@ -305,12 +351,12 @@ export function MobileStylePanel({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <div className="p-1.5 rounded-md bg-blue-500/10">
-                <ImageIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <LocalIcon name="image" className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
               <span className="font-medium">Fundo Personalizado</span>
               {hasBackgroundCustomizations() && (
                 <Badge variant="secondary" className="text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" />
+                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
                   Ativo
                 </Badge>
               )}
@@ -325,7 +371,7 @@ export function MobileStylePanel({
                 }}
                 className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
               >
-                <Trash2 className="w-3 h-3" />
+                <LocalIcon name="trash" className="w-3 h-3" />
               </Button>
             )}
           </div>
@@ -368,12 +414,12 @@ export function MobileStylePanel({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <div className="p-1.5 rounded-md bg-green-500/10">
-                <Frame className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <LocalIcon name="frame" className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
               <span className="font-medium">Moldura Personalizada</span>
               {hasFrameCustomizations() && (
                 <Badge variant="secondary" className="text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" />
+                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
                   Ativo
                 </Badge>
               )}
@@ -388,7 +434,7 @@ export function MobileStylePanel({
                 }}
                 className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
               >
-                <Trash2 className="w-3 h-3" />
+                <LocalIcon name="trash" className="w-3 h-3" />
               </Button>
             )}
           </div>
@@ -422,6 +468,134 @@ export function MobileStylePanel({
                 placeholder="Digite o texto da moldura"
                 className="w-full p-2 border rounded-md bg-background text-sm"
               />
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem
+        value="templates"
+        className="bg-amber-50/50 dark:bg-amber-900/40 rounded-lg border border-amber-200/60 dark:border-amber-700/50"
+      >
+        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-md bg-amber-500/10">
+                <LocalIcon name="sparkles" className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+              </div>
+              <span className="font-medium">{copy.templates}</span>
+              {visualTemplates.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {visualTemplates.length} salvo{visualTemplates.length > 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4 pt-2">
+          <div className="space-y-3">
+            <div className="grid gap-2">
+              <Input
+                type="text"
+                value={templateName}
+                onChange={(event) => setTemplateName(event.target.value)}
+                placeholder="Nome do template"
+                className="h-10 text-sm"
+              />
+              <Button type="button" onClick={handleSaveTemplate} className="h-10 gap-2">
+                <LocalIcon name="plus" className="w-4 h-4" />
+                {copy.saveCurrent}
+              </Button>
+            </div>
+
+            {visualTemplates.length > 0 ? (
+              <div className="space-y-2.5">
+                {visualTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="rounded-xl border border-amber-200/60 bg-background/80 p-3 dark:border-amber-700/40 dark:bg-background/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Atualizado em {formatTemplateDate(template.updatedAt)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className="h-4 w-4 rounded-full border border-border/60"
+                          style={{ backgroundColor: template.corFrente }}
+                        />
+                        <span
+                          className="h-4 w-4 rounded-full border border-border/60"
+                          style={{ backgroundColor: template.corFundo }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Badge variant="outline" className="normal-case tracking-normal text-[10px]">
+                        {template.tamanho}px
+                      </Badge>
+                      {template.habilitarCustomizacaoLogo && template.logoDataUri && (
+                        <Badge variant="outline" className="gap-1 normal-case tracking-normal text-[10px]">
+                          <LocalIcon name="image-plus" className="w-3 h-3" />
+                          Logo
+                        </Badge>
+                      )}
+                      {template.habilitarCustomizacaoFundo && template.imagemFundo && (
+                        <Badge variant="outline" className="gap-1 normal-case tracking-normal text-[10px]">
+                          <LocalIcon name="image" className="w-3 h-3" />
+                          Fundo
+                        </Badge>
+                      )}
+                      {template.habilitarCustomizacaoFrame &&
+                        template.tipoFrameSelecionado &&
+                        template.tipoFrameSelecionado !== "none" && (
+                          <Badge variant="outline" className="gap-1 normal-case tracking-normal text-[10px]">
+                            <LocalIcon name="frame" className="w-3 h-3" />
+                            Moldura
+                          </Badge>
+                        )}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onApplyVisualTemplate(template)}
+                        className="h-9 text-[11px]"
+                      >
+                        {copy.apply}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onSaveVisualTemplate(template.name, template.id)}
+                        className="h-9 text-[11px]"
+                      >
+                        {copy.update}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => onDeleteVisualTemplate(template.id)}
+                        className="h-9 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        {copy.remove}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-amber-300/70 px-4 py-4 text-center dark:border-amber-700/50">
+                <p className="text-sm font-medium text-foreground">{copy.none}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {copy.noneDescription}
+                </p>
+              </div>
             )}
           </div>
         </AccordionContent>

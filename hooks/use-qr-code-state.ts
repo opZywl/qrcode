@@ -38,6 +38,8 @@ export interface EntradaQRCode {
   tipoConteudo: TipoConteudoQR
   inputOriginal: string
   valorQR: string
+  favorite?: boolean
+  tags?: string[]
   corFrente: string
   corFundo: string
   tamanho: number
@@ -147,6 +149,27 @@ export interface EntradaQRCode {
   cupomValor?: string
   cupomValidade?: string
   cupomTipo?: "desconto" | "frete" | "produto"
+}
+
+export interface VisualTemplateQRCode {
+  id: string
+  name: string
+  createdAt: number
+  updatedAt: number
+  corFrente: string
+  corFundo: string
+  tamanho: number
+  nivel: NivelCorrecaoErro
+  margem: number
+  habilitarCustomizacaoLogo: boolean
+  logoDataUri?: string
+  logoTamanhoRatio?: number
+  escavarLogo?: boolean
+  habilitarCustomizacaoFundo: boolean
+  imagemFundo?: string
+  habilitarCustomizacaoFrame: boolean
+  tipoFrameSelecionado?: TipoFrame
+  textoFrame?: string
 }
 
 const TIPOS_PADRAO_ATIVOS: TipoConteudoQR[] = [
@@ -294,6 +317,7 @@ export function useQRCodeState() {
 
   // Histórico
   const [historico, setHistorico] = useState<EntradaQRCode[]>([])
+  const [templatesVisuais, setTemplatesVisuais] = useState<VisualTemplateQRCode[]>([])
 
   useEffect(() => {
     setIsClient(true)
@@ -303,12 +327,27 @@ export function useQRCodeState() {
     if (!isClient) return
     const historicoSalvo = localStorage.getItem("qrCodeHistorico")
     if (historicoSalvo) {
-      setHistorico(JSON.parse(historicoSalvo))
+      const historicoParseado = JSON.parse(historicoSalvo) as EntradaQRCode[]
+      setHistorico(
+        Array.isArray(historicoParseado)
+          ? historicoParseado.map((entrada) => ({
+              ...entrada,
+              favorite: !!entrada.favorite,
+              tags: Array.isArray(entrada.tags) ? entrada.tags : [],
+            }))
+          : [],
+      )
     }
 
     const tiposVisiveisSalvos = localStorage.getItem("qrCodeTiposVisiveis")
     if (tiposVisiveisSalvos) {
       setTiposVisiveis(JSON.parse(tiposVisiveisSalvos))
+    }
+
+    const templatesSalvos = localStorage.getItem("qrCodeVisualTemplates")
+    if (templatesSalvos) {
+      const templatesParseados = JSON.parse(templatesSalvos) as VisualTemplateQRCode[]
+      setTemplatesVisuais(Array.isArray(templatesParseados) ? templatesParseados : [])
     }
   }, [isClient])
 
@@ -320,6 +359,15 @@ export function useQRCodeState() {
       localStorage.removeItem("qrCodeHistorico")
     }
   }, [historico, isClient])
+
+  useEffect(() => {
+    if (!isClient) return
+    if (templatesVisuais.length > 0) {
+      localStorage.setItem("qrCodeVisualTemplates", JSON.stringify(templatesVisuais))
+    } else if (localStorage.getItem("qrCodeVisualTemplates")) {
+      localStorage.removeItem("qrCodeVisualTemplates")
+    }
+  }, [templatesVisuais, isClient])
 
   useEffect(() => {
     if (!isClient) return
@@ -593,6 +641,9 @@ export function useQRCodeState() {
       case "historico":
         setHistorico(valor)
         break
+      case "templatesVisuais":
+        setTemplatesVisuais(valor)
+        break
       default:
         console.warn(`Campo não reconhecido: ${campo}`)
     }
@@ -758,6 +809,7 @@ export function useQRCodeState() {
     whatsappGroupMensagem,
     telefonePara,
     historico,
+    templatesVisuais,
 
     // PIX
     pixChave,

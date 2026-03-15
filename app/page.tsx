@@ -10,7 +10,7 @@ export default function HomePage() {
   const [historicoAberto, setHistoricoAberto] = useState(false)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative isolate min-h-screen bg-transparent">
       <QrGenerator
         scannerAberto={scannerAberto}
         onScannerAbertoChange={setScannerAberto}

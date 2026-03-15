@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { Languages, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useLanguage } from "@/components/language-provider"
+import { LocalIcon } from "@/components/ui/local-icon"
 
 type Idioma = "pt" | "en" | "es"
 
@@ -14,22 +15,22 @@ interface IdiomaInfo {
 }
 
 const idiomas: IdiomaInfo[] = [
-  { codigo: "pt", nome: "Português", bandeira: "🇧🇷" },
-  { codigo: "en", nome: "English", bandeira: "🇺🇸" },
-  { codigo: "es", nome: "Español", bandeira: "🇪🇸" },
+  { codigo: "pt", nome: "Portuguese", bandeira: "BR" },
+  { codigo: "en", nome: "English", bandeira: "US" },
+  { codigo: "es", nome: "Spanish", bandeira: "ES" },
 ]
 
 export function LanguageSelector() {
-  const [idiomaSelecionado, setIdiomaSelecionado] = React.useState<Idioma>("pt")
+  const { language, setLanguage, t } = useLanguage()
   const [montado, setMontado] = React.useState(false)
 
   React.useEffect(() => setMontado(true), [])
 
   if (!montado) {
-    return <div style={{ width: "40px", height: "40px" }} />
+    return <div className="h-10 w-10 rounded-full border border-border/60 bg-background/40" />
   }
 
-  const idiomaAtual = idiomas.find((i) => i.codigo === idiomaSelecionado) || idiomas[0]
+  const idiomaAtual = idiomas.find((idioma) => idioma.codigo === language) ?? idiomas[0]
 
   return (
     <DropdownMenu>
@@ -37,25 +38,31 @@ export function LanguageSelector() {
         <Button
           variant="outline"
           size="icon"
-          className="relative hover:bg-primary/10 hover:border-primary/50 transition-all duration-200"
+          className="studio-icon-shell relative rounded-full bg-transparent hover:border-primary/35 hover:bg-primary/5"
         >
-          <Languages className="h-[1.2rem] w-[1.2rem] text-primary animate-text-glow-primary" />
-          <span className="absolute -bottom-1 -right-1 text-xs">{idiomaAtual.bandeira}</span>
-          <span className="sr-only">Selecionar idioma</span>
+          <LocalIcon name="globe" className="h-[1.15rem] w-[1.15rem] text-primary" />
+          <span className="absolute -bottom-1.5 -right-1 rounded-full border border-border/80 bg-background px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-foreground dark:border-dark-5/40 dark:bg-dark-4">
+            {idiomaAtual.bandeira}
+          </span>
+          <span className="sr-only">{t({ pt: "Selecionar idioma", en: "Select language", es: "Seleccionar idioma" })}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-44">
         {idiomas.map((idioma) => (
           <DropdownMenuItem
             key={idioma.codigo}
-            onClick={() => setIdiomaSelecionado(idioma.codigo)}
-            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setLanguage(idioma.codigo)}
+            className="flex cursor-pointer items-center justify-between"
           >
-            <div className="flex items-center gap-2">
-              <span>{idioma.bandeira}</span>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-border/70 px-1.5 text-[10px] font-bold uppercase tracking-[0.14em]">
+                {idioma.bandeira}
+              </span>
               <span className="text-sm">{idioma.nome}</span>
             </div>
-            {idiomaSelecionado === idioma.codigo && <Check className="h-4 w-4 text-primary" />}
+            <span
+              className={language === idioma.codigo ? "h-2 w-2 rounded-full bg-primary" : "h-2 w-2 rounded-full bg-transparent"}
+            />
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

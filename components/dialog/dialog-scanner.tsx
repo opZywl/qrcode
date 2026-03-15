@@ -40,6 +40,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/hooks/use-mobile"
+import type { AppLanguage } from "@/components/language-provider"
 import jsQR from "jsqr"
 
 interface DialogScannerProps {
@@ -47,6 +48,7 @@ interface DialogScannerProps {
   onAbertoChange: (aberto: boolean) => void
   abaInicial: "camera" | "image"
   onAbaChange: (aba: "camera" | "image") => void
+  language?: AppLanguage
 }
 
 interface QRResult {
@@ -455,7 +457,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
     if (aberto && abaInicial === "camera" && temPermissaoCamera !== null) {
       iniciarCamera()
     }
-  }, [cameraFacingMode])
+  }, [aberto, abaInicial, iniciarCamera, temPermissaoCamera])
 
   // Efeito para controlar a câmera quando a aba muda
   useEffect(() => {
@@ -469,7 +471,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
     return () => {
       pararCamera()
     }
-  }, [aberto, abaInicial])
+  }, [aberto, abaInicial, checkCameraDevices, iniciarCamera, pararCamera])
 
   // Processamento de imagem (mantido igual)
   const processarImagemQr = useCallback(
