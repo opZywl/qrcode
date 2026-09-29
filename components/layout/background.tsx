@@ -1,6 +1,6 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { m } from "framer-motion"
 import Image from "next/image"
 import { GridPattern } from "@/components/ui/animated-grid-pattern"
 import { cn } from "@/lib/utils"
@@ -20,10 +20,10 @@ export function Background() {
             className="absolute inset-0 size-full object-cover opacity-90 lg:object-fill"
             unoptimized
             draggable={false}
-            priority
+            preload
           />
           <Image
-            src="/portfolio/images/bigCloud.png"
+            src="/portfolio/images/bigCloud.webp"
             alt=""
             width={1495}
             height={521}
@@ -31,27 +31,27 @@ export function Background() {
             unoptimized
             draggable={false}
           />
-          <motion.div
+          <m.div
             className="absolute left-[-4vw] top-[14vh] w-[58vw] max-w-[687px]"
             animate={{ x: [0, 14, 0], y: [0, -7, 0] }}
             transition={{ duration: 16, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
           >
             <Image
-              src="/portfolio/images/cloudCrop.png"
+              src="/portfolio/images/cloudCrop.webp"
               alt=""
               width={688}
               height={721}
               className="h-auto w-full object-contain"
               draggable={false}
             />
-          </motion.div>
-          <motion.div
+          </m.div>
+          <m.div
             className="absolute -left-20 top-[68vh] z-10 w-[70vw] max-w-[497px] lg:left-auto lg:right-[-1vw] lg:top-20"
             animate={{ x: [0, -14, 0], y: [0, 9, 0] }}
             transition={{ duration: 18, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
           >
             <Image
-              src="/portfolio/images/cloud.png"
+              src="/portfolio/images/cloud.webp"
               alt=""
               width={497}
               height={246}
@@ -59,14 +59,14 @@ export function Background() {
               unoptimized
               draggable={false}
             />
-          </motion.div>
-          <motion.div
+          </m.div>
+          <m.div
             className="absolute left-14 top-[10vh] z-10 w-[70vw] max-w-[497px] lg:top-0"
             animate={{ x: [0, 9, 0], y: [0, -5, 0] }}
             transition={{ duration: 14, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY, delay: 1.2 }}
           >
             <Image
-              src="/portfolio/images/cloud.png"
+              src="/portfolio/images/cloud.webp"
               alt=""
               width={497}
               height={246}
@@ -74,8 +74,8 @@ export function Background() {
               unoptimized
               draggable={false}
             />
-          </motion.div>
-          <motion.div
+          </m.div>
+          <m.div
             aria-hidden
             className="absolute left-1/2 top-1/2 z-0 h-[160px] w-[115vw] max-w-[1100px] -translate-x-1/2 -translate-y-1/2 lg:h-[720px]"
             animate={{ scale: [0.96, 1.05, 0.96], opacity: [0.88, 1, 0.88] }}

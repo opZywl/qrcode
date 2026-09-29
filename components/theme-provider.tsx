@@ -1,5 +1,6 @@
 "use client"
 
+import { LazyMotion, MotionConfig, domAnimation } from "framer-motion"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { Background } from "@/components/layout/background"
@@ -50,9 +51,7 @@ function applyTheme(theme: ThemeMode) {
     if (localStorage.getItem(LEGACY_THEME_STORAGE_KEY) !== null) {
       localStorage.removeItem(LEGACY_THEME_STORAGE_KEY)
     }
-  } catch (error) {
-    /* ignore */
-  }
+  } catch {}
 }
 
 interface ThemeProviderProps {
@@ -99,9 +98,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   return (
     <ThemeContext.Provider value={value}>
-      <ThemeSwitchAnimation isAnimating={isAnimating} theme={theme} />
-      <Background />
-      {children}
+      <LazyMotion features={domAnimation} strict>
+        <MotionConfig reducedMotion="user">
+          <ThemeSwitchAnimation isAnimating={isAnimating} theme={theme} />
+          <Background />
+          {children}
+        </MotionConfig>
+      </LazyMotion>
     </ThemeContext.Provider>
   )
 }

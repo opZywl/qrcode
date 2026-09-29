@@ -1,7 +1,6 @@
 "use client"
 
-import { AnimatePresence, motion } from "framer-motion"
-import { useEffect, useState } from "react"
+import { AnimatePresence, m } from "framer-motion"
 
 interface ThemeSwitchAnimationProps {
   isAnimating: boolean
@@ -9,19 +8,10 @@ interface ThemeSwitchAnimationProps {
 }
 
 export function ThemeSwitchAnimation({ isAnimating, theme }: ThemeSwitchAnimationProps) {
-  const [show, setShow] = useState(false)
-
-  useEffect(() => {
-    if (!isAnimating) return
-    setShow(true)
-    const id = window.setTimeout(() => setShow(false), 1500)
-    return () => window.clearTimeout(id)
-  }, [isAnimating])
-
   return (
     <AnimatePresence>
-      {show && (
-        <motion.div
+      {isAnimating && (
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -35,8 +25,8 @@ export function ThemeSwitchAnimation({ isAnimating, theme }: ThemeSwitchAnimatio
             style={{
               animation: "scale 1.5s",
               background: theme === "dark" ? "#110f10" : "#fdfdfd",
-              WebkitMaskImage: "url(/portfolio/images/theL.gif)",
-              maskImage: "url(/portfolio/images/theL.gif)",
+              WebkitMaskImage: "url(/portfolio/images/theL.webp)",
+              maskImage: "url(/portfolio/images/theL.webp)",
               WebkitMaskRepeat: "no-repeat",
               maskRepeat: "no-repeat",
               WebkitMaskPosition: "center",
@@ -45,7 +35,7 @@ export function ThemeSwitchAnimation({ isAnimating, theme }: ThemeSwitchAnimatio
               maskSize: "0vmax",
             }}
           />
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   )

@@ -14,9 +14,7 @@ const script = `(() => {
     if (localStorage.getItem(legacyStorageKey) !== null) {
       localStorage.removeItem(legacyStorageKey);
     }
-  } catch (error) {
-    /* ignore */
-  }
+  } catch (error) {}
 })();`
 
 export function ThemeScript() {

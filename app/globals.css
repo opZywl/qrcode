@@ -30,7 +30,6 @@
   --color-dark-4: #1f1f22;
   --color-dark-5: #d4d4d8;
 
-  --font-glancyr: var(--font-face-glancyr), sans-serif;
   --font-glancyr700: var(--font-face-glancyr700), sans-serif;
   --font-spaceGrotesk: var(--font-face-space-grotesk), sans-serif;
 
@@ -360,7 +359,7 @@
 }
 
 ::view-transition-new(root) {
-  mask: url("/portfolio/images/theL.gif") center / cover no-repeat;
+  mask: url("/portfolio/images/theL.webp") center / cover no-repeat;
   animation: scale 1.5s;
 }
 

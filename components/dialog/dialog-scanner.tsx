@@ -1,799 +1,533 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react"
+import jsQR, { type QRCode } from "jsqr"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import {
-  ScanLine,
-  Copy,
-  CameraOff,
-  RefreshCw,
-  Upload,
-  FileImage,
-  ExternalLink,
-  CheckCircle,
   AlertCircle,
   Camera,
-  Eye,
+  CameraOff,
+  CheckCircle,
+  ClipboardCopy,
+  Copy,
   Download,
-  RotateCcw,
+  ExternalLink,
+  Eye,
+  FileImage,
   Flashlight,
+  RefreshCw,
+  RotateCcw,
+  ScanLine,
   Target,
+  Upload,
   Volume2,
   VolumeX,
-  ClipboardCopy,
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { useIsMobile } from "@/hooks/use-mobile"
-import type { AppLanguage } from "@/components/language-provider"
-import jsQR from "jsqr"
+import { useLanguage } from "@/components/language-provider"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "@/hooks/use-toast"
+import { toHttpUrl } from "@/lib/qr/url"
+
+export type ScannerTab = "camera" | "image"
 
 interface DialogScannerProps {
   aberto: boolean
   onAbertoChange: (aberto: boolean) => void
-  abaInicial: "camera" | "image"
-  onAbaChange: (aba: "camera" | "image") => void
-  language?: AppLanguage
+  aba: ScannerTab
+  onAbaChange: (aba: ScannerTab) => void
 }
 
-interface QRResult {
-  data: string
-  location: {
-    topLeftCorner: { x: number; y: number }
-    topRightCorner: { x: number; y: number }
-    bottomLeftCorner: { x: number; y: number }
-    bottomRightCorner: { x: number; y: number }
+type CameraStatus = "active" | "denied" | "notFound" | "busy" | "unsupported" | "error"
+
+type TorchConstraint = MediaTrackConstraintSet & { torch?: boolean }
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+const CAMERA_SCAN_SIZE = 720
+const IMAGE_SCAN_SIZES = [1600, 1000, 600]
+const DETECTION_PAUSE_MS = 2000
+const SCAN_INTERVAL_MS = 120
+
+let sharedScanCanvas: HTMLCanvasElement | null = null
+
+function getScanCanvas() {
+  sharedScanCanvas ??= document.createElement("canvas")
+  return sharedScanCanvas
+}
+
+function decodeFrom(source: CanvasImageSource, width: number, height: number, maxSize: number, canvas: HTMLCanvasElement) {
+  const scale = Math.min(1, maxSize / Math.max(width, height))
+  canvas.width = Math.max(1, Math.round(width * scale))
+  canvas.height = Math.max(1, Math.round(height * scale))
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  if (!context) {
+    return null
+  }
+  context.drawImage(source, 0, 0, canvas.width, canvas.height)
+  const image = context.getImageData(0, 0, canvas.width, canvas.height)
+  return jsQR(image.data, image.width, image.height, { inversionAttempts: "attemptBoth" })
+}
+
+function drawOverlay(canvas: HTMLCanvasElement, width: number, height: number, code: QRCode) {
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext("2d")
+  if (!context) {
+    return
+  }
+  const { topLeftCorner, topRightCorner, bottomRightCorner, bottomLeftCorner } = code.location
+  context.clearRect(0, 0, width, height)
+  context.strokeStyle = "#00ff00"
+  context.lineWidth = 4
+  context.shadowColor = "#00ff00"
+  context.shadowBlur = 10
+  context.beginPath()
+  context.moveTo(topLeftCorner.x, topLeftCorner.y)
+  context.lineTo(topRightCorner.x, topRightCorner.y)
+  context.lineTo(bottomRightCorner.x, bottomRightCorner.y)
+  context.lineTo(bottomLeftCorner.x, bottomLeftCorner.y)
+  context.closePath()
+  context.stroke()
+  context.strokeStyle = "#ffff00"
+  context.lineWidth = 6
+  context.shadowColor = "#ffff00"
+  for (const corner of [topLeftCorner, topRightCorner, bottomRightCorner, bottomLeftCorner]) {
+    context.beginPath()
+    context.arc(corner.x, corner.y, 10, 0, 2 * Math.PI)
+    context.stroke()
   }
 }
 
-export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange }: DialogScannerProps) {
-  const isMobile = useIsMobile()
+function clearCanvas(canvas: HTMLCanvasElement | null) {
+  canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height)
+}
 
-  const [temPermissaoCamera, setTemPermissaoCamera] = useState<boolean | null>(null)
-  const [tentandoCamera, setTentandoCamera] = useState<boolean>(false)
-  const [scanningFromCamera, setScanningFromCamera] = useState<boolean>(false)
-  const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">("environment")
-  const [hasMultipleCameras, setHasMultipleCameras] = useState<boolean>(false)
-  const [torchSupported, setTorchSupported] = useState<boolean>(false)
-  const [torchEnabled, setTorchEnabled] = useState<boolean>(false)
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true)
-  const [lastScanTime, setLastScanTime] = useState<number>(0)
-  const [scanCount, setScanCount] = useState<number>(0)
-  const [currentStream, setCurrentStream] = useState<MediaStream | null>(null)
+function cameraStatusFromError(error: unknown): CameraStatus {
+  if (!(error instanceof DOMException)) {
+    return "error"
+  }
+  switch (error.name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return "denied"
+    case "NotFoundError":
+    case "OverconstrainedError":
+      return "notFound"
+    case "NotReadableError":
+    case "AbortError":
+      return "busy"
+    default:
+      return "error"
+  }
+}
 
-  // Estados da imagem
-  const [previewImagemEscaneada, setPreviewImagemEscaneada] = useState<string | null>(null)
-  const [resultadoQrImagemEscaneada, setResultadoQrImagemEscaneada] = useState<string | null>(null)
-  const [escaneandoImagem, setEscaneandoImagem] = useState<boolean>(false)
-  const [dragOver, setDragOver] = useState<boolean>(false)
+export function DialogScanner({ aberto, onAbertoChange, aba, onAbaChange }: DialogScannerProps) {
+  const { t } = useLanguage()
 
-  // Estados do resultado
-  const [qrResult, setQrResult] = useState<QRResult | null>(null)
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
+  const [attempt, setAttempt] = useState(0)
+  const [cameraResult, setCameraResult] = useState<{ key: string; status: CameraStatus } | null>(null)
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false)
+  const [torchSupported, setTorchSupported] = useState(false)
+  const [torchEnabled, setTorchEnabled] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [detected, setDetected] = useState(false)
+  const [scanCount, setScanCount] = useState(0)
   const [detectionHistory, setDetectionHistory] = useState<string[]>([])
+  const [cameraResultText, setCameraResultText] = useState<string | null>(null)
 
-  // Refs
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const imageScanCanvasRef = useRef<HTMLCanvasElement>(null)
-  const imageScanInputRef = useRef<HTMLInputElement>(null)
-  const cameraCanvasRef = useRef<HTMLCanvasElement>(null)
-  const scanIntervalRef = useRef<number | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageResult, setImageResult] = useState<string | null>(null)
+  const [imageScanning, setImageScanning] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [videoMounted, setVideoMounted] = useState(false)
+  const overlayRef = useRef<HTMLCanvasElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const previewUrlRef = useRef<string | null>(null)
 
-  const { toast } = useToast()
+  const cameraKey = aberto && aba === "camera" ? `${facingMode}:${attempt}` : null
+  const cameraStatus = cameraKey === null ? "idle" : cameraResult?.key === cameraKey ? cameraResult.status : "starting"
 
-  // Som de sucesso
   const playSuccessSound = useCallback(() => {
-    if (!soundEnabled) return
-
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      }
-
-      const ctx = audioContextRef.current
-      const oscillator = ctx.createOscillator()
-      const gainNode = ctx.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(ctx.destination)
-
-      oscillator.frequency.setValueAtTime(800, ctx.currentTime)
-      oscillator.frequency.setValueAtTime(1000, ctx.currentTime + 0.1)
-
-      gainNode.gain.setValueAtTime(0, ctx.currentTime)
-      gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05)
-      gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2)
-
-      oscillator.start(ctx.currentTime)
-      oscillator.stop(ctx.currentTime + 0.2)
-    } catch (error) {
-      console.warn("Não foi possível reproduzir som:", error)
+    if (!soundEnabled) {
+      return
     }
+    try {
+      audioContextRef.current ??= new AudioContext()
+      const context = audioContextRef.current
+      void context.resume()
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.frequency.setValueAtTime(800, context.currentTime)
+      oscillator.frequency.setValueAtTime(1000, context.currentTime + 0.1)
+      gain.gain.setValueAtTime(0, context.currentTime)
+      gain.gain.linearRampToValueAtTime(0.3, context.currentTime + 0.05)
+      gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2)
+      oscillator.start(context.currentTime)
+      oscillator.stop(context.currentTime + 0.2)
+    } catch {}
   }, [soundEnabled])
 
-  // Verificar dispositivos de câmera disponíveis
-  const checkCameraDevices = useCallback(async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const videoDevices = devices.filter((device) => device.kind === "videoinput")
-      setHasMultipleCameras(videoDevices.length > 1)
-    } catch (error) {
-      console.warn("Erro ao enumerar dispositivos:", error)
-    }
-  }, [])
-
-  // Verificar suporte a torch
-  const checkTorchSupport = useCallback((stream: MediaStream) => {
-    try {
-      const track = stream.getVideoTracks()[0]
-      const capabilities = track.getCapabilities?.()
-      setTorchSupported(!!(capabilities && "torch" in capabilities))
-    } catch (error) {
-      setTorchSupported(false)
-    }
-  }, [])
-
-  // Controlar torch
-  const toggleTorch = useCallback(async () => {
-    if (!currentStream || !torchSupported) return
-
-    try {
-      const track = currentStream.getVideoTracks()[0]
-      await track.applyConstraints({
-        advanced: [{ torch: !torchEnabled } as any],
-      })
-      setTorchEnabled(!torchEnabled)
-
+  const notifyDetection = useCallback(
+    (data: string, source: "camera" | "image") => {
+      playSuccessSound()
+      navigator.vibrate?.([200, 100, 200])
       toast({
-        title: torchEnabled ? "🔦 Flash Desligado" : "🔦 Flash Ligado",
-        description: torchEnabled ? "Flash da câmera foi desligado" : "Flash da câmera foi ligado",
+        title: t({ pt: "QR Code detectado", en: "QR code detected", es: "Código QR detectado" }),
+        description: source === "camera" ? `${data.slice(0, 60)}${data.length > 60 ? "…" : ""}` : t({ pt: "Conteúdo lido com sucesso.", en: "Content read successfully.", es: "Contenido leído correctamente." }),
       })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "❌ Erro no Flash",
-        description: "Não foi possível controlar o flash da câmera",
-      })
-    }
-  }, [currentStream, torchSupported, torchEnabled, toast])
-
-  // Desenhar overlay de detecção
-  const drawDetectionOverlay = useCallback((canvas: HTMLCanvasElement, result: QRResult) => {
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    const { location } = result
-
-    // Limpar overlay anterior
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    // Desenhar contorno do QR Code detectado
-    ctx.strokeStyle = "#00ff00"
-    ctx.lineWidth = 4
-    ctx.shadowColor = "#00ff00"
-    ctx.shadowBlur = 10
-
-    ctx.beginPath()
-    ctx.moveTo(location.topLeftCorner.x, location.topLeftCorner.y)
-    ctx.lineTo(location.topRightCorner.x, location.topRightCorner.y)
-    ctx.lineTo(location.bottomRightCorner.x, location.bottomRightCorner.y)
-    ctx.lineTo(location.bottomLeftCorner.x, location.bottomLeftCorner.y)
-    ctx.closePath()
-    ctx.stroke()
-
-    // Desenhar cantos destacados
-    const cornerSize = 20
-    const corners = [
-      location.topLeftCorner,
-      location.topRightCorner,
-      location.bottomRightCorner,
-      location.bottomLeftCorner,
-    ]
-
-    ctx.strokeStyle = "#ffff00"
-    ctx.lineWidth = 6
-    ctx.shadowColor = "#ffff00"
-
-    corners.forEach((corner) => {
-      ctx.beginPath()
-      ctx.arc(corner.x, corner.y, cornerSize / 2, 0, 2 * Math.PI)
-      ctx.stroke()
-    })
-  }, [])
-
-  // Scanner de câmera em tempo real MELHORADO
-  const startCameraScanning = useCallback(() => {
-    if (!videoRef.current || !cameraCanvasRef.current) return
-
-    setScanningFromCamera(true)
-    const video = videoRef.current
-    const canvas = cameraCanvasRef.current
-    const overlayCanvas = document.getElementById("detection-overlay") as HTMLCanvasElement
-    const ctx = canvas.getContext("2d", { willReadFrequently: true })
-
-    if (!ctx) return
-
-    let frameCount = 0
-    const scanFrame = () => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Ajustar canvas para o tamanho do vídeo
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-
-        if (overlayCanvas) {
-          overlayCanvas.width = video.videoWidth
-          overlayCanvas.height = video.videoHeight
-        }
-
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-        // Escanear apenas a cada 3 frames para performance
-        if (frameCount % 3 === 0) {
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
-          })
-
-          if (code) {
-            const now = Date.now()
-
-            // Evitar detecções duplicadas muito rápidas
-            if (now - lastScanTime > 1000) {
-              setLastScanTime(now)
-              setScanCount((prev) => prev + 1)
-              setScanningFromCamera(false)
-
-              // Parar escaneamento
-              if (scanIntervalRef.current) {
-                cancelAnimationFrame(scanIntervalRef.current)
-                scanIntervalRef.current = null
-              }
-
-              // Desenhar overlay de detecção
-              if (overlayCanvas) {
-                drawDetectionOverlay(overlayCanvas, code as QRResult)
-              }
-
-              // Efeitos de feedback
-              playSuccessSound()
-
-              if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200])
-              }
-
-              // Adicionar ao histórico
-              setDetectionHistory((prev) => [code.data, ...prev.slice(0, 4)])
-              setQrResult(code as QRResult)
-              setResultadoQrImagemEscaneada(code.data)
-
-              toast({
-                title: "🎯 QR Code Detectado!",
-                description: `Scan #${scanCount + 1} - ${code.data.substring(0, 50)}${code.data.length > 50 ? "..." : ""}`,
-              })
-
-              // Continuar escaneamento após 2 segundos
-              setTimeout(() => {
-                if (overlayCanvas) {
-                  const overlayCtx = overlayCanvas.getContext("2d")
-                  if (overlayCtx) {
-                    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
-                  }
-                }
-                setQrResult(null)
-                setScanningFromCamera(true)
-                if (scanIntervalRef.current === null) {
-                  scanIntervalRef.current = requestAnimationFrame(scanFrame)
-                }
-              }, 2000)
-
-              return
-            }
-          }
-        }
-
-        frameCount++
-      }
-
-      if (scanIntervalRef.current !== null) {
-        scanIntervalRef.current = requestAnimationFrame(scanFrame)
-      }
-    }
-
-    scanIntervalRef.current = requestAnimationFrame(scanFrame)
-  }, [lastScanTime, scanCount, playSuccessSound, drawDetectionOverlay, toast])
-
-  const stopCameraScanning = useCallback(() => {
-    setScanningFromCamera(false)
-    setQrResult(null)
-
-    if (scanIntervalRef.current) {
-      cancelAnimationFrame(scanIntervalRef.current)
-      scanIntervalRef.current = null
-    }
-
-    // Limpar overlay
-    const overlayCanvas = document.getElementById("detection-overlay") as HTMLCanvasElement
-    if (overlayCanvas) {
-      const ctx = overlayCanvas.getContext("2d")
-      if (ctx) {
-        ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
-      }
-    }
-  }, [])
-
-  // Iniciar câmera MELHORADO
-  const iniciarCamera = useCallback(async () => {
-    setTentandoCamera(true)
-    setTemPermissaoCamera(null)
-    setResultadoQrImagemEscaneada(null)
-    setQrResult(null)
-    setScanCount(0)
-    setDetectionHistory([])
-
-    try {
-      // Parar stream anterior se existir
-      if (currentStream) {
-        currentStream.getTracks().forEach((track) => track.stop())
-      }
-
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: cameraFacingMode,
-          width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 },
-          frameRate: { ideal: 30, max: 30 },
-        },
-        audio: false,
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints)
-      setCurrentStream(stream)
-      setTemPermissaoCamera(true)
-      setTentandoCamera(false)
-
-      // Verificar suporte a torch
-      checkTorchSupport(stream)
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-
-        // Iniciar escaneamento após a câmera estar pronta
-        setTimeout(() => {
-          startCameraScanning()
-        }, 1000)
-      }
-
-      toast({
-        title: "📷 Câmera Ativada!",
-        description: `Câmera ${cameraFacingMode === "environment" ? "traseira" : "frontal"} ativada. Aponte para um QR Code!`,
-      })
-    } catch (error) {
-      console.error("Erro ao acessar câmera:", error)
-      setTemPermissaoCamera(false)
-      setTentandoCamera(false)
-      setCurrentStream(null)
-
-      let errorMessage = "Não foi possível acessar a câmera. Verifique as permissões."
-      if (error instanceof DOMException) {
-        switch (error.name) {
-          case "NotAllowedError":
-            errorMessage = "Permissão de câmera negada. Permita o acesso à câmera nas configurações do navegador."
-            break
-          case "NotFoundError":
-            errorMessage = "Nenhuma câmera encontrada no dispositivo."
-            break
-          case "NotReadableError":
-            errorMessage = "Câmera está sendo usada por outro aplicativo."
-            break
-          case "OverconstrainedError":
-            errorMessage = "Configurações de câmera não suportadas. Tentando câmera frontal..."
-            // Tentar com câmera frontal
-            if (cameraFacingMode === "environment") {
-              setCameraFacingMode("user")
-              return
-            }
-            break
-          default:
-            errorMessage = `Erro desconhecido: ${error.message}`
-        }
-      }
-
-      toast({
-        variant: "destructive",
-        title: "❌ Erro de Câmera",
-        description: errorMessage,
-      })
-    }
-  }, [cameraFacingMode, currentStream, checkTorchSupport, startCameraScanning, toast])
-
-  const pararCamera = useCallback(() => {
-    stopCameraScanning()
-
-    if (currentStream) {
-      currentStream.getTracks().forEach((track) => track.stop())
-      setCurrentStream(null)
-    }
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null
-    }
-
-    setTemPermissaoCamera(null)
-    setTorchEnabled(false)
-    setQrResult(null)
-    setScanCount(0)
-    setDetectionHistory([])
-  }, [stopCameraScanning, currentStream])
-
-  // Alternar câmera
-  const switchCamera = useCallback(() => {
-    const newFacingMode = cameraFacingMode === "environment" ? "user" : "environment"
-    setCameraFacingMode(newFacingMode)
-
-    toast({
-      title: "🔄 Alternando Câmera",
-      description: `Mudando para câmera ${newFacingMode === "environment" ? "traseira" : "frontal"}...`,
-    })
-  }, [cameraFacingMode, toast])
-
-  // Efeito para reiniciar câmera quando facing mode muda
-  useEffect(() => {
-    if (aberto && abaInicial === "camera" && temPermissaoCamera !== null) {
-      iniciarCamera()
-    }
-  }, [aberto, abaInicial, iniciarCamera, temPermissaoCamera])
-
-  // Efeito para controlar a câmera quando a aba muda
-  useEffect(() => {
-    if (aberto && abaInicial === "camera") {
-      checkCameraDevices()
-      iniciarCamera()
-    } else {
-      pararCamera()
-    }
-
-    return () => {
-      pararCamera()
-    }
-  }, [aberto, abaInicial, checkCameraDevices, iniciarCamera, pararCamera])
-
-  // Processamento de imagem (mantido igual)
-  const processarImagemQr = useCallback(
-    (file: File) => {
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "❌ Erro no Upload",
-          description: "Por favor, selecione um arquivo de imagem válido.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "❌ Arquivo Muito Grande",
-          description: "Por favor, selecione uma imagem menor que 10MB.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      setEscaneandoImagem(true)
-      setResultadoQrImagemEscaneada(null)
-
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setPreviewImagemEscaneada(e.target?.result as string)
-        const img = new window.Image()
-        img.onload = () => {
-          const canvas = imageScanCanvasRef.current
-          if (!canvas) {
-            toast({
-              title: "❌ Erro",
-              description: "Erro no canvas de escaneamento.",
-              variant: "destructive",
-            })
-            setEscaneandoImagem(false)
-            return
-          }
-
-          canvas.width = img.width
-          canvas.height = img.height
-          const ctx = canvas.getContext("2d", { willReadFrequently: true })
-          if (!ctx) {
-            toast({
-              title: "❌ Erro",
-              description: "Erro no contexto do canvas.",
-              variant: "destructive",
-            })
-            setEscaneandoImagem(false)
-            return
-          }
-
-          ctx.drawImage(img, 0, 0, img.width, img.height)
-          const imageData = ctx.getImageData(0, 0, img.width, img.height)
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
-          })
-
-          if (code) {
-            setResultadoQrImagemEscaneada(code.data)
-            playSuccessSound()
-
-            if (navigator.vibrate) {
-              navigator.vibrate([200, 100, 200])
-            }
-
-            toast({
-              title: "✅ QR Code Encontrado!",
-              description: `Conteúdo detectado com sucesso`,
-            })
-          } else {
-            setResultadoQrImagemEscaneada(null)
-            toast({
-              variant: "destructive",
-              title: "❌ QR Code Não Encontrado",
-              description: "Nenhum QR Code foi detectado na imagem. Tente uma imagem com melhor qualidade.",
-            })
-          }
-          setEscaneandoImagem(false)
-        }
-
-        img.onerror = () => {
-          toast({
-            title: "❌ Erro",
-            description: "Erro ao carregar a imagem.",
-            variant: "destructive",
-          })
-          setEscaneandoImagem(false)
-          setPreviewImagemEscaneada(null)
-        }
-        img.src = e.target?.result as string
-      }
-
-      reader.onerror = () => {
-        toast({
-          title: "❌ Erro de Leitura",
-          description: "Erro ao ler o arquivo.",
-          variant: "destructive",
-        })
-        setEscaneandoImagem(false)
-        setPreviewImagemEscaneada(null)
-      }
-      reader.readAsDataURL(file)
     },
-    [toast, playSuccessSound],
+    [playSuccessSound, t],
   )
 
-  // Cleanup ao fechar
+  const onCameraDetection = useEffectEvent((code: QRCode, width: number, height: number) => {
+    if (overlayRef.current) {
+      drawOverlay(overlayRef.current, width, height, code)
+    }
+    setDetected(true)
+    setScanCount((count) => count + 1)
+    setCameraResultText(code.data)
+    setDetectionHistory((history) => [code.data, ...history.filter((item) => item !== code.data)].slice(0, 5))
+    notifyDetection(code.data, "camera")
+  })
+
+  const onDetectionCleared = useEffectEvent(() => {
+    clearCanvas(overlayRef.current)
+    setDetected(false)
+  })
+
+  const attachVideo = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node
+    setVideoMounted(node !== null)
+  }, [])
+
   useEffect(() => {
-    if (!aberto) {
-      setPreviewImagemEscaneada(null)
-      setResultadoQrImagemEscaneada(null)
-      setEscaneandoImagem(false)
-      setDragOver(false)
-      setTentandoCamera(false)
-      setQrResult(null)
-      setScanCount(0)
-      setDetectionHistory([])
-      if (imageScanInputRef.current) {
-        imageScanInputRef.current.value = ""
+    const video = videoRef.current
+    if (!cameraKey || !videoMounted || !video) {
+      return
+    }
+
+    let cancelled = false
+    let frame = 0
+    let lastScan = 0
+    let pausedUntil = 0
+    let resumeTimer = 0
+    const overlay = overlayRef.current
+
+    const loop = (timestamp: number) => {
+      if (cancelled) {
+        return
       }
-      pararCamera()
-    }
-  }, [aberto, pararCamera])
-
-  // Handlers para imagem (mantidos iguais)
-  const handleImageFileForScanChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      processarImagemQr(file)
-    }
-  }
-
-  const handleCopyScannedResult = () => {
-    if (resultadoQrImagemEscaneada) {
-      navigator.clipboard
-        .writeText(resultadoQrImagemEscaneada)
-        .then(() =>
-          toast({
-            title: "📋 Copiado!",
-            description: "Resultado do QR Code copiado para a área de transferência.",
-          }),
-        )
-        .catch(() =>
-          toast({
-            variant: "destructive",
-            title: "❌ Erro ao Copiar",
-            description: "Não foi possível copiar o resultado.",
-          }),
-        )
-    }
-  }
-
-  const handleOpenLink = () => {
-    if (resultadoQrImagemEscaneada) {
-      try {
-        let url = resultadoQrImagemEscaneada
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          if (url.includes(".") && !url.includes(" ")) {
-            url = "https://" + url
-          } else {
-            throw new Error("Not a valid URL")
-          }
+      if (video.readyState >= video.HAVE_ENOUGH_DATA && timestamp - lastScan >= SCAN_INTERVAL_MS && Date.now() >= pausedUntil) {
+        lastScan = timestamp
+        const canvas = getScanCanvas()
+        const code = decodeFrom(video, video.videoWidth, video.videoHeight, CAMERA_SCAN_SIZE, canvas)
+        if (code?.data) {
+          pausedUntil = Date.now() + DETECTION_PAUSE_MS
+          onCameraDetection(code, canvas.width, canvas.height)
+          window.clearTimeout(resumeTimer)
+          resumeTimer = window.setTimeout(onDetectionCleared, DETECTION_PAUSE_MS)
         }
-        window.open(url, "_blank", "noopener,noreferrer")
+      }
+      frame = requestAnimationFrame(loop)
+    }
 
-        toast({
-          title: "🔗 Link Aberto!",
-          description: "Link foi aberto em uma nova aba",
+    const start = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraResult({ key: cameraKey, status: "unsupported" })
+        return
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
         })
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+        streamRef.current = stream
+        video.srcObject = stream
+        void video.play().catch(() => {})
+
+        const [track] = stream.getVideoTracks()
+        const capabilities = track?.getCapabilities?.() as (MediaTrackCapabilities & { torch?: boolean }) | undefined
+        setTorchSupported(!!capabilities?.torch)
+        setTorchEnabled(false)
+        setDetected(false)
+
+        const devices = await navigator.mediaDevices.enumerateDevices().catch(() => [])
+        if (cancelled) {
+          return
+        }
+        setHasMultipleCameras(devices.filter((device) => device.kind === "videoinput").length > 1)
+        setCameraResult({ key: cameraKey, status: "active" })
+        frame = requestAnimationFrame(loop)
       } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "❌ Erro",
-          description: "O conteúdo escaneado não é um link válido.",
-        })
+        if (!cancelled) {
+          setCameraResult({ key: cameraKey, status: cameraStatusFromError(error) })
+        }
       }
     }
-  }
 
-  const handleDownloadResult = () => {
-    if (resultadoQrImagemEscaneada) {
-      const blob = new Blob([resultadoQrImagemEscaneada], { type: "text/plain" })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `qr_result_${Date.now()}.txt`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+    void start()
 
-      toast({
-        title: "📥 Resultado Baixado!",
-        description: "Conteúdo do QR Code salvo em arquivo",
-      })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+      window.clearTimeout(resumeTimer)
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+      video.srcObject = null
+      clearCanvas(overlay)
     }
-  }
+  }, [cameraKey, facingMode, videoMounted])
 
-  // Adicionar função para processar paste do clipboard
-  const handlePasteImageForScan = useCallback(async () => {
-    try {
-      if (!navigator.clipboard?.read) {
+  useEffect(() => {
+    return () => {
+      void audioContextRef.current?.close().catch(() => {})
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+    }
+  }, [])
+
+  const setPreviewUrl = useCallback((url: string | null) => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+    }
+    previewUrlRef.current = url
+    setImagePreview(url)
+  }, [])
+
+  const processImage = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("image/")) {
         toast({
           variant: "destructive",
-          title: "❌ Paste Não Suportado",
-          description: "Seu navegador não suporta colar imagens do clipboard",
+          title: t({ pt: "Arquivo inválido", en: "Invalid file", es: "Archivo no válido" }),
+          description: t({ pt: "Selecione uma imagem.", en: "Choose an image.", es: "Elige una imagen." }),
+        })
+        return
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast({
+          variant: "destructive",
+          title: t({ pt: "Arquivo muito grande", en: "File too large", es: "Archivo demasiado grande" }),
+          description: t({ pt: "Use uma imagem de até 10 MB.", en: "Use an image up to 10 MB.", es: "Usa una imagen de hasta 10 MB." }),
         })
         return
       }
 
-      const clipboardItems = await navigator.clipboard.read()
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+      setImageResult(null)
+      setImageScanning(true)
 
-      for (const item of clipboardItems) {
-        for (const type of item.types) {
-          if (type.startsWith("image/")) {
-            const blob = await item.getType(type)
-            const file = new File([blob], "pasted_image.png", { type: blob.type })
-            processarImagemQr(file)
-
-            toast({
-              title: "📋 Imagem Colada!",
-              description: "Imagem do clipboard foi processada com sucesso",
-            })
-            return
+      try {
+        const image = new Image()
+        image.src = url
+        await image.decode()
+        let code: QRCode | null = null
+        for (const size of IMAGE_SCAN_SIZES) {
+          code = decodeFrom(image, image.naturalWidth, image.naturalHeight, size, getScanCanvas())
+          if (code?.data) {
+            break
           }
         }
-      }
-
-      toast({
-        variant: "destructive",
-        title: "❌ Nenhuma Imagem",
-        description: "Não há imagens no clipboard para colar",
-      })
-    } catch (err) {
-      console.error("Paste error:", err)
-
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        toast({
-          variant: "destructive",
-          title: "❌ Permissão Negada",
-          description: "Permissão para acessar clipboard foi negada",
-        })
-      } else {
-        toast({
-          variant: "destructive",
-          title: "❌ Erro ao Colar",
-          description: "Não foi possível colar a imagem do clipboard",
-        })
-      }
-    }
-  }, [processarImagemQr, toast])
-
-  // Adicionar handlers para drag & drop melhorados:
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setDragOver(false)
-
-      const files = e.dataTransfer.files
-      if (files.length > 0) {
-        const file = files[0]
-        if (file.type.startsWith("image/")) {
-          processarImagemQr(file)
-          toast({
-            title: "📁 Arquivo Arrastado!",
-            description: `Processando ${file.name}...`,
-          })
+        if (code?.data) {
+          setImageResult(code.data)
+          notifyDetection(code.data, "image")
         } else {
           toast({
             variant: "destructive",
-            title: "❌ Tipo Inválido",
-            description: "Por favor, arraste apenas arquivos de imagem",
+            title: t({ pt: "QR Code não encontrado", en: "QR code not found", es: "Código QR no encontrado" }),
+            description: t({
+              pt: "Tente uma imagem mais nítida ou com o QR Code maior.",
+              en: "Try a sharper image or one where the QR code is bigger.",
+              es: "Prueba una imagen más nítida o con el código QR más grande.",
+            }),
           })
         }
+      } catch {
+        toast({
+          variant: "destructive",
+          title: t({ pt: "Erro", en: "Error", es: "Error" }),
+          description: t({ pt: "Não foi possível abrir a imagem.", en: "Could not open the image.", es: "No se pudo abrir la imagen." }),
+        })
+        setPreviewUrl(null)
+      } finally {
+        setImageScanning(false)
       }
     },
-    [processarImagemQr, toast],
+    [notifyDetection, setPreviewUrl, t],
   )
 
-  const isValidUrl = (string: string) => {
+  useEffect(() => {
+    if (!aberto || aba !== "image") {
+      return
+    }
+    const onPaste = (event: ClipboardEvent) => {
+      const file = Array.from(event.clipboardData?.files ?? []).find((item) => item.type.startsWith("image/"))
+      if (file) {
+        event.preventDefault()
+        void processImage(file)
+      }
+    }
+    document.addEventListener("paste", onPaste)
+    return () => document.removeEventListener("paste", onPaste)
+  }, [aberto, aba, processImage])
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setPreviewUrl(null)
+      setImageResult(null)
+      setImageScanning(false)
+      setDragOver(false)
+      setCameraResultText(null)
+      setDetectionHistory([])
+      setScanCount(0)
+      setDetected(false)
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ""
+      }
+    }
+    onAbertoChange(open)
+  }
+
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track) {
+      return
+    }
+    const next = !torchEnabled
     try {
-      new URL(string.startsWith("http") ? string : "https://" + string)
-      return true
-    } catch (_) {
-      return false
+      await track.applyConstraints({ advanced: [{ torch: next } as TorchConstraint] })
+      setTorchEnabled(next)
+    } catch {
+      toast({
+        variant: "destructive",
+        title: t({ pt: "Flash indisponível", en: "Flash unavailable", es: "Flash no disponible" }),
+        description: t({ pt: "Não foi possível controlar o flash.", en: "Could not control the flash.", es: "No se pudo controlar el flash." }),
+      })
     }
   }
 
-  // Adicionar useEffect para listener de paste global:
-  useEffect(() => {
-    const handleGlobalPaste = (e: KeyboardEvent) => {
-      if (aberto && abaInicial === "image" && (e.ctrlKey || e.metaKey) && e.key === "v") {
-        e.preventDefault()
-        handlePasteImageForScan()
+  const pasteFromClipboard = async () => {
+    try {
+      if (!navigator.clipboard?.read) {
+        throw new Error("unsupported")
       }
+      for (const item of await navigator.clipboard.read()) {
+        const type = item.types.find((entry) => entry.startsWith("image/"))
+        if (type) {
+          const blob = await item.getType(type)
+          await processImage(new File([blob], "clipboard", { type: blob.type }))
+          return
+        }
+      }
+      toast({
+        variant: "destructive",
+        title: t({ pt: "Nenhuma imagem", en: "No image", es: "Sin imagen" }),
+        description: t({ pt: "Não há imagem na área de transferência.", en: "There is no image in the clipboard.", es: "No hay ninguna imagen en el portapapeles." }),
+      })
+    } catch {
+      toast({
+        variant: "destructive",
+        title: t({ pt: "Não foi possível colar", en: "Could not paste", es: "No se pudo pegar" }),
+        description: t({
+          pt: "Use Ctrl+V com a janela em foco ou selecione o arquivo.",
+          en: "Press Ctrl+V with this window focused or choose the file.",
+          es: "Pulsa Ctrl+V con esta ventana activa o elige el archivo.",
+        }),
+      })
     }
+  }
 
-    if (aberto && abaInicial === "image") {
-      document.addEventListener("keydown", handleGlobalPaste)
-      return () => document.removeEventListener("keydown", handleGlobalPaste)
+  const copyText = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value)
+      toast({ title: t({ pt: "Copiado", en: "Copied", es: "Copiado" }), description: t({ pt: "Conteúdo copiado.", en: "Content copied.", es: "Contenido copiado." }) })
+    } catch {
+      toast({ variant: "destructive", title: t({ pt: "Erro", en: "Error", es: "Error" }), description: t({ pt: "Não foi possível copiar.", en: "Could not copy.", es: "No se pudo copiar." }) })
     }
-  }, [aberto, abaInicial, handlePasteImageForScan])
+  }
+
+  const downloadText = (value: string) => {
+    const url = URL.createObjectURL(new Blob([value], { type: "text/plain;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `qr_result_${Date.now()}.txt`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  const renderResultActions = (value: string) => {
+    const url = toHttpUrl(value)
+    return (
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => void copyText(value)} variant="outline" size="sm" className="flex-1">
+          <Copy className="mr-2 h-4 w-4" />
+          {t({ pt: "Copiar", en: "Copy", es: "Copiar" })}
+        </Button>
+        <Button onClick={() => downloadText(value)} variant="outline" size="sm" className="flex-1">
+          <Download className="mr-2 h-4 w-4" />
+          {t({ pt: "Baixar", en: "Download", es: "Descargar" })}
+        </Button>
+        {url && (
+          <Button asChild variant="default" size="sm" className="min-w-0 flex-1">
+            <a href={url.href} target="_blank" rel="noopener noreferrer nofollow" title={url.href}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              <span className="truncate">
+                {t({ pt: "Abrir", en: "Open", es: "Abrir" })} {url.hostname}
+              </span>
+            </a>
+          </Button>
+        )}
+      </div>
+    )
+  }
+
+  const cameraErrorMessage =
+    cameraStatus === "denied"
+      ? t({
+          pt: "Permissão de câmera negada. Libere o acesso nas configurações do navegador.",
+          en: "Camera permission denied. Allow access in the browser settings.",
+          es: "Permiso de cámara denegado. Permite el acceso en los ajustes del navegador.",
+        })
+      : cameraStatus === "notFound"
+        ? t({ pt: "Nenhuma câmera encontrada.", en: "No camera found.", es: "No se encontró ninguna cámara." })
+        : cameraStatus === "busy"
+          ? t({ pt: "A câmera está em uso por outro aplicativo.", en: "The camera is being used by another app.", es: "Otra aplicación está usando la cámara." })
+          : cameraStatus === "unsupported"
+            ? t({
+                pt: "Este navegador não permite acesso à câmera aqui (é preciso HTTPS).",
+                en: "This browser does not allow camera access here (HTTPS is required).",
+                es: "Este navegador no permite acceder a la cámara aquí (se requiere HTTPS).",
+              })
+            : t({ pt: "Não foi possível acessar a câmera.", en: "Could not access the camera.", es: "No se pudo acceder a la cámara." })
+
+  const cameraFailed = cameraStatus !== "idle" && cameraStatus !== "starting" && cameraStatus !== "active"
 
   return (
-    <Dialog open={aberto} onOpenChange={onAbertoChange}>
-      <DialogContent className="sm:max-w-lg w-[95vw] max-h-[95vh] flex flex-col rounded-lg p-0">
-        <DialogHeader className="p-4 border-b pr-10 sm:pr-12 shrink-0">
-          <DialogTitle className="text-foreground text-left flex items-center gap-2">
-            <ScanLine className="w-5 h-5 text-primary animate-text-glow-primary" />
+    <Dialog open={aberto} onOpenChange={handleOpenChange}>
+      <DialogContent className="flex max-h-[95vh] w-[95vw] flex-col rounded-lg p-0 sm:max-w-lg">
+        <DialogHeader className="shrink-0 border-b p-4 pr-10 sm:pr-12">
+          <DialogTitle className="flex items-center gap-2 text-left text-foreground">
+            <ScanLine className="h-5 w-5 animate-text-glow-primary text-primary" />
             Scanner
             {scanCount > 0 && (
               <Badge variant="secondary" className="text-xs">
@@ -801,160 +535,127 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-left">
-            Scanner em tempo real com detecção automática e múltiplas câmeras
+          <DialogDescription className="text-left text-muted-foreground">
+            {t({
+              pt: "Leia QR Codes pela câmera ou por uma imagem.",
+              en: "Read QR codes with the camera or from an image.",
+              es: "Lee códigos QR con la cámara o desde una imagen.",
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grow overflow-auto p-4">
-          <Tabs
-            defaultValue="camera"
-            value={abaInicial}
-            onValueChange={(value) => onAbaChange(value as "camera" | "image")}
-            className="flex flex-col h-full"
-          >
-            <TabsList className="grid w-full grid-cols-2 shrink-0">
+          <Tabs value={aba} onValueChange={(value) => onAbaChange(value as ScannerTab)} className="flex h-full flex-col">
+            <TabsList className="grid w-full shrink-0 grid-cols-2">
               <TabsTrigger value="camera" className="text-xs sm:text-sm">
-                <Camera className="w-4 h-4 mr-1 sm:mr-2" />
-                Câmera
-                {scanningFromCamera && <div className="w-2 h-2 bg-green-500 rounded-full ml-2 animate-pulse" />}
+                <Camera className="mr-1 h-4 w-4 sm:mr-2" />
+                {t({ pt: "Câmera", en: "Camera", es: "Cámara" })}
+                {cameraStatus === "active" && !detected && <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-green-500" />}
               </TabsTrigger>
               <TabsTrigger value="image" className="text-xs sm:text-sm">
-                <FileImage className="w-4 h-4 mr-1 sm:mr-2" />
-                Imagem
+                <FileImage className="mr-1 h-4 w-4 sm:mr-2" />
+                {t({ pt: "Imagem", en: "Image", es: "Imagen" })}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="camera" className="grow flex flex-col pt-4 min-h-0 space-y-4">
-              {/* Controles da Câmera */}
-              {temPermissaoCamera && (
-                <div className="flex flex-wrap gap-2 justify-center">
+            <TabsContent value="camera" className="flex min-h-0 grow flex-col space-y-4 pt-4">
+              {cameraStatus === "active" && (
+                <div className="flex flex-wrap justify-center gap-2">
                   {hasMultipleCameras && (
                     <Button
-                      onClick={switchCamera}
+                      onClick={() => setFacingMode((current) => (current === "environment" ? "user" : "environment"))}
                       variant="outline"
                       size="sm"
                       className="text-xs"
-                      disabled={tentandoCamera}
                     >
-                      <RotateCcw className="w-4 h-4 mr-1" />
-                      {cameraFacingMode === "environment" ? "Frontal" : "Traseira"}
+                      <RotateCcw className="mr-1 h-4 w-4" />
+                      {facingMode === "environment"
+                        ? t({ pt: "Frontal", en: "Front", es: "Frontal" })
+                        : t({ pt: "Traseira", en: "Rear", es: "Trasera" })}
                     </Button>
                   )}
-
                   {torchSupported && (
-                    <Button
-                      onClick={toggleTorch}
-                      variant={torchEnabled ? "default" : "outline"}
-                      size="sm"
-                      className="text-xs"
-                    >
-                      <Flashlight className="w-4 h-4 mr-1" />
+                    <Button onClick={() => void toggleTorch()} variant={torchEnabled ? "default" : "outline"} size="sm" className="text-xs" aria-pressed={torchEnabled}>
+                      <Flashlight className="mr-1 h-4 w-4" />
                       Flash
                     </Button>
                   )}
-
                   <Button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    onClick={() => setSoundEnabled((current) => !current)}
                     variant={soundEnabled ? "default" : "outline"}
                     size="sm"
                     className="text-xs"
+                    aria-pressed={soundEnabled}
                   >
-                    {soundEnabled ? <Volume2 className="w-4 h-4 mr-1" /> : <VolumeX className="w-4 h-4 mr-1" />}
-                    Som
+                    {soundEnabled ? <Volume2 className="mr-1 h-4 w-4" /> : <VolumeX className="mr-1 h-4 w-4" />}
+                    {t({ pt: "Som", en: "Sound", es: "Sonido" })}
                   </Button>
-
                   <Button
                     onClick={() => {
                       setDetectionHistory([])
                       setScanCount(0)
-                      setResultadoQrImagemEscaneada(null)
+                      setCameraResultText(null)
                     }}
                     variant="outline"
                     size="sm"
                     className="text-xs"
                   >
-                    <RefreshCw className="w-4 h-4 mr-1" />
-                    Limpar
+                    <RefreshCw className="mr-1 h-4 w-4" />
+                    {t({ pt: "Limpar", en: "Clear", es: "Borrar" })}
                   </Button>
                 </div>
               )}
 
-              {/* Área do Vídeo */}
-              <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
-                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+                <video ref={attachVideo} className="h-full w-full object-cover" autoPlay muted playsInline />
+                <canvas ref={overlayRef} className="pointer-events-none absolute inset-0 h-full w-full object-cover" style={{ mixBlendMode: "screen" }} />
 
-                {/* Canvas para detecção */}
-                <canvas ref={cameraCanvasRef} style={{ display: "none" }} />
-
-                {/* Overlay de detecção */}
-                <canvas
-                  id="detection-overlay"
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                  style={{ mixBlendMode: "screen" }}
-                />
-
-                {/* Loading state */}
-                {tentandoCamera && (
+                {cameraStatus === "starting" && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                     <div className="text-center text-white">
-                      <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
-                      <p className="text-sm">Iniciando câmera...</p>
+                      <RefreshCw className="mx-auto mb-2 h-8 w-8 animate-spin" />
+                      <p className="text-sm">{t({ pt: "Iniciando câmera...", en: "Starting camera...", es: "Iniciando cámara..." })}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Error state */}
-                {abaInicial === "camera" && temPermissaoCamera === false && !tentandoCamera && (
+                {cameraFailed && (
                   <div className="absolute inset-0 flex items-center justify-center p-4">
                     <Alert variant="destructive" className="max-w-sm">
                       <CameraOff className="h-5 w-5" />
-                      <AlertTitle>Permissão Negada</AlertTitle>
+                      <AlertTitle>{t({ pt: "Câmera indisponível", en: "Camera unavailable", es: "Cámara no disponible" })}</AlertTitle>
                       <AlertDescription className="space-y-2">
-                        <p>Não foi possível acessar a câmera.</p>
-                        <Button onClick={iniciarCamera} variant="outline" size="sm" className="w-full">
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Tentar Novamente
+                        <p>{cameraErrorMessage}</p>
+                        <Button onClick={() => setAttempt((current) => current + 1)} variant="outline" size="sm" className="w-full">
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          {t({ pt: "Tentar novamente", en: "Try again", es: "Intentar de nuevo" })}
                         </Button>
                       </AlertDescription>
                     </Alert>
                   </div>
                 )}
 
-                {/* Scanning overlay */}
-                {abaInicial === "camera" && temPermissaoCamera === true && !tentandoCamera && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                {cameraStatus === "active" && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
                     <div
-                      className={`w-3/4 h-3/4 border-4 rounded-lg transition-all duration-300 ${
-                        qrResult
-                          ? "border-green-500 shadow-green-500/50 shadow-2xl"
-                          : scanningFromCamera
-                            ? "border-blue-500 animate-pulse shadow-blue-500/30 shadow-lg"
-                            : "border-white/50"
+                      className={`h-3/4 w-3/4 rounded-lg border-4 transition-all duration-300 ${
+                        detected ? "border-green-500 shadow-2xl shadow-green-500/50" : "animate-pulse border-blue-500 shadow-lg shadow-blue-500/30"
                       }`}
                     >
-                      {/* Cantos do scanner */}
-                      <div className="absolute top-2 left-2 w-6 h-6 border-l-4 border-t-4 border-white rounded-tl-lg"></div>
-                      <div className="absolute top-2 right-2 w-6 h-6 border-r-4 border-t-4 border-white rounded-tr-lg"></div>
-                      <div className="absolute bottom-2 left-2 w-6 h-6 border-l-4 border-b-4 border-white rounded-bl-lg"></div>
-                      <div className="absolute bottom-2 right-2 w-6 h-6 border-r-4 border-b-4 border-white rounded-br-lg"></div>
-
-                      {/* Status do scanner */}
+                      <div className="absolute left-2 top-2 h-6 w-6 rounded-tl-lg border-l-4 border-t-4 border-white" />
+                      <div className="absolute right-2 top-2 h-6 w-6 rounded-tr-lg border-r-4 border-t-4 border-white" />
+                      <div className="absolute bottom-2 left-2 h-6 w-6 rounded-bl-lg border-b-4 border-l-4 border-white" />
+                      <div className="absolute bottom-2 right-2 h-6 w-6 rounded-br-lg border-b-4 border-r-4 border-white" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        {qrResult ? (
-                          <div className="bg-green-500/90 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            QR Code Detectado!
-                          </div>
-                        ) : scanningFromCamera ? (
-                          <div className="bg-blue-500/90 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
-                            <Target className="w-4 h-4 animate-pulse" />
-                            Escaneando...
+                        {detected ? (
+                          <div className="flex items-center gap-2 rounded-full bg-green-500/90 px-4 py-2 text-sm font-medium text-white">
+                            <CheckCircle className="h-4 w-4" />
+                            {t({ pt: "QR Code detectado!", en: "QR code detected!", es: "¡Código QR detectado!" })}
                           </div>
                         ) : (
-                          <div className="bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2">
-                            <Camera className="w-4 h-4" />
-                            Aponte para um QR Code
+                          <div className="flex items-center gap-2 rounded-full bg-blue-500/90 px-4 py-2 text-sm font-medium text-white">
+                            <Target className="h-4 w-4 animate-pulse" />
+                            {t({ pt: "Escaneando...", en: "Scanning...", es: "Escaneando..." })}
                           </div>
                         )}
                       </div>
@@ -963,226 +664,188 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
                 )}
               </div>
 
-              {/* Histórico de Detecções */}
               {detectionHistory.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Target className="w-4 h-4 text-primary" />
-                    Últimas Detecções:
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <Target className="h-4 w-4 text-primary" />
+                    {t({ pt: "Últimas detecções", en: "Latest detections", es: "Últimas detecciones" })}
                   </Label>
-                  <div className="space-y-1 max-h-24 overflow-y-auto">
-                    {detectionHistory.map((detection, index) => (
-                      <div
-                        key={index}
-                        className="text-xs p-2 bg-muted rounded border font-mono break-all cursor-pointer hover:bg-muted/80"
-                        onClick={() => {
-                          navigator.clipboard.writeText(detection)
-                          toast({ title: "📋 Copiado!", description: "Detecção copiada para área de transferência" })
-                        }}
+                  <div className="max-h-24 space-y-1 overflow-y-auto">
+                    {detectionHistory.map((item, index) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => void copyText(item)}
+                        title={t({ pt: "Copiar", en: "Copy", es: "Copiar" })}
+                        className="w-full break-all rounded border bg-muted p-2 text-left font-mono text-xs hover:bg-muted/80"
                       >
-                        #{detectionHistory.length - index}: {detection.substring(0, 60)}
-                        {detection.length > 60 ? "..." : ""}
-                      </div>
+                        #{detectionHistory.length - index}: {item.slice(0, 60)}
+                        {item.length > 60 ? "…" : ""}
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Resultado Atual */}
-              {resultadoQrImagemEscaneada && abaInicial === "camera" && (
-                <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+              {cameraResultText && (
+                <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-green-600" />
                         <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                          Último QR Code Detectado:
+                          {t({ pt: "Último QR Code detectado", en: "Last detected QR code", es: "Último código QR detectado" })}
                         </span>
                       </div>
-
-                      <div className="p-3 bg-background rounded border font-mono text-sm break-all max-h-32 overflow-y-auto custom-scrollbar">
-                        {resultadoQrImagemEscaneada}
+                      <div className="custom-scrollbar max-h-32 overflow-y-auto whitespace-pre-wrap break-all rounded border bg-background p-3 font-mono text-sm">
+                        {cameraResultText}
                       </div>
-
-                      <div className="flex gap-2 flex-wrap">
-                        <Button onClick={handleCopyScannedResult} variant="outline" size="sm" className="flex-1">
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copiar
-                        </Button>
-
-                        <Button onClick={handleDownloadResult} variant="outline" size="sm" className="flex-1">
-                          <Download className="w-4 h-4 mr-2" />
-                          Baixar
-                        </Button>
-
-                        {isValidUrl(resultadoQrImagemEscaneada) && (
-                          <Button onClick={handleOpenLink} variant="default" size="sm" className="flex-1">
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Abrir Link
-                          </Button>
-                        )}
-                      </div>
+                      {renderResultActions(cameraResultText)}
                     </div>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
-            <TabsContent value="image" className="grow flex flex-col space-y-4 pt-4 pb-2 min-h-0">
-              <canvas ref={imageScanCanvasRef} style={{ display: "none" }} />
-
-              {/* Área de Drag & Drop Melhorada */}
+            <TabsContent value="image" className="flex min-h-0 grow flex-col space-y-4 pb-2 pt-4">
               <div
-                className={`
-                  relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 cursor-pointer
-                  ${
-                    dragOver
-                      ? "border-primary bg-primary/5 scale-105 shadow-lg"
-                      : "border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30"
+                role="button"
+                tabIndex={0}
+                aria-label={t({ pt: "Selecionar imagem para escanear", en: "Choose an image to scan", es: "Elegir una imagen para escanear" })}
+                className={`relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-all duration-300 ${
+                  dragOver ? "scale-105 border-primary bg-primary/5 shadow-lg" : "border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/30"
+                }`}
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  setDragOver(true)
+                }}
+                onDragLeave={(event) => {
+                  event.preventDefault()
+                  setDragOver(false)
+                }}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  setDragOver(false)
+                  const file = event.dataTransfer.files[0]
+                  if (file) {
+                    void processImage(file)
                   }
-                `}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => imageScanInputRef.current?.click()}
+                }}
+                onClick={() => imageInputRef.current?.click()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    imageInputRef.current?.click()
+                  }
+                }}
               >
                 <div className="flex flex-col items-center gap-4">
-                  <div
-                    className={`p-4 rounded-full transition-all duration-300 ${
-                      dragOver ? "bg-primary/20 scale-110" : "bg-muted/50"
-                    }`}
-                  >
-                    <Upload
-                      className={`w-8 h-8 transition-all duration-300 ${
-                        dragOver ? "text-primary animate-bounce" : "text-muted-foreground"
-                      }`}
-                    />
+                  <div className={`rounded-full p-4 transition-all duration-300 ${dragOver ? "scale-110 bg-primary/20" : "bg-muted/50"}`}>
+                    <Upload className={`h-8 w-8 transition-all duration-300 ${dragOver ? "animate-bounce text-primary" : "text-muted-foreground"}`} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground mb-2">
-                      {dragOver ? "Solte a imagem aqui!" : "Arraste uma imagem ou clique para selecionar"}
+                    <p className="mb-2 text-sm font-medium text-foreground">
+                      {dragOver
+                        ? t({ pt: "Solte a imagem aqui!", en: "Drop the image here!", es: "¡Suelta la imagen aquí!" })
+                        : t({
+                            pt: "Arraste uma imagem ou clique para selecionar",
+                            en: "Drag an image or click to choose one",
+                            es: "Arrastra una imagen o haz clic para elegirla",
+                          })}
                     </p>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Formatos suportados: JPG, PNG, GIF, WebP (máx. 10MB)
+                    <p className="mb-1 text-xs text-muted-foreground">
+                      {t({ pt: "JPG, PNG, GIF ou WebP (máx. 10 MB)", en: "JPG, PNG, GIF or WebP (max 10 MB)", es: "JPG, PNG, GIF o WebP (máx. 10 MB)" })}
                     </p>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handlePasteImageForScan()
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        void pasteFromClipboard()
                       }}
                       className="mt-2"
                     >
-                      <ClipboardCopy className="w-4 h-4 mr-2" />
-                      Colar do Clipboard
+                      <ClipboardCopy className="mr-2 h-4 w-4" />
+                      {t({ pt: "Colar da área de transferência", en: "Paste from clipboard", es: "Pegar del portapapeles" })}
                     </Button>
                   </div>
                 </div>
-                <Input
-                  ref={imageScanInputRef}
+                <input
+                  ref={imageInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={handleImageFileForScanChange}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      void processImage(file)
+                    }
+                  }}
                   className="hidden"
                 />
               </div>
 
-              {/* Dica de Atalho */}
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  💡 <strong>Dica:</strong> Você também pode usar{" "}
-                  <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+V</kbd> para colar imagens
-                </p>
-              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                {t({ pt: "Dica: você também pode usar", en: "Tip: you can also use", es: "Consejo: también puedes usar" })}{" "}
+                <kbd className="rounded bg-muted px-1 py-0.5 text-xs">Ctrl+V</kbd>{" "}
+                {t({ pt: "para colar imagens", en: "to paste images", es: "para pegar imágenes" })}
+              </p>
 
-              {/* Preview da Imagem Melhorado */}
-              {previewImagemEscaneada && !escaneandoImagem && (
+              {imagePreview && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-primary" />
-                    <Label className="text-sm font-medium">Imagem Carregada:</Label>
+                    <Eye className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-medium">{t({ pt: "Imagem carregada", en: "Loaded image", es: "Imagen cargada" })}</Label>
                   </div>
-
                   <Card className="p-4">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="relative">
-                        <img
-                          src={previewImagemEscaneada || "/placeholder.svg"}
-                          alt="Preview da imagem para escaneamento"
-                          className="max-w-full max-h-48 object-contain border rounded-md shadow-xs bg-white"
-                        />
-                        {escaneandoImagem && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md">
-                            <div className="text-white text-center">
-                              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                              <p className="text-sm">Escaneando...</p>
-                            </div>
+                    <div className="relative mx-auto">
+                      <img
+                        src={imagePreview}
+                        alt={t({ pt: "Imagem enviada para leitura", en: "Image sent for scanning", es: "Imagen enviada para escanear" })}
+                        className="mx-auto max-h-48 max-w-full rounded-md border bg-white object-contain shadow-sm"
+                      />
+                      {imageScanning && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/50">
+                          <div className="text-center text-white">
+                            <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin" />
+                            <p className="text-sm">{t({ pt: "Escaneando...", en: "Scanning...", es: "Escaneando..." })}</p>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">
-                          Imagem carregada com sucesso. Aguarde o resultado do scan...
-                        </p>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </Card>
                 </div>
               )}
 
-              {/* Resultado do QR Code */}
-              {resultadoQrImagemEscaneada && !escaneandoImagem && (
+              {imageResult && !imageScanning && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <Label className="text-sm font-medium">Conteúdo do QR Code Escaneado:</Label>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <Label className="text-sm font-medium">{t({ pt: "Conteúdo do QR Code", en: "QR code content", es: "Contenido del código QR" })}</Label>
                   </div>
-
-                  <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                  <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
                     <CardContent className="p-4">
                       <div className="space-y-3">
-                        <div className="p-3 bg-background rounded border font-mono text-sm break-all max-h-32 overflow-y-auto custom-scrollbar">
-                          {resultadoQrImagemEscaneada}
+                        <div className="custom-scrollbar max-h-32 overflow-y-auto whitespace-pre-wrap break-all rounded border bg-background p-3 font-mono text-sm">
+                          {imageResult}
                         </div>
-
-                        <div className="flex gap-2 flex-wrap">
-                          <Button onClick={handleCopyScannedResult} variant="outline" size="sm" className="flex-1">
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copiar
-                          </Button>
-
-                          <Button onClick={handleDownloadResult} variant="outline" size="sm" className="flex-1">
-                            <Download className="w-4 h-4 mr-2" />
-                            Baixar
-                          </Button>
-
-                          {isValidUrl(resultadoQrImagemEscaneada) && (
-                            <Button onClick={handleOpenLink} variant="default" size="sm" className="flex-1">
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              Abrir Link
-                            </Button>
-                          )}
-                        </div>
+                        {renderResultActions(imageResult)}
                       </div>
                     </CardContent>
                   </Card>
                 </div>
               )}
 
-              {/* Estado de Erro */}
-              {!resultadoQrImagemEscaneada && !escaneandoImagem && previewImagemEscaneada && (
+              {!imageResult && !imageScanning && imagePreview && (
                 <Alert variant="default" className="border-amber-200 dark:border-amber-800">
                   <AlertCircle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-700 dark:text-amber-300">
-                    Nenhum QR Code foi detectado na imagem. Certifique-se de que:
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>A imagem contém um QR Code visível</li>
-                      <li>O QR Code está bem definido e não borrado</li>
-                      <li>Há contraste suficiente entre o QR Code e o fundo</li>
-                      <li>O QR Code não está muito pequeno na imagem</li>
+                    {t({ pt: "Nenhum QR Code foi detectado. Confira se:", en: "No QR code was detected. Check that:", es: "No se detectó ningún código QR. Comprueba que:" })}
+                    <ul className="mt-2 list-inside list-disc space-y-1">
+                      <li>{t({ pt: "O QR Code está visível e inteiro", en: "The QR code is visible and complete", es: "El código QR es visible y está completo" })}</li>
+                      <li>{t({ pt: "A imagem não está borrada", en: "The image is not blurry", es: "La imagen no está borrosa" })}</li>
+                      <li>{t({ pt: "Há contraste entre o QR e o fundo", en: "There is contrast between the QR and the background", es: "Hay contraste entre el QR y el fondo" })}</li>
+                      <li>{t({ pt: "O QR Code não está pequeno demais", en: "The QR code is not too small", es: "El código QR no es demasiado pequeño" })}</li>
                     </ul>
                   </AlertDescription>
                 </Alert>
@@ -1191,9 +854,9 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
           </Tabs>
         </div>
 
-        <DialogFooter className="p-4 border-t shrink-0">
-          <Button variant="outline" onClick={() => onAbertoChange(false)} className="w-full sm:w-auto h-9">
-            Fechar
+        <DialogFooter className="shrink-0 border-t p-4">
+          <Button variant="outline" onClick={() => handleOpenChange(false)} className="h-9 w-full sm:w-auto">
+            {t({ pt: "Fechar", en: "Close", es: "Cerrar" })}
           </Button>
         </DialogFooter>
       </DialogContent>

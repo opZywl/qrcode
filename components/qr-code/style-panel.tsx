@@ -2,22 +2,32 @@
 
 import type React from "react"
 import { useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, m } from "framer-motion"
+import { useLanguage } from "@/components/language-provider"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import { LocalIcon } from "@/components/ui/local-icon"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { LocalIcon } from "@/components/ui/local-icon"
-import type { AppLanguage } from "@/components/language-provider"
-import type { NivelCorrecaoErro, TipoFrame, VisualTemplateQRCode } from "@/hooks/use-qr-code-state"
+import type { QrState, UpdateField } from "@/hooks/use-qr-code-state"
+import { IMAGE_ACCEPT } from "@/lib/qr/image"
+import { ERROR_LEVEL_LABELS, FRAME_LABELS } from "@/lib/qr/labels"
+import {
+  ERROR_LEVELS,
+  FRAME_TYPES,
+  FRAMES_WITH_CUSTOM_TEXT,
+  type NivelCorrecaoErro,
+  type TipoFrame,
+  type VisualTemplateQRCode,
+} from "@/lib/qr/types"
 
-interface PersonalizacaoAparenciaProps {
-  valores: any
-  onChange: (campo: string, valor: any) => void
+interface StylePanelProps {
+  valores: QrState
+  onChange: UpdateField
   onReset: () => void
   onLogoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   onBackgroundImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
@@ -28,21 +38,11 @@ interface PersonalizacaoAparenciaProps {
   onSaveVisualTemplate: (name: string, templateId?: string) => void
   onApplyVisualTemplate: (template: VisualTemplateQRCode) => void
   onDeleteVisualTemplate: (templateId: string) => void
-  language?: AppLanguage
-  isMobile: boolean
 }
 
-const frameOptions: Array<{ value: TipoFrame; label: string }> = [
-  { value: "none", label: "Nenhuma" },
-  { value: "simpleBorder", label: "Borda simples" },
-  { value: "textBottom", label: "Texto inferior" },
-  { value: "scanMeBottom", label: "Scan me" },
-  { value: "roundedBorderTextBottom", label: "Borda arredondada com texto" },
-  { value: "topBottomText", label: "Texto superior e inferior" },
-  { value: "decorativeBorder", label: "Bordas decorativas" },
-  { value: "modernFrame", label: "Moldura moderna" },
-  { value: "classicFrame", label: "Moldura classica" },
-]
+function clamp(value: number, min: number, max: number) {
+  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
+}
 
 function StudioSection({
   active,
@@ -63,7 +63,7 @@ function StudioSection({
     <div
       className={[
         "studio-tile transition-all duration-200",
-        active ? accentClassName ?? "border-primary/30 bg-primary/5 dark:border-primary/25 dark:bg-primary/10" : "",
+        active ? (accentClassName ?? "border-primary/30 bg-primary/5 dark:border-primary/25 dark:bg-primary/10") : "",
       ].join(" ")}
     >
       <div className="relative z-1 space-y-3">
@@ -95,56 +95,10 @@ export function StylePanel({
   onSaveVisualTemplate,
   onApplyVisualTemplate,
   onDeleteVisualTemplate,
-  language = "pt",
-}: PersonalizacaoAparenciaProps) {
+}: StylePanelProps) {
+  const { t, localeTag } = useLanguage()
   const [isOpen, setIsOpen] = useState(true)
   const [templateName, setTemplateName] = useState("")
-  const copy =
-    language === "en"
-      ? {
-          title: "Customize appearance",
-          subtitle: "Colors, size, background, logo and frame",
-          reset: "Reset",
-          baseTitle: "QR base",
-          baseDescription: "Fine control over colors, size and scanning quality",
-          fg: "QR color",
-          bg: "Background color",
-          size: "Size",
-          error: "Error correction",
-          margin: "Margin",
-          logoTitle: "Custom logo",
-          bgTitle: "Custom background",
-          frameTitle: "Custom frame",
-          templatesTitle: "Visual templates",
-          saveTheme: "Save theme",
-          apply: "Apply",
-          update: "Update",
-          remove: "Delete",
-          emptyTemplate: "No saved template",
-          emptyTemplateDescription: "Store complete styles to reuse the same visual setup quickly.",
-        }
-      : {
-          title: "Personalizar aparencia",
-          subtitle: "Cores, tamanho, fundo, logo e moldura",
-          reset: "Resetar",
-          baseTitle: "Base do QR Code",
-          baseDescription: "Controle fino de cor, tamanho e leitura",
-          fg: "Cor do QR Code",
-          bg: "Cor de fundo",
-          size: "Tamanho",
-          error: "Correcao de erro",
-          margin: "Margem",
-          logoTitle: "Logo personalizado",
-          bgTitle: "Fundo personalizado",
-          frameTitle: "Moldura personalizada",
-          templatesTitle: "Templates visuais",
-          saveTheme: "Salvar tema",
-          apply: "Aplicar",
-          update: "Atualizar",
-          remove: "Excluir",
-          emptyTemplate: "Nenhum template salvo",
-          emptyTemplateDescription: "Guarde combinacoes prontas para reutilizar o mesmo visual rapidamente.",
-        }
 
   const backgroundLocked =
     (valores.habilitarCustomizacaoFundo && !!valores.imagemFundo) ||
@@ -156,45 +110,46 @@ export function StylePanel({
   }
 
   const formatTemplateDate = (timestamp: number) =>
-    new Date(timestamp).toLocaleDateString(language === "en" ? "en-US" : "pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
+    new Date(timestamp).toLocaleDateString(localeTag, { day: "2-digit", month: "2-digit", year: "numeric" })
 
   return (
     <div className="space-y-3">
-      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
+          aria-expanded={isOpen}
           className="flex flex-1 items-center gap-2.5 text-left"
         >
           <span className="studio-icon-shell h-9 w-9 rounded-[0.9rem]">
             <LocalIcon name="settings" className="h-4 w-4 text-primary" />
           </span>
           <div>
-            <h3 className="text-[0.98rem] font-semibold text-foreground">{copy.title}</h3>
-            <p className="text-[11px] text-muted-foreground">{copy.subtitle}</p>
+            <h3 className="text-[0.98rem] font-semibold text-foreground">
+              {t({ pt: "Personalizar aparência", en: "Customize appearance", es: "Personalizar apariencia" })}
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              {t({
+                pt: "Cores, tamanho, fundo, logo e moldura",
+                en: "Colors, size, background, logo and frame",
+                es: "Colores, tamaño, fondo, logo y marco",
+              })}
+            </p>
           </div>
           <span className="studio-icon-shell ml-auto h-8 w-8 rounded-full">
-            <LocalIcon
-              name={isOpen ? "chevron-down" : "chevron-right"}
-              className="h-3.5 w-3.5 text-muted-foreground"
-            />
+            <LocalIcon name={isOpen ? "chevron-down" : "chevron-right"} className="h-3.5 w-3.5 text-muted-foreground" />
           </span>
         </button>
 
-        <Button variant="ghost" size="sm" onClick={onReset} className="gap-1.5 rounded-full text-[12px] h-8 px-2.5">
+        <Button variant="ghost" size="sm" onClick={onReset} className="h-8 gap-1.5 rounded-full px-2.5 text-[12px]">
           <LocalIcon name="reset" className="h-3.5 w-3.5" />
-          {copy.reset}
+          {t({ pt: "Resetar", en: "Reset", es: "Restablecer" })}
         </Button>
       </div>
 
       <AnimatePresence initial={false}>
         {isOpen && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -202,13 +157,20 @@ export function StylePanel({
             className="overflow-hidden"
           >
             <div className="space-y-2.5 pt-0.5">
-              {/* Base QR */}
-              <StudioSection icon="palette" title={copy.baseTitle} description={copy.baseDescription}>
+              <StudioSection
+                icon="palette"
+                title={t({ pt: "Base do QR Code", en: "QR base", es: "Base del código QR" })}
+                description={t({
+                  pt: "Controle fino de cor, tamanho e leitura",
+                  en: "Fine control over color, size and scanning",
+                  es: "Control fino de color, tamaño y lectura",
+                })}
+              >
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="fg-color" className="flex items-center gap-1.5 text-[12px] font-medium text-foreground">
                       <LocalIcon name="palette" className="h-3.5 w-3.5 text-primary" />
-                      {copy.fg}
+                      {t({ pt: "Cor do QR Code", en: "QR color", es: "Color del QR" })}
                     </Label>
                     <Input
                       id="fg-color"
@@ -222,7 +184,7 @@ export function StylePanel({
                   <div className="space-y-1.5">
                     <Label htmlFor="bg-color" className="flex items-center gap-1.5 text-[12px] font-medium text-foreground">
                       <LocalIcon name="image" className="h-3.5 w-3.5 text-primary" />
-                      {copy.bg}
+                      {t({ pt: "Cor de fundo", en: "Background color", es: "Color de fondo" })}
                     </Label>
                     <Input
                       id="bg-color"
@@ -234,7 +196,11 @@ export function StylePanel({
                     />
                     {backgroundLocked && (
                       <p className="text-[10px] text-amber-600 dark:text-amber-400">
-                        Bloqueada quando ha imagem ou moldura ativa.
+                        {t({
+                          pt: "Bloqueada quando há imagem ou moldura ativa.",
+                          en: "Locked while a background image or frame is active.",
+                          es: "Bloqueado mientras haya imagen o marco activo.",
+                        })}
                       </p>
                     )}
                   </div>
@@ -244,7 +210,7 @@ export function StylePanel({
                   <div className="flex items-center justify-between">
                     <Label htmlFor="size-slider" className="flex items-center gap-1.5 text-[12px] font-medium text-foreground">
                       <LocalIcon name="size" className="h-3.5 w-3.5 text-primary" />
-                      {copy.size}
+                      {t({ pt: "Tamanho", en: "Size", es: "Tamaño" })}
                     </Label>
                     <Badge variant="secondary" className="font-mono text-[11px]">
                       {valores.tamanho}px
@@ -257,6 +223,7 @@ export function StylePanel({
                     step={1}
                     value={[valores.tamanho]}
                     onValueChange={(value) => onChange("tamanho", value[0])}
+                    aria-label={t({ pt: "Tamanho", en: "Size", es: "Tamaño" })}
                   />
                 </div>
 
@@ -264,20 +231,21 @@ export function StylePanel({
                   <div className="space-y-1.5">
                     <Label htmlFor="error-correction" className="flex items-center gap-1.5 text-[12px] font-medium text-foreground">
                       <LocalIcon name="shield" className="h-3.5 w-3.5 text-emerald-600" />
-                      {copy.error}
+                      {t({ pt: "Correção de erro", en: "Error correction", es: "Corrección de errores" })}
                     </Label>
                     <Select
-                      onValueChange={(value) => onChange("nivelCorrecaoErro", value as NivelCorrecaoErro)}
                       value={valores.nivelCorrecaoErro}
+                      onValueChange={(value) => onChange("nivelCorrecaoErro", value as NivelCorrecaoErro)}
                     >
                       <SelectTrigger id="error-correction" className="h-9 text-[12px]">
-                        <SelectValue placeholder="Nivel de correcao" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="L">Baixo (~7%)</SelectItem>
-                        <SelectItem value="M">Medio (~15%)</SelectItem>
-                        <SelectItem value="Q">Alto (~25%)</SelectItem>
-                        <SelectItem value="H">Muito alto (~30%)</SelectItem>
+                        {ERROR_LEVELS.map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {t(ERROR_LEVEL_LABELS[level])}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -285,37 +253,44 @@ export function StylePanel({
                   <div className="space-y-1.5">
                     <Label htmlFor="quiet-zone" className="flex items-center gap-1.5 text-[12px] font-medium text-foreground">
                       <LocalIcon name="frame" className="h-3.5 w-3.5 text-primary" />
-                      {copy.margin}
+                      {t({ pt: "Margem", en: "Margin", es: "Margen" })}
                     </Label>
                     <Input
                       id="quiet-zone"
                       type="number"
-                      min="0"
-                      max="40"
+                      min={0}
+                      max={40}
                       value={valores.zonaQuieta}
-                      onChange={(event) => onChange("zonaQuieta", Number(event.target.value))}
+                      onChange={(event) => onChange("zonaQuieta", clamp(Number(event.target.value), 0, 40))}
                       className="h-9 text-[12px]"
-                      placeholder="Margem"
                     />
                   </div>
                 </div>
               </StudioSection>
 
-              {/* Logo */}
               <StudioSection
                 active={valores.habilitarCustomizacaoLogo}
                 icon="image-plus"
-                title={copy.logoTitle}
-                description="Adicione um logo central com proporcao ajustavel"
+                title={t({ pt: "Logo personalizado", en: "Custom logo", es: "Logo personalizado" })}
+                description={t({
+                  pt: "Adicione um logo central com proporção ajustável",
+                  en: "Add a centered logo with adjustable size",
+                  es: "Añade un logo central con tamaño ajustable",
+                })}
                 accentClassName="border-fuchsia-300/50 bg-fuchsia-50/60 dark:border-fuchsia-500/20 dark:bg-fuchsia-950/10"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-[11px] text-muted-foreground">
-                    Use um PNG transparente para melhor resultado.
+                    {t({
+                      pt: "Use um PNG transparente para melhor resultado.",
+                      en: "Use a transparent PNG for best results.",
+                      es: "Usa un PNG transparente para un mejor resultado.",
+                    })}
                   </div>
                   <Switch
                     id="enable-logo"
                     checked={valores.habilitarCustomizacaoLogo}
+                    aria-label={t({ pt: "Logo personalizado", en: "Custom logo", es: "Logo personalizado" })}
                     onCheckedChange={(checked) => {
                       onChange("habilitarCustomizacaoLogo", checked)
                       if (!checked) {
@@ -330,10 +305,10 @@ export function StylePanel({
 
                 {valores.habilitarCustomizacaoLogo && (
                   <div className="space-y-3">
-                    <Input
+                    <input
                       id="logo-upload"
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_ACCEPT}
                       ref={fileInputRef}
                       onChange={onLogoUpload}
                       className="hidden"
@@ -348,20 +323,24 @@ export function StylePanel({
                       <span className="studio-icon-shell h-6 w-6 rounded-full">
                         <LocalIcon name="upload" className="h-3.5 w-3.5 text-primary" />
                       </span>
-                      Selecionar logo
+                      {t({ pt: "Selecionar logo", en: "Choose logo", es: "Elegir logo" })}
                     </Button>
 
                     {valores.logoDataUri && (
                       <div className="rounded-2xl border border-border/70 bg-background/70 p-2.5 dark:border-dark-5/30 dark:bg-dark-1/60">
                         <div className="flex items-center gap-2.5">
                           <img
-                            src={valores.logoDataUri || "/placeholder.svg"}
-                            alt="Preview do logo"
+                            src={valores.logoDataUri}
+                            alt={t({ pt: "Prévia do logo", en: "Logo preview", es: "Vista previa del logo" })}
                             className="h-10 w-10 rounded-md border bg-white object-contain"
                           />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[12.5px] font-medium text-foreground">Logo carregado</p>
-                            <p className="text-[11px] text-muted-foreground">Ajuste o tamanho abaixo.</p>
+                            <p className="text-[12.5px] font-medium text-foreground">
+                              {t({ pt: "Logo carregado", en: "Logo loaded", es: "Logo cargado" })}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {t({ pt: "Ajuste o tamanho abaixo.", en: "Adjust the size below.", es: "Ajusta el tamaño abajo." })}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -370,19 +349,17 @@ export function StylePanel({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="logo-size-ratio" className="text-[12px] font-medium text-foreground">
-                          Tamanho do logo
+                          {t({ pt: "Tamanho do logo", en: "Logo size", es: "Tamaño del logo" })}
                         </Label>
                         <div className="flex items-center gap-1.5">
                           <Input
                             id="logo-size-ratio"
                             type="number"
-                            min="5"
-                            max="40"
-                            step="1"
+                            min={5}
+                            max={40}
+                            step={1}
                             value={Math.round(valores.logoTamanhoRatio * 100)}
-                            onChange={(event) =>
-                              onChange("logoTamanhoRatio", Number.parseFloat(event.target.value || "0") / 100)
-                            }
+                            onChange={(event) => onChange("logoTamanhoRatio", clamp(Number(event.target.value), 5, 40) / 100)}
                             disabled={!valores.logoDataUri}
                             className="h-9 text-[12px]"
                           />
@@ -394,11 +371,11 @@ export function StylePanel({
                         <Checkbox
                           id="excavate-logo"
                           checked={valores.escavarLogo}
-                          onCheckedChange={(checked) => onChange("escavarLogo", checked as boolean)}
+                          onCheckedChange={(checked) => onChange("escavarLogo", checked === true)}
                           disabled={!valores.logoDataUri}
                         />
                         <Label htmlFor="excavate-logo" className="text-[12px] font-medium text-foreground">
-                          Escavar area
+                          {t({ pt: "Limpar área do logo", en: "Clear area behind logo", es: "Despejar área del logo" })}
                         </Label>
                       </div>
                     </div>
@@ -406,21 +383,29 @@ export function StylePanel({
                 )}
               </StudioSection>
 
-              {/* Background */}
               <StudioSection
                 active={valores.habilitarCustomizacaoFundo}
                 icon="image"
-                title={copy.bgTitle}
-                description="Aplique uma imagem no container do QR Code"
+                title={t({ pt: "Fundo personalizado", en: "Custom background", es: "Fondo personalizado" })}
+                description={t({
+                  pt: "Aplique uma imagem no container do QR Code",
+                  en: "Apply an image behind the QR code",
+                  es: "Aplica una imagen detrás del código QR",
+                })}
                 accentClassName="border-sky-300/50 bg-sky-50/60 dark:border-sky-500/20 dark:bg-sky-950/10"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-[11px] text-muted-foreground">
-                    Incorporado ao wrapper visual do preview e exportacao.
+                    {t({
+                      pt: "Incorporado ao preview e à exportação.",
+                      en: "Included in the preview and export.",
+                      es: "Incluido en la vista previa y la exportación.",
+                    })}
                   </div>
                   <Switch
                     id="enable-background"
                     checked={valores.habilitarCustomizacaoFundo}
+                    aria-label={t({ pt: "Fundo personalizado", en: "Custom background", es: "Fondo personalizado" })}
                     onCheckedChange={(checked) => {
                       onChange("habilitarCustomizacaoFundo", checked)
                       if (!checked) {
@@ -435,10 +420,10 @@ export function StylePanel({
 
                 {valores.habilitarCustomizacaoFundo && (
                   <div className="space-y-3">
-                    <Input
+                    <input
                       id="bg-image-upload"
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_ACCEPT}
                       ref={backgroundImageInputRef}
                       onChange={onBackgroundImageUpload}
                       className="hidden"
@@ -453,22 +438,32 @@ export function StylePanel({
                       <span className="studio-icon-shell h-6 w-6 rounded-full">
                         <LocalIcon name="upload" className="h-3.5 w-3.5 text-primary" />
                       </span>
-                      Selecionar imagem
+                      {t({ pt: "Selecionar imagem", en: "Choose image", es: "Elegir imagen" })}
                     </Button>
 
                     {valores.imagemFundo && (
                       <div className="rounded-2xl border border-border/70 bg-background/70 p-2.5 dark:border-dark-5/30 dark:bg-dark-1/60">
                         <div className="flex items-center gap-2.5">
                           <img
-                            src={valores.imagemFundo || "/placeholder.svg"}
-                            alt="Preview da imagem de fundo"
+                            src={valores.imagemFundo}
+                            alt={t({ pt: "Prévia da imagem de fundo", en: "Background preview", es: "Vista previa del fondo" })}
                             className="h-10 w-10 rounded-md border object-cover"
                           />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[12.5px] font-medium text-foreground">Imagem carregada</p>
-                            <p className="text-[11px] text-muted-foreground">Base visual do wrapper.</p>
+                            <p className="text-[12.5px] font-medium text-foreground">
+                              {t({ pt: "Imagem carregada", en: "Image loaded", es: "Imagen cargada" })}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {t({ pt: "Base visual do QR Code.", en: "Visual base of the QR code.", es: "Base visual del código QR." })}
+                            </p>
                           </div>
-                          <Button variant="outline" size="icon" onClick={onRemoveBackgroundImage} className="rounded-full h-8 w-8">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={onRemoveBackgroundImage}
+                            aria-label={t({ pt: "Remover imagem de fundo", en: "Remove background image", es: "Quitar imagen de fondo" })}
+                            className="h-8 w-8 rounded-full"
+                          >
                             <LocalIcon name="trash" className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </div>
@@ -478,21 +473,29 @@ export function StylePanel({
                 )}
               </StudioSection>
 
-              {/* Frame */}
               <StudioSection
                 active={valores.habilitarCustomizacaoFrame}
                 icon="frame"
-                title={copy.frameTitle}
-                description="Bordas extras e textos de apoio para composicoes promocionais"
+                title={t({ pt: "Moldura personalizada", en: "Custom frame", es: "Marco personalizado" })}
+                description={t({
+                  pt: "Bordas extras e textos de apoio para peças promocionais",
+                  en: "Extra borders and supporting text for promotional pieces",
+                  es: "Bordes extra y textos de apoyo para piezas promocionales",
+                })}
                 accentClassName="border-emerald-300/50 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-950/10"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-[11px] text-muted-foreground">
-                    Molduras alteram o wrapper visual do preview.
+                    {t({
+                      pt: "Molduras alteram o visual do preview e da exportação.",
+                      en: "Frames change the preview and export design.",
+                      es: "Los marcos cambian la vista previa y la exportación.",
+                    })}
                   </div>
                   <Switch
                     id="enable-frame"
                     checked={valores.habilitarCustomizacaoFrame}
+                    aria-label={t({ pt: "Moldura personalizada", en: "Custom frame", es: "Marco personalizado" })}
                     onCheckedChange={(checked) => {
                       onChange("habilitarCustomizacaoFrame", checked)
                       if (!checked) {
@@ -507,39 +510,34 @@ export function StylePanel({
                   <div className="space-y-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="frame-type" className="text-[12px] font-medium text-foreground">
-                        Tipo de moldura
+                        {t({ pt: "Tipo de moldura", en: "Frame type", es: "Tipo de marco" })}
                       </Label>
-                      <Select
-                        value={valores.tipoFrameSelecionado}
-                        onValueChange={(value) => onChange("tipoFrameSelecionado", value as TipoFrame)}
-                      >
+                      <Select value={valores.tipoFrameSelecionado} onValueChange={(value) => onChange("tipoFrameSelecionado", value as TipoFrame)}>
                         <SelectTrigger id="frame-type" className="h-9 text-[12px]">
-                          <SelectValue placeholder="Selecione o tipo de moldura" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {frameOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                          {FRAME_TYPES.map((frame) => (
+                            <SelectItem key={frame} value={frame}>
+                              {t(FRAME_LABELS[frame])}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {(valores.tipoFrameSelecionado === "textBottom" ||
-                      valores.tipoFrameSelecionado === "roundedBorderTextBottom" ||
-                      valores.tipoFrameSelecionado === "topBottomText" ||
-                      valores.tipoFrameSelecionado === "decorativeBorder") && (
+                    {FRAMES_WITH_CUSTOM_TEXT.includes(valores.tipoFrameSelecionado) && (
                       <div className="space-y-1.5">
                         <Label htmlFor="frame-text" className="text-[12px] font-medium text-foreground">
-                          Texto da moldura
+                          {t({ pt: "Texto da moldura", en: "Frame text", es: "Texto del marco" })}
                         </Label>
                         <Input
                           id="frame-text"
                           type="text"
+                          maxLength={40}
                           value={valores.textoFrame}
                           onChange={(event) => onChange("textoFrame", event.target.value)}
-                          placeholder="Digite o texto da moldura"
+                          placeholder={t({ pt: "Digite o texto da moldura", en: "Enter the frame text", es: "Escribe el texto del marco" })}
                           className="h-9 text-[12px]"
                         />
                       </div>
@@ -551,21 +549,33 @@ export function StylePanel({
               <StudioSection
                 active={visualTemplates.length > 0}
                 icon="sparkles"
-                title={copy.templatesTitle}
-                description="Salve combinacoes completas de cor, logo, fundo e moldura"
+                title={t({ pt: "Templates visuais", en: "Visual templates", es: "Plantillas visuales" })}
+                description={t({
+                  pt: "Salve combinações completas de cor, logo, fundo e moldura",
+                  en: "Save full combinations of color, logo, background and frame",
+                  es: "Guarda combinaciones completas de color, logo, fondo y marco",
+                })}
                 accentClassName="border-amber-300/50 bg-amber-50/60 dark:border-amber-500/20 dark:bg-amber-950/10"
               >
                 <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto]">
                   <Input
                     type="text"
+                    maxLength={60}
                     value={templateName}
                     onChange={(event) => setTemplateName(event.target.value)}
-                    placeholder="Nome do template"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        handleSaveTemplate()
+                      }
+                    }}
+                    placeholder={t({ pt: "Nome do template", en: "Template name", es: "Nombre de la plantilla" })}
+                    aria-label={t({ pt: "Nome do template", en: "Template name", es: "Nombre de la plantilla" })}
                     className="h-10 text-[12px]"
                   />
                   <Button type="button" onClick={handleSaveTemplate} className="h-10 gap-2.5 px-4 text-[12px]">
                     <LocalIcon name="plus" className="h-3.5 w-3.5" />
-                    {copy.saveTheme}
+                    {t({ pt: "Salvar tema", en: "Save theme", es: "Guardar tema" })}
                   </Button>
                 </div>
 
@@ -580,19 +590,13 @@ export function StylePanel({
                           <div className="min-w-0">
                             <p className="truncate text-[13px] font-semibold text-foreground">{template.name}</p>
                             <p className="text-[11px] text-muted-foreground">
-                              Atualizado em {formatTemplateDate(template.updatedAt)}
+                              {t({ pt: "Atualizado em", en: "Updated on", es: "Actualizado el" })} {formatTemplateDate(template.updatedAt)}
                             </p>
                           </div>
 
                           <div className="flex items-center gap-1.5">
-                            <span
-                              className="h-5 w-5 rounded-full border border-border/60"
-                              style={{ backgroundColor: template.corFrente }}
-                            />
-                            <span
-                              className="h-5 w-5 rounded-full border border-border/60"
-                              style={{ backgroundColor: template.corFundo }}
-                            />
+                            <span className="h-5 w-5 rounded-full border border-border/60" style={{ backgroundColor: template.corFrente }} />
+                            <span className="h-5 w-5 rounded-full border border-border/60" style={{ backgroundColor: template.corFundo }} />
                           </div>
                         </div>
 
@@ -601,7 +605,7 @@ export function StylePanel({
                             {template.tamanho}px
                           </Badge>
                           <Badge variant="outline" className="normal-case tracking-normal">
-                            Correcao {template.nivel}
+                            {t({ pt: "Correção", en: "Correction", es: "Corrección" })} {template.nivel}
                           </Badge>
                           {template.habilitarCustomizacaoLogo && template.logoDataUri && (
                             <Badge variant="outline" className="gap-1 normal-case tracking-normal">
@@ -612,28 +616,21 @@ export function StylePanel({
                           {template.habilitarCustomizacaoFundo && template.imagemFundo && (
                             <Badge variant="outline" className="gap-1 normal-case tracking-normal">
                               <LocalIcon name="image" className="h-3 w-3" />
-                              Fundo
+                              {t({ pt: "Fundo", en: "Background", es: "Fondo" })}
                             </Badge>
                           )}
-                          {template.habilitarCustomizacaoFrame &&
-                            template.tipoFrameSelecionado &&
-                            template.tipoFrameSelecionado !== "none" && (
-                              <Badge variant="outline" className="gap-1 normal-case tracking-normal">
-                                <LocalIcon name="frame" className="h-3 w-3" />
-                                Moldura
-                              </Badge>
-                            )}
+                          {template.habilitarCustomizacaoFrame && template.tipoFrameSelecionado && template.tipoFrameSelecionado !== "none" && (
+                            <Badge variant="outline" className="gap-1 normal-case tracking-normal">
+                              <LocalIcon name="frame" className="h-3 w-3" />
+                              {t({ pt: "Moldura", en: "Frame", es: "Marco" })}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="mt-3 grid grid-cols-3 gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onApplyVisualTemplate(template)}
-                            className="h-9 gap-1.5 text-[11px]"
-                          >
+                          <Button type="button" variant="outline" onClick={() => onApplyVisualTemplate(template)} className="h-9 gap-1.5 text-[11px]">
                             <LocalIcon name="check" className="h-3.5 w-3.5" />
-                            {copy.apply}
+                            {t({ pt: "Aplicar", en: "Apply", es: "Aplicar" })}
                           </Button>
                           <Button
                             type="button"
@@ -642,7 +639,7 @@ export function StylePanel({
                             className="h-9 gap-1.5 text-[11px]"
                           >
                             <LocalIcon name="reset" className="h-3.5 w-3.5" />
-                            {copy.update}
+                            {t({ pt: "Atualizar", en: "Update", es: "Actualizar" })}
                           </Button>
                           <Button
                             type="button"
@@ -651,7 +648,7 @@ export function StylePanel({
                             className="h-9 gap-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
                           >
                             <LocalIcon name="trash" className="h-3.5 w-3.5" />
-                            {copy.remove}
+                            {t({ pt: "Excluir", en: "Delete", es: "Eliminar" })}
                           </Button>
                         </div>
                       </div>
@@ -659,15 +656,21 @@ export function StylePanel({
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-border/70 bg-background/50 px-4 py-4 text-center dark:border-dark-5/30 dark:bg-dark-1/40">
-                    <p className="text-[12px] font-medium text-foreground">{copy.emptyTemplate}</p>
+                    <p className="text-[12px] font-medium text-foreground">
+                      {t({ pt: "Nenhum template salvo", en: "No saved templates", es: "No hay plantillas guardadas" })}
+                    </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {copy.emptyTemplateDescription}
+                      {t({
+                        pt: "Guarde combinações prontas para reutilizar o mesmo visual rapidamente.",
+                        en: "Save ready-made combinations to reuse the same design quickly.",
+                        es: "Guarda combinaciones listas para reutilizar el mismo diseño rápidamente.",
+                      })}
                     </p>
                   </div>
                 )}
               </StudioSection>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

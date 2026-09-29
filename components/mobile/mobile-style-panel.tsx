@@ -1,29 +1,114 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
+import { useLanguage } from "@/components/language-provider"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import { LocalIcon } from "@/components/ui/local-icon"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { LocalIcon } from "@/components/ui/local-icon"
-import type { AppLanguage } from "@/components/language-provider"
-import type { NivelCorrecaoErro, VisualTemplateQRCode } from "@/hooks/use-qr-code-state"
+import type { ResetKind } from "@/hooks/use-qr-code-generator"
+import type { QrState, UpdateField } from "@/hooks/use-qr-code-state"
+import { IMAGE_ACCEPT } from "@/lib/qr/image"
+import { ERROR_LEVEL_LABELS, FRAME_LABELS } from "@/lib/qr/labels"
+import {
+  DEFAULT_APPEARANCE,
+  ERROR_LEVELS,
+  FRAME_TYPES,
+  FRAMES_WITH_CUSTOM_TEXT,
+  type NivelCorrecaoErro,
+  type TipoFrame,
+  type VisualTemplateQRCode,
+} from "@/lib/qr/types"
 
-interface PersonalizacaoAparenciaMobileProps {
-  valores: any
-  onChange: (campo: string, valor: any) => void
-  onResetGranular: (tipo: string) => void
+interface MobileStylePanelProps {
+  valores: QrState
+  onChange: UpdateField
+  onResetGranular: (kind: ResetKind) => void
   valoresAccordion: string[]
   onValoresAccordionChange: (values: string[]) => void
+  onLogoFile: (file: File) => void | Promise<void>
+  onBackgroundFile: (file: File) => void | Promise<void>
   visualTemplates: VisualTemplateQRCode[]
   onSaveVisualTemplate: (name: string, templateId?: string) => void
   onApplyVisualTemplate: (template: VisualTemplateQRCode) => void
   onDeleteVisualTemplate: (templateId: string) => void
-  language?: AppLanguage
+}
+
+const LEVEL_COLORS: Record<NivelCorrecaoErro, string> = {
+  L: "bg-red-500",
+  M: "bg-yellow-500",
+  Q: "bg-blue-500",
+  H: "bg-green-500",
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
+}
+
+function SectionTrigger({
+  icon,
+  iconClassName,
+  shellClassName,
+  title,
+  active,
+  activeLabel,
+  resetLabel,
+  resetIcon,
+  onReset,
+}: {
+  icon: string
+  iconClassName: string
+  shellClassName: string
+  title: string
+  active: boolean
+  activeLabel: string
+  resetLabel: string
+  resetIcon: string
+  onReset: () => void
+}) {
+  return (
+    <div className="flex w-full items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className={`rounded-md p-1.5 ${shellClassName}`}>
+          <LocalIcon name={icon} className={`h-4 w-4 ${iconClassName}`} />
+        </div>
+        <span className="font-medium">{title}</span>
+        {active && (
+          <Badge variant="secondary" className="text-xs">
+            <LocalIcon name="sparkles" className="mr-1 h-3 w-3" />
+            {activeLabel}
+          </Badge>
+        )}
+      </div>
+      {active && (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={resetLabel}
+          onClick={(event) => {
+            event.stopPropagation()
+            onReset()
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault()
+              event.stopPropagation()
+              onReset()
+            }
+          }}
+          className="mr-2 inline-flex h-8 items-center justify-center rounded-xl px-3 text-xs text-destructive hover:bg-destructive/10"
+        >
+          <LocalIcon name={resetIcon} className="h-3 w-3" />
+        </span>
+      )}
+    </div>
+  )
 }
 
 export function MobileStylePanel({
@@ -32,54 +117,32 @@ export function MobileStylePanel({
   onResetGranular,
   valoresAccordion,
   onValoresAccordionChange,
+  onLogoFile,
+  onBackgroundFile,
   visualTemplates,
   onSaveVisualTemplate,
   onApplyVisualTemplate,
   onDeleteVisualTemplate,
-  language = "pt",
-}: PersonalizacaoAparenciaMobileProps) {
+}: MobileStylePanelProps) {
+  const { t, localeTag } = useLanguage()
   const [templateName, setTemplateName] = useState("")
-  const copy =
-    language === "en"
-      ? {
-          templates: "Visual templates",
-          saveCurrent: "Save current theme",
-          apply: "Apply",
-          update: "Update",
-          remove: "Delete",
-          none: "No saved template",
-          noneDescription: "Save full styles to reuse later.",
-        }
-      : {
-          templates: "Templates Visuais",
-          saveCurrent: "Salvar tema atual",
-          apply: "Aplicar",
-          update: "Atualizar",
-          remove: "Excluir",
-          none: "Nenhum template salvo",
-          noneDescription: "Guarde estilos completos para reutilizar depois.",
-        }
 
-  const hasBasicCustomizations = () => {
-    return (
-      valores.corFrente !== "#000000" ||
-      valores.corFundo !== "#FFFFFF" ||
-      valores.tamanho !== 256 ||
-      valores.nivelCorrecaoErro !== "H" ||
-      valores.zonaQuieta !== 4
-    )
-  }
+  const activeLabel = t({ pt: "Ativo", en: "Active", es: "Activo" })
+  const hasBasic =
+    valores.corFrente !== DEFAULT_APPEARANCE.corFrente ||
+    valores.corFundo !== DEFAULT_APPEARANCE.corFundo ||
+    valores.tamanho !== DEFAULT_APPEARANCE.tamanho ||
+    valores.nivelCorrecaoErro !== DEFAULT_APPEARANCE.nivelCorrecaoErro ||
+    valores.zonaQuieta !== DEFAULT_APPEARANCE.zonaQuieta
+  const hasFrame = valores.tipoFrameSelecionado !== "none"
+  const backgroundLocked = !!valores.imagemFundo || hasFrame
 
-  const hasLogoCustomizations = () => {
-    return !!valores.logoDataUri
-  }
-
-  const hasBackgroundCustomizations = () => {
-    return !!valores.imagemFundo
-  }
-
-  const hasFrameCustomizations = () => {
-    return valores.tipoFrameSelecionado && valores.tipoFrameSelecionado !== "none"
+  const pickFile = (handler: (file: File) => void | Promise<void>) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (file) {
+      void handler(file)
+    }
   }
 
   const handleSaveTemplate = () => {
@@ -87,89 +150,64 @@ export function MobileStylePanel({
     setTemplateName("")
   }
 
-  const formatTemplateDate = (timestamp: number) =>
-    new Date(timestamp).toLocaleDateString(language === "en" ? "en-US" : "pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
-
   return (
     <Accordion type="multiple" value={valoresAccordion} onValueChange={onValoresAccordionChange} className="space-y-2">
-      {/* Cores e Tamanho */}
-      <AccordionItem
-        value="appearance"
-        className="bg-slate-50/50 dark:bg-slate-900/50 rounded-lg border border-slate-200/50 dark:border-slate-700/50"
-      >
+      <AccordionItem value="appearance" className="rounded-lg border border-slate-200/50 bg-slate-50/50 dark:border-slate-700/50 dark:bg-slate-900/50">
         <AccordionTrigger className="px-4 py-3 hover:no-underline">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-md bg-slate-500/10">
-                <LocalIcon name="palette" className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-              </div>
-              <span className="font-medium">Cores e Tamanho</span>
-              {hasBasicCustomizations() && (
-                <Badge variant="secondary" className="text-xs">
-                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
-                  Ativo
-                </Badge>
-              )}
-            </div>
-            {hasBasicCustomizations() && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onResetGranular("basic")
-                }}
-                className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
-              >
-                <LocalIcon name="reset" className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+          <SectionTrigger
+            icon="palette"
+            iconClassName="text-slate-600 dark:text-slate-400"
+            shellClassName="bg-slate-500/10"
+            title={t({ pt: "Cores e tamanho", en: "Colors and size", es: "Colores y tamaño" })}
+            active={hasBasic}
+            activeLabel={activeLabel}
+            resetLabel={t({ pt: "Restaurar cores e tamanho", en: "Reset colors and size", es: "Restablecer colores y tamaño" })}
+            resetIcon="reset"
+            onReset={() => onResetGranular("basic")}
+          />
         </AccordionTrigger>
         <AccordionContent className="px-4 pb-4 pt-2">
           <div className="space-y-4">
-            {/* Cores */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Cor do QR</label>
-                <div className="relative">
-                  <input
-                    type="color"
-                    value={valores.corFrente}
-                    onChange={(e) => onChange("corFrente", e.target.value)}
-                    className="w-full h-10 rounded border-2 cursor-pointer hover:border-primary/50 transition-all duration-200"
-                  />
-                  <div className="absolute inset-0 rounded-md bg-linear-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
-                </div>
+              <div className="grid gap-2">
+                <label htmlFor="mobile-fg-color" className="text-sm font-medium text-foreground">
+                  {t({ pt: "Cor do QR", en: "QR color", es: "Color del QR" })}
+                </label>
+                <input
+                  id="mobile-fg-color"
+                  type="color"
+                  value={valores.corFrente}
+                  onChange={(event) => onChange("corFrente", event.target.value)}
+                  className="h-10 w-full cursor-pointer rounded border-2 transition-all duration-200 hover:border-primary/50"
+                />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Cor de Fundo</label>
-                <div className="relative">
-                  <input
-                    type="color"
-                    value={valores.corFundo}
-                    onChange={(e) => onChange("corFundo", e.target.value)}
-                    className="w-full h-10 rounded border-2 cursor-pointer hover:border-primary/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={valores.imagemFundo || hasFrameCustomizations()}
-                  />
-                  <div className="absolute inset-0 rounded-md bg-linear-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
-                </div>
-                {(valores.imagemFundo || hasFrameCustomizations()) && (
+              <div className="grid gap-2">
+                <label htmlFor="mobile-bg-color" className="text-sm font-medium text-foreground">
+                  {t({ pt: "Cor de fundo", en: "Background color", es: "Color de fondo" })}
+                </label>
+                <input
+                  id="mobile-bg-color"
+                  type="color"
+                  value={valores.corFundo}
+                  onChange={(event) => onChange("corFundo", event.target.value)}
+                  disabled={backgroundLocked}
+                  className="h-10 w-full cursor-pointer rounded border-2 transition-all duration-200 hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                {backgroundLocked && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Desabilitado quando há imagem de fundo ou frame
+                    {t({
+                      pt: "Desabilitada quando há imagem de fundo ou moldura",
+                      en: "Disabled while a background image or frame is active",
+                      es: "Desactivado mientras haya imagen de fondo o marco",
+                    })}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Tamanho */}
             <div className="space-y-2">
               <div className="flex justify-between">
-                <label className="text-sm font-medium text-foreground">Tamanho</label>
+                <span className="text-sm font-medium text-foreground">{t({ pt: "Tamanho", en: "Size", es: "Tamaño" })}</span>
                 <Badge variant="secondary" className="font-mono text-xs">
                   {valores.tamanho}px
                 </Badge>
@@ -180,70 +218,47 @@ export function MobileStylePanel({
                 step={1}
                 value={[valores.tamanho]}
                 onValueChange={(value) => onChange("tamanho", value[0])}
+                aria-label={t({ pt: "Tamanho", en: "Size", es: "Tamaño" })}
                 className="transition-all duration-300"
               />
             </div>
 
-            {/* Configurações Avançadas */}
             <div className="grid grid-cols-1 gap-3">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="error-correction"
-                  className="text-sm font-medium text-foreground flex items-center gap-2"
-                >
-                  <LocalIcon name="shield" className="w-4 h-4 text-green-600" />
-                  Correção de Erro
+              <div className="grid gap-2">
+                <Label htmlFor="mobile-error-correction" className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <LocalIcon name="shield" className="h-4 w-4 text-green-600" />
+                  {t({ pt: "Correção de erro", en: "Error correction", es: "Corrección de errores" })}
                 </Label>
-                <Select
-                  onValueChange={(value) => onChange("nivelCorrecaoErro", value as NivelCorrecaoErro)}
-                  value={valores.nivelCorrecaoErro}
-                >
-                  <SelectTrigger id="error-correction" className="text-sm h-10">
-                    <SelectValue placeholder="Nível de correção" />
+                <Select value={valores.nivelCorrecaoErro} onValueChange={(value) => onChange("nivelCorrecaoErro", value as NivelCorrecaoErro)}>
+                  <SelectTrigger id="mobile-error-correction" className="h-10 text-sm">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="L" className="text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        Baixo (~7%)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="M" className="text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                        Médio (~15%)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Q" className="text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        Alto (~25%)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="H" className="text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        Muito Alto (~30%)
-                      </div>
-                    </SelectItem>
+                    {ERROR_LEVELS.map((level) => (
+                      <SelectItem key={level} value={level} className="text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${LEVEL_COLORS[level]}`} />
+                          {t(ERROR_LEVEL_LABELS[level])}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quiet-zone" className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <LocalIcon name="frame" className="w-4 h-4 text-primary" />
-                  Margem
+              <div className="grid gap-2">
+                <Label htmlFor="mobile-quiet-zone" className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <LocalIcon name="frame" className="h-4 w-4 text-primary" />
+                  {t({ pt: "Margem", en: "Margin", es: "Margen" })}
                 </Label>
                 <Input
-                  id="quiet-zone"
+                  id="mobile-quiet-zone"
                   type="number"
-                  min="0"
-                  max="40"
+                  min={0}
+                  max={40}
                   value={valores.zonaQuieta}
-                  onChange={(e) => onChange("zonaQuieta", Number(e.target.value))}
+                  onChange={(event) => onChange("zonaQuieta", clamp(Number(event.target.value), 0, 40))}
                   className="h-10"
-                  placeholder="Tamanho da margem"
                 />
               </div>
             </div>
@@ -251,89 +266,56 @@ export function MobileStylePanel({
         </AccordionContent>
       </AccordionItem>
 
-      {/* Logo Personalizado */}
-      <AccordionItem
-        value="logo"
-        className="bg-purple-50/50 dark:bg-purple-900/50 rounded-lg border border-purple-200/50 dark:border-purple-700/50"
-      >
+      <AccordionItem value="logo" className="rounded-lg border border-purple-200/50 bg-purple-50/50 dark:border-purple-700/50 dark:bg-purple-900/50">
         <AccordionTrigger className="px-4 py-3 hover:no-underline">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-md bg-purple-500/10">
-                <LocalIcon name="image-plus" className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <span className="font-medium">Logo Personalizado</span>
-              {hasLogoCustomizations() && (
-                <Badge variant="secondary" className="text-xs">
-                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
-                  Ativo
-                </Badge>
-              )}
-            </div>
-            {hasLogoCustomizations() && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onResetGranular("logo")
-                }}
-                className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
-              >
-                <LocalIcon name="trash" className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+          <SectionTrigger
+            icon="image-plus"
+            iconClassName="text-purple-600 dark:text-purple-400"
+            shellClassName="bg-purple-500/10"
+            title={t({ pt: "Logo personalizado", en: "Custom logo", es: "Logo personalizado" })}
+            active={!!valores.logoDataUri}
+            activeLabel={activeLabel}
+            resetLabel={t({ pt: "Remover logo", en: "Remove logo", es: "Quitar logo" })}
+            resetIcon="trash"
+            onReset={() => onResetGranular("logo")}
+          />
         </AccordionTrigger>
         <AccordionContent className="px-4 pb-4 pt-2">
           <div className="space-y-3">
             <input
               type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  const reader = new FileReader()
-                  reader.onload = () => onChange("logoDataUri", reader.result)
-                  reader.readAsDataURL(file)
-                }
-              }}
-              className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+              accept={IMAGE_ACCEPT}
+              aria-label={t({ pt: "Selecionar logo", en: "Choose logo", es: "Elegir logo" })}
+              onChange={pickFile(onLogoFile)}
+              className="w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-purple-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-purple-700 hover:file:bg-purple-100"
             />
             {valores.logoDataUri && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={valores.logoDataUri || "/placeholder.svg"}
-                    alt="Logo"
-                    className="w-8 h-8 object-contain border rounded"
-                  />
-                  <span className="text-xs text-muted-foreground">Logo carregado</span>
+                  <img src={valores.logoDataUri} alt="Logo" className="h-8 w-8 rounded border object-contain" />
+                  <span className="text-xs text-muted-foreground">{t({ pt: "Logo carregado", en: "Logo loaded", es: "Logo cargado" })}</span>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Tamanho do Logo (%)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min="5"
-                      max="40"
-                      step="1"
-                      value={Math.round(valores.logoTamanhoRatio * 100)}
-                      onChange={(e) => onChange("logoTamanhoRatio", Number.parseFloat(e.target.value) / 100)}
-                      className="h-9"
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="mobile-logo-size" className="text-sm font-medium text-foreground">
+                    {t({ pt: "Tamanho do logo (%)", en: "Logo size (%)", es: "Tamaño del logo (%)" })}
+                  </Label>
+                  <Input
+                    id="mobile-logo-size"
+                    type="number"
+                    min={5}
+                    max={40}
+                    step={1}
+                    value={Math.round(valores.logoTamanhoRatio * 100)}
+                    onChange={(event) => onChange("logoTamanhoRatio", clamp(Number(event.target.value), 5, 40) / 100)}
+                    className="h-9"
+                  />
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="excavate-logo"
-                    checked={valores.escavarLogo}
-                    onCheckedChange={(checked) => onChange("escavarLogo", checked as boolean)}
-                  />
-                  <Label htmlFor="excavate-logo" className="text-sm font-medium text-foreground">
-                    Escavar área do QR Code
+                <div className="flex items-center gap-2">
+                  <Checkbox id="mobile-excavate-logo" checked={valores.escavarLogo} onCheckedChange={(checked) => onChange("escavarLogo", checked === true)} />
+                  <Label htmlFor="mobile-excavate-logo" className="text-sm font-medium text-foreground">
+                    {t({ pt: "Limpar área atrás do logo", en: "Clear area behind logo", es: "Despejar el área detrás del logo" })}
                   </Label>
                 </div>
               </div>
@@ -342,151 +324,103 @@ export function MobileStylePanel({
         </AccordionContent>
       </AccordionItem>
 
-      {/* Fundo Personalizado */}
-      <AccordionItem
-        value="background"
-        className="bg-blue-50/50 dark:bg-blue-900/50 rounded-lg border border-blue-200/50 dark:border-blue-700/50"
-      >
+      <AccordionItem value="background" className="rounded-lg border border-blue-200/50 bg-blue-50/50 dark:border-blue-700/50 dark:bg-blue-900/50">
         <AccordionTrigger className="px-4 py-3 hover:no-underline">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-md bg-blue-500/10">
-                <LocalIcon name="image" className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <span className="font-medium">Fundo Personalizado</span>
-              {hasBackgroundCustomizations() && (
-                <Badge variant="secondary" className="text-xs">
-                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
-                  Ativo
-                </Badge>
-              )}
-            </div>
-            {hasBackgroundCustomizations() && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onResetGranular("background")
-                }}
-                className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
-              >
-                <LocalIcon name="trash" className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+          <SectionTrigger
+            icon="image"
+            iconClassName="text-blue-600 dark:text-blue-400"
+            shellClassName="bg-blue-500/10"
+            title={t({ pt: "Fundo personalizado", en: "Custom background", es: "Fondo personalizado" })}
+            active={!!valores.imagemFundo}
+            activeLabel={activeLabel}
+            resetLabel={t({ pt: "Remover fundo", en: "Remove background", es: "Quitar fondo" })}
+            resetIcon="trash"
+            onReset={() => onResetGranular("background")}
+          />
         </AccordionTrigger>
         <AccordionContent className="px-4 pb-4 pt-2">
           <div className="space-y-3">
             <input
               type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  const reader = new FileReader()
-                  reader.onload = () => onChange("imagemFundo", reader.result)
-                  reader.readAsDataURL(file)
-                }
-              }}
-              className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              accept={IMAGE_ACCEPT}
+              aria-label={t({ pt: "Selecionar imagem de fundo", en: "Choose background image", es: "Elegir imagen de fondo" })}
+              onChange={pickFile(onBackgroundFile)}
+              className="w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
             />
             {valores.imagemFundo && (
               <div className="flex items-center gap-2">
                 <img
-                  src={valores.imagemFundo || "/placeholder.svg"}
-                  alt="Fundo"
-                  className="w-8 h-8 object-cover border rounded"
+                  src={valores.imagemFundo}
+                  alt={t({ pt: "Fundo", en: "Background", es: "Fondo" })}
+                  className="h-8 w-8 rounded border object-cover"
                 />
-                <span className="text-xs text-muted-foreground">Imagem de fundo carregada</span>
+                <span className="text-xs text-muted-foreground">
+                  {t({ pt: "Imagem de fundo carregada", en: "Background image loaded", es: "Imagen de fondo cargada" })}
+                </span>
               </div>
             )}
           </div>
         </AccordionContent>
       </AccordionItem>
 
-      {/* Moldura Personalizada */}
-      <AccordionItem
-        value="frame"
-        className="bg-green-50/50 dark:bg-green-900/50 rounded-lg border border-green-200/50 dark:border-green-700/50"
-      >
+      <AccordionItem value="frame" className="rounded-lg border border-green-200/50 bg-green-50/50 dark:border-green-700/50 dark:bg-green-900/50">
         <AccordionTrigger className="px-4 py-3 hover:no-underline">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-md bg-green-500/10">
-                <LocalIcon name="frame" className="w-4 h-4 text-green-600 dark:text-green-400" />
-              </div>
-              <span className="font-medium">Moldura Personalizada</span>
-              {hasFrameCustomizations() && (
-                <Badge variant="secondary" className="text-xs">
-                  <LocalIcon name="sparkles" className="w-3 h-3 mr-1" />
-                  Ativo
-                </Badge>
-              )}
-            </div>
-            {hasFrameCustomizations() && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onResetGranular("frame")
-                }}
-                className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive mr-2"
-              >
-                <LocalIcon name="trash" className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+          <SectionTrigger
+            icon="frame"
+            iconClassName="text-green-600 dark:text-green-400"
+            shellClassName="bg-green-500/10"
+            title={t({ pt: "Moldura personalizada", en: "Custom frame", es: "Marco personalizado" })}
+            active={hasFrame}
+            activeLabel={activeLabel}
+            resetLabel={t({ pt: "Remover moldura", en: "Remove frame", es: "Quitar marco" })}
+            resetIcon="trash"
+            onReset={() => onResetGranular("frame")}
+          />
         </AccordionTrigger>
         <AccordionContent className="px-4 pb-4 pt-2">
           <div className="space-y-3">
             <select
+              aria-label={t({ pt: "Tipo de moldura", en: "Frame type", es: "Tipo de marco" })}
               value={valores.tipoFrameSelecionado}
-              onChange={(e) => onChange("tipoFrameSelecionado", e.target.value)}
-              className="w-full p-2 border rounded-md bg-background text-sm"
+              onChange={(event) => onChange("tipoFrameSelecionado", event.target.value as TipoFrame)}
+              className="w-full rounded-md border bg-background p-2 text-sm"
             >
-              <option value="none">Nenhuma</option>
-              <option value="simpleBorder">Borda Simples</option>
-              <option value="textBottom">Texto na Parte Inferior</option>
-              <option value="scanMeBottom">"SCAN ME" na Parte Inferior</option>
-              <option value="roundedBorderTextBottom">Borda Arredondada com Texto</option>
-              <option value="topBottomText">Texto Superior e Inferior</option>
-              <option value="decorativeBorder">Bordas Decorativas</option>
-              <option value="modernFrame">Moldura Moderna</option>
-              <option value="classicFrame">Moldura Clássica</option>
+              {FRAME_TYPES.map((frame) => (
+                <option key={frame} value={frame}>
+                  {t(FRAME_LABELS[frame])}
+                </option>
+              ))}
             </select>
 
-            {(valores.tipoFrameSelecionado === "textBottom" ||
-              valores.tipoFrameSelecionado === "roundedBorderTextBottom" ||
-              valores.tipoFrameSelecionado === "topBottomText" ||
-              valores.tipoFrameSelecionado === "decorativeBorder") && (
+            {FRAMES_WITH_CUSTOM_TEXT.includes(valores.tipoFrameSelecionado) && (
               <input
                 type="text"
+                maxLength={40}
+                aria-label={t({ pt: "Texto da moldura", en: "Frame text", es: "Texto del marco" })}
                 value={valores.textoFrame}
-                onChange={(e) => onChange("textoFrame", e.target.value)}
-                placeholder="Digite o texto da moldura"
-                className="w-full p-2 border rounded-md bg-background text-sm"
+                onChange={(event) => onChange("textoFrame", event.target.value)}
+                placeholder={t({ pt: "Digite o texto da moldura", en: "Enter the frame text", es: "Escribe el texto del marco" })}
+                className="w-full rounded-md border bg-background p-2 text-sm"
               />
             )}
           </div>
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem
-        value="templates"
-        className="bg-amber-50/50 dark:bg-amber-900/40 rounded-lg border border-amber-200/60 dark:border-amber-700/50"
-      >
+      <AccordionItem value="templates" className="rounded-lg border border-amber-200/60 bg-amber-50/50 dark:border-amber-700/50 dark:bg-amber-900/40">
         <AccordionTrigger className="px-4 py-3 hover:no-underline">
-          <div className="flex items-center justify-between w-full">
+          <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-md bg-amber-500/10">
-                <LocalIcon name="sparkles" className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+              <div className="rounded-md bg-amber-500/10 p-1.5">
+                <LocalIcon name="sparkles" className="h-4 w-4 text-amber-600 dark:text-amber-300" />
               </div>
-              <span className="font-medium">{copy.templates}</span>
+              <span className="font-medium">{t({ pt: "Templates visuais", en: "Visual templates", es: "Plantillas visuales" })}</span>
               {visualTemplates.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {visualTemplates.length} salvo{visualTemplates.length > 1 ? "s" : ""}
+                  {visualTemplates.length}{" "}
+                  {visualTemplates.length > 1
+                    ? t({ pt: "salvos", en: "saved", es: "guardadas" })
+                    : t({ pt: "salvo", en: "saved", es: "guardada" })}
                 </Badge>
               )}
             </div>
@@ -497,85 +431,67 @@ export function MobileStylePanel({
             <div className="grid gap-2">
               <Input
                 type="text"
+                maxLength={60}
                 value={templateName}
                 onChange={(event) => setTemplateName(event.target.value)}
-                placeholder="Nome do template"
+                placeholder={t({ pt: "Nome do template", en: "Template name", es: "Nombre de la plantilla" })}
+                aria-label={t({ pt: "Nome do template", en: "Template name", es: "Nombre de la plantilla" })}
                 className="h-10 text-sm"
               />
               <Button type="button" onClick={handleSaveTemplate} className="h-10 gap-2">
-                <LocalIcon name="plus" className="w-4 h-4" />
-                {copy.saveCurrent}
+                <LocalIcon name="plus" className="h-4 w-4" />
+                {t({ pt: "Salvar tema atual", en: "Save current theme", es: "Guardar tema actual" })}
               </Button>
             </div>
 
             {visualTemplates.length > 0 ? (
               <div className="space-y-2.5">
                 {visualTemplates.map((template) => (
-                  <div
-                    key={template.id}
-                    className="rounded-xl border border-amber-200/60 bg-background/80 p-3 dark:border-amber-700/40 dark:bg-background/40"
-                  >
+                  <div key={template.id} className="rounded-xl border border-amber-200/60 bg-background/80 p-3 dark:border-amber-700/40 dark:bg-background/40">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Atualizado em {formatTemplateDate(template.updatedAt)}
+                          {t({ pt: "Atualizado em", en: "Updated on", es: "Actualizado el" })}{" "}
+                          {new Date(template.updatedAt).toLocaleDateString(localeTag, { day: "2-digit", month: "2-digit", year: "numeric" })}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span
-                          className="h-4 w-4 rounded-full border border-border/60"
-                          style={{ backgroundColor: template.corFrente }}
-                        />
-                        <span
-                          className="h-4 w-4 rounded-full border border-border/60"
-                          style={{ backgroundColor: template.corFundo }}
-                        />
+                        <span className="h-4 w-4 rounded-full border border-border/60" style={{ backgroundColor: template.corFrente }} />
+                        <span className="h-4 w-4 rounded-full border border-border/60" style={{ backgroundColor: template.corFundo }} />
                       </div>
                     </div>
 
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <Badge variant="outline" className="normal-case tracking-normal text-[10px]">
+                      <Badge variant="outline" className="text-[10px] normal-case tracking-normal">
                         {template.tamanho}px
                       </Badge>
                       {template.habilitarCustomizacaoLogo && template.logoDataUri && (
-                        <Badge variant="outline" className="gap-1 normal-case tracking-normal text-[10px]">
-                          <LocalIcon name="image-plus" className="w-3 h-3" />
+                        <Badge variant="outline" className="gap-1 text-[10px] normal-case tracking-normal">
+                          <LocalIcon name="image-plus" className="h-3 w-3" />
                           Logo
                         </Badge>
                       )}
                       {template.habilitarCustomizacaoFundo && template.imagemFundo && (
-                        <Badge variant="outline" className="gap-1 normal-case tracking-normal text-[10px]">
-                          <LocalIcon name="image" className="w-3 h-3" />
-                          Fundo
+                        <Badge variant="outline" className="gap-1 text-[10px] normal-case tracking-normal">
+                          <LocalIcon name="image" className="h-3 w-3" />
+                          {t({ pt: "Fundo", en: "Background", es: "Fondo" })}
                         </Badge>
                       )}
-                      {template.habilitarCustomizacaoFrame &&
-                        template.tipoFrameSelecionado &&
-                        template.tipoFrameSelecionado !== "none" && (
-                          <Badge variant="outline" className="gap-1 normal-case tracking-normal text-[10px]">
-                            <LocalIcon name="frame" className="w-3 h-3" />
-                            Moldura
-                          </Badge>
-                        )}
+                      {template.habilitarCustomizacaoFrame && template.tipoFrameSelecionado && template.tipoFrameSelecionado !== "none" && (
+                        <Badge variant="outline" className="gap-1 text-[10px] normal-case tracking-normal">
+                          <LocalIcon name="frame" className="h-3 w-3" />
+                          {t({ pt: "Moldura", en: "Frame", es: "Marco" })}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="mt-3 grid grid-cols-3 gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onApplyVisualTemplate(template)}
-                        className="h-9 text-[11px]"
-                      >
-                        {copy.apply}
+                      <Button type="button" variant="outline" onClick={() => onApplyVisualTemplate(template)} className="h-9 text-[11px]">
+                        {t({ pt: "Aplicar", en: "Apply", es: "Aplicar" })}
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onSaveVisualTemplate(template.name, template.id)}
-                        className="h-9 text-[11px]"
-                      >
-                        {copy.update}
+                      <Button type="button" variant="outline" onClick={() => onSaveVisualTemplate(template.name, template.id)} className="h-9 text-[11px]">
+                        {t({ pt: "Atualizar", en: "Update", es: "Actualizar" })}
                       </Button>
                       <Button
                         type="button"
@@ -583,7 +499,7 @@ export function MobileStylePanel({
                         onClick={() => onDeleteVisualTemplate(template.id)}
                         className="h-9 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
-                        {copy.remove}
+                        {t({ pt: "Excluir", en: "Delete", es: "Eliminar" })}
                       </Button>
                     </div>
                   </div>
@@ -591,9 +507,15 @@ export function MobileStylePanel({
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-amber-300/70 px-4 py-4 text-center dark:border-amber-700/50">
-                <p className="text-sm font-medium text-foreground">{copy.none}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {t({ pt: "Nenhum template salvo", en: "No saved templates", es: "No hay plantillas guardadas" })}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {copy.noneDescription}
+                  {t({
+                    pt: "Guarde estilos completos para reutilizar depois.",
+                    en: "Save complete styles to reuse later.",
+                    es: "Guarda estilos completos para reutilizarlos después.",
+                  })}
                 </p>
               </div>
             )}

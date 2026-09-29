@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
-import { motion } from "framer-motion"
+import { m } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface Square {
@@ -60,12 +60,6 @@ export function GridPattern({
   ]
 
   useEffect(() => {
-    if (dimensions.width && dimensions.height) {
-      setSquares(generateSquares(numSquares, dimensions, width, height))
-    }
-  }, [dimensions, numSquares, width, height])
-
-  useEffect(() => {
     const container = containerRef.current
     if (!container) {
       return
@@ -77,16 +71,17 @@ export function GridPattern({
         return
       }
 
-      setDimensions({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      })
+      const next = { width: entry.contentRect.width, height: entry.contentRect.height }
+      setDimensions(next)
+      if (next.width && next.height) {
+        setSquares(generateSquares(numSquares, next, width, height))
+      }
     })
 
     resizeObserver.observe(container)
 
     return () => resizeObserver.disconnect()
-  }, [])
+  }, [numSquares, width, height])
 
   return (
     <svg
@@ -107,7 +102,7 @@ export function GridPattern({
 
       <svg x={x} y={y} className="overflow-visible">
         {squares.map(({ pos: [squareX, squareY], id: squareId }, index) => (
-          <motion.rect
+          <m.rect
             key={`${squareId}-${squareX}-${squareY}`}
             width={width - 1}
             height={height - 1}

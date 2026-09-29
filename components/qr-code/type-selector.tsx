@@ -1,90 +1,33 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { m } from "framer-motion"
+import { useLanguage } from "@/components/language-provider"
 import { LocalIcon } from "@/components/ui/local-icon"
-import type { AppLanguage } from "@/components/language-provider"
-import type { TipoConteudoQR } from "@/hooks/use-qr-code-state"
+import { CONTENT_TYPE_META } from "@/lib/qr/labels"
+import { CONTENT_TYPES, DEFAULT_VISIBLE_TYPES, type TipoConteudoQR } from "@/lib/qr/types"
 
-interface ContentTypeItem {
-  valor: TipoConteudoQR
-  icon: string
-  label: string
-  descricao: string
-}
-
-interface SeletorTipoConteudoProps {
+interface TypeSelectorProps {
   tipoAtivo: TipoConteudoQR
   onTipoChange: (tipo: TipoConteudoQR) => void
   tiposVisiveis?: TipoConteudoQR[]
-  language?: AppLanguage
 }
 
-const contentTypes: Record<"pt" | "en", ContentTypeItem[]> = {
-  pt: [
-    { valor: "url" as const, icon: "link", label: "URL", descricao: "Sites, links e texto" },
-    { valor: "wifi" as const, icon: "wifi", label: "Wi-Fi", descricao: "Rede e senha" },
-    { valor: "whatsapp" as const, icon: "whatsapp", label: "WhatsApp", descricao: "Contato direto" },
-    { valor: "whatsappGroup" as const, icon: "group", label: "Grupo", descricao: "Link de grupo" },
-    { valor: "phone" as const, icon: "phone", label: "Telefone", descricao: "Chamada rapida" },
-    { valor: "vcard" as const, icon: "user", label: "Contato", descricao: "Cartao virtual" },
-    { valor: "vevent" as const, icon: "calendar", label: "Evento", descricao: "Agenda e data" },
-    { valor: "email" as const, icon: "email", label: "Email", descricao: "Mensagem pronta" },
-    { valor: "sms" as const, icon: "sms", label: "SMS", descricao: "Texto curto" },
-    { valor: "geo" as const, icon: "geo", label: "Local", descricao: "Latitude e longitude" },
-    { valor: "pix" as const, icon: "pix", label: "PIX", descricao: "Pagamento" },
-    { valor: "appstore" as const, icon: "app", label: "App", descricao: "iOS e Android" },
-    { valor: "spotify" as const, icon: "media", label: "Midia", descricao: "Musica e video" },
-    { valor: "zoom" as const, icon: "video", label: "Chamada", descricao: "Reunioes online" },
-    { valor: "menu" as const, icon: "menu", label: "Menu", descricao: "Catalogo e cardapio" },
-    { valor: "cupom" as const, icon: "coupon", label: "Cupom", descricao: "Codigo promocional" },
-  ],
-  en: [
-    { valor: "url" as const, icon: "link", label: "URL", descricao: "Sites, links and text" },
-    { valor: "wifi" as const, icon: "wifi", label: "Wi-Fi", descricao: "Network and password" },
-    { valor: "whatsapp" as const, icon: "whatsapp", label: "WhatsApp", descricao: "Direct contact" },
-    { valor: "whatsappGroup" as const, icon: "group", label: "Group", descricao: "Group invite link" },
-    { valor: "phone" as const, icon: "phone", label: "Phone", descricao: "Quick call" },
-    { valor: "vcard" as const, icon: "user", label: "Contact", descricao: "Digital card" },
-    { valor: "vevent" as const, icon: "calendar", label: "Event", descricao: "Schedule and date" },
-    { valor: "email" as const, icon: "email", label: "Email", descricao: "Pre-filled message" },
-    { valor: "sms" as const, icon: "sms", label: "SMS", descricao: "Short text" },
-    { valor: "geo" as const, icon: "geo", label: "Location", descricao: "Latitude and longitude" },
-    { valor: "pix" as const, icon: "pix", label: "PIX", descricao: "Payment" },
-    { valor: "appstore" as const, icon: "app", label: "App", descricao: "iOS and Android" },
-    { valor: "spotify" as const, icon: "media", label: "Media", descricao: "Music and video" },
-    { valor: "zoom" as const, icon: "video", label: "Meeting", descricao: "Online meetings" },
-    { valor: "menu" as const, icon: "menu", label: "Menu", descricao: "Catalog and menu" },
-    { valor: "cupom" as const, icon: "coupon", label: "Coupon", descricao: "Promo code" },
-  ],
-}
-
-const DEFAULT_VISIBLE: TipoConteudoQR[] = [
-  "url",
-  "wifi",
-  "whatsapp",
-  "whatsappGroup",
-  "phone",
-  "vcard",
-  "vevent",
-  "email",
-  "sms",
-  "geo",
-]
-
-export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis, language = "pt" }: SeletorTipoConteudoProps) {
-  const visiveis = tiposVisiveis ?? DEFAULT_VISIBLE
-  const locale = language === "en" ? "en" : "pt"
-  const lista = contentTypes[locale].filter((tipo) => visiveis.includes(tipo.valor))
+export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis = DEFAULT_VISIBLE_TYPES }: TypeSelectorProps) {
+  const { t } = useLanguage()
+  const lista = CONTENT_TYPES.filter((tipo) => tiposVisiveis.includes(tipo))
 
   return (
     <div className="grid auto-rows-fr grid-cols-3 gap-2 xl:grid-cols-3">
-      {lista.map(({ valor, icon, label, descricao }, index) => {
+      {lista.map((valor, index) => {
+        const meta = CONTENT_TYPE_META[valor]
         const active = tipoAtivo === valor
+        const label = t(meta.short)
 
         return (
-          <motion.button
+          <m.button
             key={valor}
             type="button"
+            aria-pressed={active}
             onClick={() => onTipoChange(valor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -105,7 +48,7 @@ export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis, language 
                     : "text-foreground group-hover:border-primary/30 group-hover:text-primary",
                 ].join(" ")}
               >
-                <LocalIcon name={icon} className="h-3.5 w-3.5" />
+                <LocalIcon name={meta.icon} className="h-3.5 w-3.5" />
               </div>
 
               <span
@@ -120,11 +63,16 @@ export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis, language 
 
             <div className="relative z-1 mt-1">
               <p className="font-glancyr700 text-[0.78rem] uppercase leading-none tracking-tight">{label}</p>
-              <p className={["mt-0.5 text-[10px] leading-tight", active ? "text-foreground/65 dark:text-white/65" : "text-muted-foreground"].join(" ")}>
-                {descricao}
+              <p
+                className={[
+                  "mt-0.5 text-[10px] leading-tight",
+                  active ? "text-foreground/65 dark:text-white/65" : "text-muted-foreground",
+                ].join(" ")}
+              >
+                {t(meta.description)}
               </p>
             </div>
-          </motion.button>
+          </m.button>
         )
       })}
     </div>

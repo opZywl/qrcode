@@ -1,54 +1,50 @@
 "use client"
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { useLanguage } from "@/components/language-provider"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar" // Removido AvatarImage
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { LocalIcon } from "@/components/ui/local-icon"
-import type { AppLanguage } from "@/components/language-provider"
 
-interface PopupPortfolioMobileProps {
-    aberto: boolean
-    onAbertoChange: (aberto: boolean) => void
-    language?: AppLanguage
+interface DevPopupProps {
+  aberto: boolean
+  onAbertoChange: (aberto: boolean) => void
 }
 
-export function DevPopup({ aberto, onAbertoChange }: PopupPortfolioMobileProps) {
-    return (
-        <Dialog open={aberto} onOpenChange={onAbertoChange}>
-            <DialogContent className="sm:max-w-sm w-[90vw] p-0 bg-background/95 backdrop-blur-xs border border-border/50">
-                <DialogTitle className="sr-only">Portfólio do Desenvolvedor</DialogTitle>
-                {/* Conteúdo */}
-                <div className="flex flex-col items-center text-center p-8 space-y-4">
-                    {/* Avatar */}
-                    <Avatar className="w-16 h-16 border-2 border-primary/50">
-                        {/* AvatarFallback com fundo preto, texto branco e glow */}
-                        <AvatarFallback className="bg-black text-white font-semibold text-lg animate-text-glow-primary">
-                            ¥$
-                        </AvatarFallback>
-                    </Avatar>
+export function DevPopup({ aberto, onAbertoChange }: DevPopupProps) {
+  const { t } = useLanguage()
 
-                    {/* Nome e Título */}
-                    <div className="space-y-1">
-                        <h3 className="text-xl font-semibold text-foreground animate-text-glow-footer">Lucas Lima</h3>
-                        <p className="text-sm text-muted-foreground">Full Stack Developer</p>
-                    </div>
+  return (
+    <Dialog open={aberto} onOpenChange={onAbertoChange}>
+      <DialogContent className="w-[90vw] border border-border/50 bg-background/95 p-0 backdrop-blur-xs sm:max-w-sm">
+        <DialogTitle className="sr-only">{t({ pt: "Portfólio do desenvolvedor", en: "Developer portfolio", es: "Portafolio del desarrollador" })}</DialogTitle>
+        <DialogDescription className="sr-only">
+          {t({ pt: "Conheça outros projetos de Lucas Lima.", en: "See other projects by Lucas Lima.", es: "Conoce otros proyectos de Lucas Lima." })}
+        </DialogDescription>
+        <div className="flex flex-col items-center space-y-4 p-8 text-center">
+          <Avatar className="h-16 w-16 border-2 border-primary/50">
+            <AvatarFallback className="animate-text-glow-primary bg-black text-lg font-semibold text-white">¥$</AvatarFallback>
+          </Avatar>
 
-                    {/* Mensagem */}
-                    <p className="text-sm text-muted-foreground">Gostou do gerador? Confira meu portfólio!</p>
+          <div className="space-y-1">
+            <h3 className="animate-text-glow-footer text-xl font-semibold text-foreground">Lucas Lima</h3>
+            <p className="text-sm text-muted-foreground">
+              {t({ pt: "Desenvolvedor Full Stack", en: "Full Stack Developer", es: "Desarrollador Full Stack" })}
+            </p>
+          </div>
 
-                    {/* Botão Ver Portfólio */}
-                    <Button
-                        onClick={() => {
-                            window.open("https://lucas-lima.vercel.app", "_blank")
-                            onAbertoChange(false)
-                        }}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2.5 transition-all duration-200 hover:scale-105"
-                    >
-                        <LocalIcon name="globe" className="h-4 w-4 mr-2" />
-                        Ver Portfolio
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
+          <p className="text-sm text-muted-foreground">
+            {t({ pt: "Gostou do gerador? Confira meu portfólio!", en: "Liked the generator? Check out my portfolio!", es: "¿Te gustó el generador? ¡Mira mi portafolio!" })}
+          </p>
+
+          <Button asChild className="w-full py-2.5 font-medium transition-all duration-200 hover:scale-105">
+            <a href="https://lucas-lima.vercel.app" target="_blank" rel="noopener noreferrer" onClick={() => onAbertoChange(false)}>
+              <LocalIcon name="globe" className="mr-2 h-4 w-4" />
+              {t({ pt: "Ver portfólio", en: "View portfolio", es: "Ver portafolio" })}
+            </a>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }

@@ -1,50 +1,37 @@
 "use client"
 
-import * as React from "react"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { LocalIcon } from "@/components/ui/local-icon"
+import type { TranslationValue } from "@/lib/i18n"
 
-const links = [
+const LINKS: Array<{ title: TranslationValue; description: TranslationValue; href: string }> = [
   {
-    title: "Repositorio do projeto",
-    description: "Acesse o codigo fonte completo",
+    title: { pt: "Repositório do projeto", en: "Project repository", es: "Repositorio del proyecto" },
+    description: { pt: "Acesse o código-fonte completo", en: "Browse the full source code", es: "Consulta el código fuente completo" },
     href: "https://github.com/opZywl/qrcode",
   },
   {
-    title: "Criador",
-    description: "Perfil do desenvolvedor",
+    title: { pt: "Criador", en: "Author", es: "Autor" },
+    description: { pt: "Perfil do desenvolvedor", en: "Developer profile", es: "Perfil del desarrollador" },
     href: "https://github.com/opZywl",
   },
   {
-    title: "Relatar problema",
-    description: "Abrir uma nova issue",
+    title: { pt: "Relatar problema", en: "Report an issue", es: "Informar un problema" },
+    description: { pt: "Abrir uma nova issue", en: "Open a new issue", es: "Abrir una nueva issue" },
     href: "https://github.com/opZywl/qrcode/issues/new",
   },
 ]
 
 export function GithubPopup() {
-  const [montado, setMontado] = React.useState(false)
-
-  React.useEffect(() => setMontado(true), [])
-
-  if (!montado) {
-    return <div className="h-10 w-10 rounded-full border border-border/60 bg-background/40" />
-  }
+  const { t } = useLanguage()
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="studio-icon-shell rounded-full bg-transparent hover:border-primary/35 hover:bg-primary/5"
-        >
-          <img
-            src="/portfolio/images/github.svg"
-            alt=""
-            className="h-[1.1rem] w-[1.1rem] object-contain invert dark:invert-0"
-          />
+        <Button variant="outline" size="icon" className="studio-icon-shell rounded-full bg-transparent hover:border-primary/35 hover:bg-primary/5">
+          <img src="/portfolio/images/github.svg" alt="" className="h-[1.1rem] w-[1.1rem] object-contain invert dark:invert-0" />
           <span className="sr-only">GitHub</span>
         </Button>
       </DialogTrigger>
@@ -53,32 +40,32 @@ export function GithubPopup() {
         <DialogHeader className="studio-hairline pb-4">
           <DialogTitle className="flex items-center gap-3">
             <span className="studio-icon-shell h-10 w-10 rounded-full">
-              <img
-                src="/portfolio/images/github.svg"
-                alt=""
-                className="h-[1.15rem] w-[1.15rem] object-contain invert dark:invert-0"
-              />
+              <img src="/portfolio/images/github.svg" alt="" className="h-[1.15rem] w-[1.15rem] object-contain invert dark:invert-0" />
             </span>
             GitHub
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t({ pt: "Links do projeto no GitHub", en: "Project links on GitHub", es: "Enlaces del proyecto en GitHub" })}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          {links.map((link) => (
-            <button
+          {LINKS.map((link) => (
+            <a
               key={link.href}
-              type="button"
-              onClick={() => window.open(link.href, "_blank")}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="studio-tile flex w-full items-center justify-between gap-4 text-left transition-transform duration-200 hover:-translate-y-0.5 hover:border-primary/35"
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{link.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{link.description}</p>
+                <p className="text-sm font-semibold text-foreground">{t(link.title)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t(link.description)}</p>
               </div>
               <span className="studio-icon-shell h-10 w-10 rounded-full">
                 <LocalIcon name="share" className="h-4 w-4 text-primary" />
               </span>
-            </button>
+            </a>
           ))}
         </div>
       </DialogContent>

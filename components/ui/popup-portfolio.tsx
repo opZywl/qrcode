@@ -1,124 +1,96 @@
 "use client"
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { LocalIcon } from "@/components/ui/local-icon"
-import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { PortfolioPanel } from "@/components/ui/portfolio-panel"
+import { useHydrated } from "@/hooks/use-hydrated"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function PopupPortfolio() {
+  const { t } = useLanguage()
+  const hydrated = useHydrated()
   const isMobile = useIsMobile()
-  const [isDesktopMinimized, setIsDesktopMinimized] = React.useState(false)
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null)
+  const [minimized, setMinimized] = useState(false)
 
-  const clearTimer = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
+  useEffect(() => {
+    if (!minimized || isMobile) {
+      return
     }
-  }
+    const timer = window.setTimeout(() => setMinimized(false), 3000)
+    return () => window.clearTimeout(timer)
+  }, [minimized, isMobile])
 
-  const handleDesktopToggleMinimize = () => {
-    clearTimer()
-    setIsDesktopMinimized((current) => !current)
-  }
-
-  React.useEffect(() => {
-    if (isDesktopMinimized && !isMobile) {
-      timerRef.current = setTimeout(() => {
-        if (!isMobile) {
-          setIsDesktopMinimized(false)
-        }
-      }, 3000)
-    } else {
-      clearTimer()
-    }
-
-    return clearTimer
-  }, [isDesktopMinimized, isMobile])
-
-  if (isMobile === undefined) {
-    return <div className="pointer-events-none fixed bottom-4 right-4 h-10 w-10 opacity-0" />
-  }
-
-  if (isMobile) {
+  if (!hydrated || isMobile) {
     return null
   }
 
-  if (isDesktopMinimized) {
+  if (minimized) {
     return (
-      <div
-        className="group fixed bottom-4 right-4 z-50 cursor-pointer"
-        onClick={handleDesktopToggleMinimize}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            handleDesktopToggleMinimize()
-          }
-        }}
-        aria-label="Expandir popup do portfolio"
-        >
+      <button
+        type="button"
+        className="group fixed bottom-4 right-4 z-50 cursor-pointer rounded-full"
+        onClick={() => setMinimized(false)}
+        aria-label={t({ pt: "Expandir popup do portfólio", en: "Expand portfolio popup", es: "Expandir ventana del portafolio" })}
+      >
         <Avatar className="h-12 w-12 border-2 border-primary/70 shadow-lg transition-transform duration-200 group-hover:scale-110">
-          <AvatarFallback className="bg-black text-sm font-semibold text-white animate-text-glow-primary">
-            Y$
-          </AvatarFallback>
+          <AvatarFallback className="animate-text-glow-primary bg-black text-sm font-semibold text-white">Y$</AvatarFallback>
         </Avatar>
-        <div className="absolute right-0 top-0 z-10 h-3.5 w-3.5 rounded-full border-2 border-card bg-green-500" />
-      </div>
+        <span className="absolute right-0 top-0 z-10 h-3.5 w-3.5 rounded-full border-2 border-card bg-green-500" />
+      </button>
     )
   }
 
   return (
     <PortfolioPanel
-      className={cn(
-        "fixed bottom-4 right-4 z-50 w-full max-w-[280px] transition-all duration-300 ease-out sm:w-72",
-      )}
+      className="fixed bottom-4 right-4 z-50 w-full max-w-70 transition-all duration-300 ease-out sm:w-72"
       innerClassName="p-3"
       style={{ transformOrigin: "bottom right" }}
     >
       <div className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center space-x-2">
           <Avatar className="h-10 w-10 border-2 border-primary/50">
-            <AvatarFallback className="bg-black text-sm font-semibold text-white animate-text-glow-primary">
-              Y$
-            </AvatarFallback>
+            <AvatarFallback className="animate-text-glow-primary bg-black text-sm font-semibold text-white">Y$</AvatarFallback>
           </Avatar>
           <div>
             <p className="animate-text-glow-footer text-sm font-semibold text-card-foreground">Lucas Lima</p>
-            <p className="text-xs text-muted-foreground">Desenvolvedor Full Stack</p>
+            <p className="text-xs text-muted-foreground">
+              {t({ pt: "Desenvolvedor Full Stack", en: "Full Stack Developer", es: "Desarrollador Full Stack" })}
+            </p>
           </div>
         </div>
 
         <div className="relative flex items-center">
-          <div className="absolute right-[8px] top-[-4px] z-10 h-3 w-3 rounded-full border-2 border-card bg-green-500" />
+          <div className="absolute -top-1 right-2 z-10 h-3 w-3 rounded-full border-2 border-card bg-green-500" />
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={handleDesktopToggleMinimize}
-            aria-label="Minimizar popup do portfolio"
+            onClick={() => setMinimized(true)}
+            aria-label={t({ pt: "Minimizar popup do portfólio", en: "Minimize portfolio popup", es: "Minimizar ventana del portafolio" })}
           >
-            <LocalIcon name="chevron-down" className="h-[18px] w-[18px]" />
+            <LocalIcon name="chevron-down" className="h-4.5 w-4.5" />
           </Button>
         </div>
       </div>
 
       <div className="space-y-3">
         <p className="text-sm leading-relaxed text-card-foreground">
-          Confira meu portfolio para ver mais projetos incríveis.
+          {t({
+            pt: "Confira meu portfólio para ver mais projetos incríveis.",
+            en: "Check out my portfolio to see more projects.",
+            es: "Mira mi portafolio para ver más proyectos.",
+          })}
         </p>
-        <Button
-          variant="outline"
-          className="group w-full gap-2.5 bg-transparent"
-          onClick={() => window.open("https://lucas-lima.vercel.app", "_blank")}
-        >
-          <span className="studio-icon-shell h-6 w-6 rounded-full">
-            <LocalIcon name="share" className="h-3.5 w-3.5 transition-colors group-hover:text-primary" />
-          </span>
-          Ver portfolio
+        <Button asChild variant="outline" className="group w-full gap-2.5 bg-transparent">
+          <a href="https://lucas-lima.vercel.app" target="_blank" rel="noopener noreferrer">
+            <span className="studio-icon-shell h-6 w-6 rounded-full">
+              <LocalIcon name="share" className="h-3.5 w-3.5 transition-colors group-hover:text-primary" />
+            </span>
+            {t({ pt: "Ver portfólio", en: "View portfolio", es: "Ver portafolio" })}
+          </a>
         </Button>
       </div>
     </PortfolioPanel>

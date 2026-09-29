@@ -1,1150 +1,1050 @@
 "use client"
 
+import { useState, type ReactNode } from "react"
+import { useLanguage } from "@/components/language-provider"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Textarea } from "@/components/ui/textarea"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
 import { LocalIcon } from "@/components/ui/local-icon"
-import { useState } from "react"
-import { useToast } from "@/hooks/use-toast"
-import type { AppLanguage } from "@/components/language-provider"
-import type { TipoConteudoQR, TipoEncriptacaoWifi } from "@/hooks/use-qr-code-state"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "@/hooks/use-toast"
+import type { QrState, UpdateField } from "@/hooks/use-qr-code-state"
+import type { TranslationValue } from "@/lib/i18n"
+import { MESSAGES } from "@/lib/messages"
+import { detectPixKey, type PixKeyType } from "@/lib/qr/pix"
+import {
+  APPSTORE_PLATFORMS,
+  COUPON_TYPES,
+  MEDIA_TYPES,
+  MEETING_TYPES,
+  WIFI_ENCRYPTIONS,
+  type AppstorePlataforma,
+  type CupomTipo,
+  type SpotifyTipo,
+  type TipoConteudoQR,
+  type TipoEncriptacaoWifi,
+  type ZoomTipo,
+} from "@/lib/qr/types"
+import { normalizeUrlInput } from "@/lib/qr/url"
 
-interface FormularioConteudoProps {
+interface ContentFormProps {
   tipo: TipoConteudoQR
-  valores: any
-  onChange: (campo: string, valor: any) => void
+  valores: QrState
+  onChange: UpdateField
   isMobile: boolean
-  language?: AppLanguage
 }
 
-export function ContentForm({ tipo, valores, onChange, isMobile }: FormularioConteudoProps) {
-  const [localizandoGPS, setLocalizandoGPS] = useState(false)
-  const { toast } = useToast()
+const WIFI_LABELS: Record<TipoEncriptacaoWifi, TranslationValue> = {
+  WPA: { pt: "WPA/WPA2/WPA3", en: "WPA/WPA2/WPA3", es: "WPA/WPA2/WPA3" },
+  WEP: { pt: "WEP", en: "WEP", es: "WEP" },
+  nopass: { pt: "Sem senha", en: "No password", es: "Sin contraseña" },
+}
 
-  const inputHeightClass = "h-9"
-  const inputPaddingClass = "py-1.5"
-  const mainInputPaddingClass = isMobile ? "py-1.5" : "py-2"
+const APPSTORE_LABELS: Record<AppstorePlataforma, TranslationValue> = {
+  ios: { pt: "iOS (App Store)", en: "iOS (App Store)", es: "iOS (App Store)" },
+  android: { pt: "Android (Play Store)", en: "Android (Play Store)", es: "Android (Play Store)" },
+  ambos: { pt: "Ambos", en: "Both", es: "Ambos" },
+}
 
-  const sanitizeAndValidateUrl = (inputUrl: string): string => {
-    let currentUrl = inputUrl.trim()
-    if (!currentUrl) return ""
+const MEDIA_LABELS: Record<SpotifyTipo, TranslationValue> = {
+  track: { pt: "Música (Spotify)", en: "Song (Spotify)", es: "Canción (Spotify)" },
+  album: { pt: "Álbum (Spotify)", en: "Album (Spotify)", es: "Álbum (Spotify)" },
+  playlist: { pt: "Playlist (Spotify)", en: "Playlist (Spotify)", es: "Playlist (Spotify)" },
+  artist: { pt: "Artista (Spotify)", en: "Artist (Spotify)", es: "Artista (Spotify)" },
+  youtube: { pt: "Vídeo (YouTube)", en: "Video (YouTube)", es: "Vídeo (YouTube)" },
+}
 
-    // Corrigir protocolos malformados (ex: https:example.com -> https://example.com)
-    if (/^https?:[^/][^/]/i.test(currentUrl) && !/^https?:\/\//i.test(currentUrl)) {
-      currentUrl = currentUrl.replace(/^(https?:)/i, "$1//")
-    }
+const MEETING_LABELS: Record<ZoomTipo, string> = {
+  zoom: "Zoom",
+  meet: "Google Meet",
+  teams: "Microsoft Teams",
+}
 
-    // Se já tem protocolo válido, retornar como está
-    const protocolRegex = /^(http:\/\/|https:\/\/|ftp:\/\/|mailto:|tel:|geo:|sms:|smsto:|vcard:|vevent:|whatsapp:)/i
-    if (protocolRegex.test(currentUrl)) return currentUrl
+const COUPON_LABELS: Record<CupomTipo, TranslationValue> = {
+  desconto: { pt: "Desconto", en: "Discount", es: "Descuento" },
+  frete: { pt: "Frete grátis", en: "Free shipping", es: "Envío gratis" },
+  produto: { pt: "Produto grátis", en: "Free product", es: "Producto gratis" },
+}
 
-    // Detectar localhost e IPs locais
-    const localhostRegex = /^(localhost|(\d{1,3}\.){3}\d{1,3})(:\d+)?(\/.*)?$/
-    if (localhostRegex.test(currentUrl)) return `http://${currentUrl}`
+const PIX_KEY_LABELS: Record<PixKeyType, TranslationValue> = {
+  cpf: { pt: "CPF", en: "CPF", es: "CPF" },
+  cnpj: { pt: "CNPJ", en: "CNPJ", es: "CNPJ" },
+  phone: { pt: "telefone", en: "phone", es: "teléfono" },
+  email: { pt: "email", en: "email", es: "correo" },
+  evp: { pt: "chave aleatória", en: "random key", es: "clave aleatoria" },
+}
 
-    // Detectar domínios válidos
-    const domainLikeRegex = /^([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}(:\d+)?(\/.*)?$/
-    if (
-        domainLikeRegex.test(currentUrl) ||
-        (currentUrl.includes(".") && !currentUrl.includes(" ") && !currentUrl.startsWith("/"))
-    ) {
-      return `https://${currentUrl}`
-    }
+function Field({ id, label, hint, children }: { id?: string; label: string; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id} className="text-sm font-medium leading-5 text-foreground">
+        {label}
+      </Label>
+      {children}
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
+  )
+}
 
-    return currentUrl
-  }
+export function ContentForm({ tipo, valores, onChange, isMobile }: ContentFormProps) {
+  const { t } = useLanguage()
+  const [locating, setLocating] = useState(false)
+  const [showWifiPassword, setShowWifiPassword] = useState(false)
+
+  const inputClass = "h-9"
+  const textareaClass = isMobile ? "min-h-15 py-1.5" : "min-h-20 py-2"
+  const twoColumns = `grid grid-cols-1 gap-3 ${isMobile ? "" : "sm:grid-cols-2"}`
 
   const handleUrlBlur = () => {
-    if (valores.inputUrl && tipo === "url") {
-      const original = valores.inputUrl
-      const sanitized = sanitizeAndValidateUrl(valores.inputUrl)
-
-      if (original !== sanitized) {
-        toast({
-          title: "🔗 URL Corrigida Automaticamente",
-          description: `Protocolo adicionado: ${sanitized.substring(0, 50)}${sanitized.length > 50 ? "..." : ""}`,
-        })
-      }
-
-      onChange("inputUrl", sanitized)
+    if (!valores.inputUrl.trim()) {
+      return
+    }
+    const normalized = normalizeUrlInput(valores.inputUrl)
+    if (normalized !== valores.inputUrl.trim()) {
+      toast({
+        title: t(MESSAGES.urlCorrectedTitle),
+        description: t(MESSAGES.urlCorrected(normalized.length > 60 ? `${normalized.slice(0, 60)}…` : normalized)),
+      })
+    }
+    if (normalized !== valores.inputUrl) {
+      onChange("inputUrl", normalized)
     }
   }
 
-  const handleLocalizarTempoReal = async () => {
-    if (!navigator.geolocation) {
+  const handleLocate = () => {
+    if (!("geolocation" in navigator)) {
       toast({
-        title: "❌ Geolocalização não suportada",
-        description: "Seu navegador não suporta geolocalização",
         variant: "destructive",
+        title: t({ pt: "Geolocalização indisponível", en: "Geolocation unavailable", es: "Geolocalización no disponible" }),
+        description: t({
+          pt: "Seu navegador não suporta geolocalização.",
+          en: "Your browser does not support geolocation.",
+          es: "Tu navegador no admite geolocalización.",
+        }),
       })
       return
     }
 
-    setLocalizandoGPS(true)
-
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000,
-    }
-
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const latitude = position.coords.latitude.toFixed(6)
-          const longitude = position.coords.longitude.toFixed(6)
-
-          onChange("geoLatitude", latitude)
-          onChange("geoLongitude", longitude)
-
-          setLocalizandoGPS(false)
-
-          toast({
-            title: "📍 Localização Obtida!",
-            description: `Lat: ${latitude}, Lon: ${longitude}`,
-          })
-        },
-        (error) => {
-          setLocalizandoGPS(false)
-
-          let errorMessage = "Erro ao obter localização"
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = "Permissão de localização negada. Permita o acesso à localização nas configurações."
-              break
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = "Informações de localização não disponíveis."
-              break
-            case error.TIMEOUT:
-              errorMessage = "Tempo limite para obter localização excedido."
-              break
-            default:
-              errorMessage = "Erro desconhecido ao obter localização."
-              break
-          }
-
-          toast({
-            title: "❌ Erro de Localização",
-            description: errorMessage,
-            variant: "destructive",
-          })
-        },
-        options,
+      (position) => {
+        const latitude = position.coords.latitude.toFixed(6)
+        const longitude = position.coords.longitude.toFixed(6)
+        onChange("geoLatitude", latitude)
+        onChange("geoLongitude", longitude)
+        setLocating(false)
+        toast({
+          title: t({ pt: "Localização obtida", en: "Location found", es: "Ubicación obtenida" }),
+          description: `Lat: ${latitude}, Lon: ${longitude}`,
+        })
+      },
+      (error) => {
+        setLocating(false)
+        const description =
+          error.code === error.PERMISSION_DENIED
+            ? t({
+                pt: "Permissão negada. Libere a localização nas configurações do navegador.",
+                en: "Permission denied. Allow location access in the browser settings.",
+                es: "Permiso denegado. Permite la ubicación en los ajustes del navegador.",
+              })
+            : error.code === error.POSITION_UNAVAILABLE
+              ? t({ pt: "Localização indisponível.", en: "Location unavailable.", es: "Ubicación no disponible." })
+              : error.code === error.TIMEOUT
+                ? t({ pt: "Tempo esgotado ao obter a localização.", en: "Timed out getting the location.", es: "Se agotó el tiempo al obtener la ubicación." })
+                : t({ pt: "Erro ao obter a localização.", en: "Could not get the location.", es: "No se pudo obtener la ubicación." })
+        toast({
+          variant: "destructive",
+          title: t({ pt: "Erro de localização", en: "Location error", es: "Error de ubicación" }),
+          description,
+        })
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     )
   }
 
   switch (tipo) {
     case "url":
       return (
-          <div className="space-y-2">
-            <Label htmlFor="url-input" className="text-sm font-medium text-foreground">
-              URL ou Texto para Codificar
-            </Label>
-            <Input
-                id="url-input"
-                type="text"
-                placeholder="Digite uma URL ou qualquer texto..."
-                value={valores.inputUrl}
-                onChange={(e) => onChange("inputUrl", e.target.value)}
-                onBlur={handleUrlBlur}
-                className={`${isMobile ? `h-9 ${mainInputPaddingClass}` : "h-10 py-2"} transition-all duration-300 focus:shadow-outline-primary`}
-            />
-          </div>
+        <Field id="url-input" label={t({ pt: "URL ou texto para codificar", en: "URL or text to encode", es: "URL o texto para codificar" })}>
+          <Input
+            id="url-input"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            placeholder={t({ pt: "Digite uma URL ou qualquer texto...", en: "Enter a URL or any text...", es: "Escribe una URL o cualquier texto..." })}
+            value={valores.inputUrl}
+            onChange={(event) => onChange("inputUrl", event.target.value)}
+            onBlur={handleUrlBlur}
+            className={isMobile ? "h-9 py-1.5" : "h-10 py-2"}
+          />
+        </Field>
       )
 
     case "wifi":
       return (
-          <div className="space-y-3 py-2">
-            <div className="space-y-1">
-              <Label htmlFor="wifi-ssid" className="text-sm font-medium text-foreground">
-                Nome da Rede (SSID)
-              </Label>
+        <div className="space-y-3 py-2">
+          <Field id="wifi-ssid" label={t({ pt: "Nome da rede (SSID)", en: "Network name (SSID)", es: "Nombre de la red (SSID)" })}>
+            <Input
+              id="wifi-ssid"
+              autoComplete="off"
+              value={valores.wifiSsid}
+              onChange={(event) => onChange("wifiSsid", event.target.value)}
+              placeholder={t({ pt: "Nome da rede Wi-Fi", en: "Wi-Fi network name", es: "Nombre de la red Wi-Fi" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="wifi-password" label={t({ pt: "Senha", en: "Password", es: "Contraseña" })}>
+            <div className="relative">
               <Input
-                  id="wifi-ssid"
-                  value={valores.wifiSsid}
-                  onChange={(e) => onChange("wifiSsid", e.target.value)}
-                  placeholder="Nome da rede WiFi"
-                  className={inputHeightClass}
+                id="wifi-password"
+                type={showWifiPassword ? "text" : "password"}
+                autoComplete="off"
+                value={valores.wifiSenha}
+                onChange={(event) => onChange("wifiSenha", event.target.value)}
+                placeholder={t({ pt: "Senha da rede", en: "Network password", es: "Contraseña de la red" })}
+                disabled={valores.wifiEncriptacao === "nopass"}
+                className={`${inputClass} pr-11`}
               />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="wifi-password" className="text-sm font-medium text-foreground">
-                Senha
-              </Label>
-              <Input
-                  id="wifi-password"
-                  type="password"
-                  value={valores.wifiSenha}
-                  onChange={(e) => onChange("wifiSenha", e.target.value)}
-                  placeholder="Senha da rede"
-                  disabled={valores.wifiEncriptacao === "nopass"}
-                  className={inputHeightClass}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="wifi-encryption" className="text-sm font-medium text-foreground">
-                Tipo de Segurança
-              </Label>
-              <Select
-                  value={valores.wifiEncriptacao}
-                  onValueChange={(v) => onChange("wifiEncriptacao", v as TipoEncriptacaoWifi)}
+              <button
+                type="button"
+                onClick={() => setShowWifiPassword((current) => !current)}
+                disabled={valores.wifiEncriptacao === "nopass"}
+                aria-label={
+                  showWifiPassword
+                    ? t({ pt: "Ocultar senha", en: "Hide password", es: "Ocultar contraseña" })
+                    : t({ pt: "Mostrar senha", en: "Show password", es: "Mostrar contraseña" })
+                }
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-2xl text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
               >
-                <SelectTrigger id="wifi-encryption" className={`${inputHeightClass} text-sm`}>
-                  <SelectValue placeholder="Selecione o tipo de segurança" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="WPA" className="text-sm">
-                    WPA/WPA2
-                  </SelectItem>
-                  <SelectItem value="WEP" className="text-sm">
-                    WEP
-                  </SelectItem>
-                  <SelectItem value="nopass" className="text-sm">
-                    Sem senha
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                <LocalIcon name={showWifiPassword ? "eye-off" : "eye"} className="h-4 w-4" />
+              </button>
             </div>
-            <div className="flex items-center space-x-2 pt-1">
-              <Checkbox
-                  id="wifi-hidden"
-                  checked={valores.wifiOculto}
-                  onCheckedChange={(c) => onChange("wifiOculto", c as boolean)}
-              />
-              <Label htmlFor="wifi-hidden" className="text-sm font-medium text-foreground">
-                Rede oculta
-              </Label>
-            </div>
+          </Field>
+          <Field id="wifi-encryption" label={t({ pt: "Tipo de segurança", en: "Security type", es: "Tipo de seguridad" })}>
+            <Select value={valores.wifiEncriptacao} onValueChange={(value) => onChange("wifiEncriptacao", value as TipoEncriptacaoWifi)}>
+              <SelectTrigger id="wifi-encryption" className={`${inputClass} text-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WIFI_ENCRYPTIONS.map((option) => (
+                  <SelectItem key={option} value={option} className="text-sm">
+                    {t(WIFI_LABELS[option])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="flex items-center gap-2 pt-1">
+            <Checkbox id="wifi-hidden" checked={valores.wifiOculto} onCheckedChange={(checked) => onChange("wifiOculto", checked === true)} />
+            <Label htmlFor="wifi-hidden" className="text-sm font-medium text-foreground">
+              {t({ pt: "Rede oculta", en: "Hidden network", es: "Red oculta" })}
+            </Label>
           </div>
+        </div>
       )
 
     case "vcard":
       return (
-          <ScrollArea className="h-[250px] sm:h-[300px] pr-3">
-            <div className="space-y-3">
-              <div className={`grid grid-cols-1 ${isMobile ? "" : "sm:grid-cols-2"} gap-3`}>
-                <div>
-                  <Label htmlFor="vcard-firstName" className="text-sm font-medium text-foreground">
-                    Nome
-                  </Label>
-                  <Input
-                      id="vcard-firstName"
-                      value={valores.vcardNome}
-                      onChange={(e) => onChange("vcardNome", e.target.value)}
-                      placeholder="Nome"
-                      className={inputHeightClass}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="vcard-lastName" className="text-sm font-medium text-foreground">
-                    Sobrenome
-                  </Label>
-                  <Input
-                      id="vcard-lastName"
-                      value={valores.vcardSobrenome}
-                      onChange={(e) => onChange("vcardSobrenome", e.target.value)}
-                      placeholder="Sobrenome"
-                      className={inputHeightClass}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="vcard-organization" className="text-sm font-medium text-foreground">
-                  Organização
-                </Label>
+        <ScrollArea className="h-62.5 pr-3 sm:h-75">
+          <div className="space-y-3">
+            <div className={twoColumns}>
+              <Field id="vcard-firstName" label={t({ pt: "Nome", en: "First name", es: "Nombre" })}>
                 <Input
-                    id="vcard-organization"
-                    value={valores.vcardOrganizacao}
-                    onChange={(e) => onChange("vcardOrganizacao", e.target.value)}
-                    placeholder="Nome da empresa"
-                    className={inputHeightClass}
+                  id="vcard-firstName"
+                  autoComplete="given-name"
+                  value={valores.vcardNome}
+                  onChange={(event) => onChange("vcardNome", event.target.value)}
+                  placeholder={t({ pt: "Nome", en: "First name", es: "Nombre" })}
+                  className={inputClass}
                 />
-              </div>
-              <div>
-                <Label htmlFor="vcard-title" className="text-sm font-medium text-foreground">
-                  Cargo
-                </Label>
+              </Field>
+              <Field id="vcard-lastName" label={t({ pt: "Sobrenome", en: "Last name", es: "Apellido" })}>
                 <Input
-                    id="vcard-title"
-                    value={valores.vcardTitulo}
-                    onChange={(e) => onChange("vcardTitulo", e.target.value)}
-                    placeholder="Cargo ou função"
-                    className={inputHeightClass}
+                  id="vcard-lastName"
+                  autoComplete="family-name"
+                  value={valores.vcardSobrenome}
+                  onChange={(event) => onChange("vcardSobrenome", event.target.value)}
+                  placeholder={t({ pt: "Sobrenome", en: "Last name", es: "Apellido" })}
+                  className={inputClass}
                 />
-              </div>
-              <div>
-                <Label htmlFor="vcard-phone" className="text-sm font-medium text-foreground">
-                  Telefone
-                </Label>
-                <Input
-                    id="vcard-phone"
-                    type="tel"
-                    value={valores.vcardTelefone}
-                    onChange={(e) => onChange("vcardTelefone", e.target.value)}
-                    placeholder="(11) 99999-9999"
-                    className={inputHeightClass}
-                />
-              </div>
-              <div>
-                <Label htmlFor="vcard-email" className="text-sm font-medium text-foreground">
-                  Email
-                </Label>
-                <Input
-                    id="vcard-email"
-                    type="email"
-                    value={valores.vcardEmail}
-                    onChange={(e) => onChange("vcardEmail", e.target.value)}
-                    placeholder="email@exemplo.com"
-                    className={inputHeightClass}
-                />
-              </div>
-              <div>
-                <Label htmlFor="vcard-website" className="text-sm font-medium text-foreground">
-                  Website
-                </Label>
-                <Input
-                    id="vcard-website"
-                    type="url"
-                    value={valores.vcardWebsite}
-                    onChange={(e) => onChange("vcardWebsite", e.target.value)}
-                    placeholder="https://exemplo.com"
-                    className={inputHeightClass}
-                />
-              </div>
-              <div>
-                <Label htmlFor="vcard-address" className="text-sm font-medium text-foreground">
-                  Endereço
-                </Label>
-                <Input
-                    id="vcard-address"
-                    value={valores.vcardEndereco}
-                    onChange={(e) => onChange("vcardEndereco", e.target.value)}
-                    placeholder="Rua, número"
-                    className={inputHeightClass}
-                />
-              </div>
-              <div className={`grid grid-cols-1 ${isMobile ? "" : "sm:grid-cols-2"} gap-3`}>
-                <div>
-                  <Label htmlFor="vcard-city" className="text-sm font-medium text-foreground">
-                    Cidade
-                  </Label>
-                  <Input
-                      id="vcard-city"
-                      value={valores.vcardCidade}
-                      onChange={(e) => onChange("vcardCidade", e.target.value)}
-                      placeholder="Cidade"
-                      className={inputHeightClass}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="vcard-state" className="text-sm font-medium text-foreground">
-                    Estado
-                  </Label>
-                  <Input
-                      id="vcard-state"
-                      value={valores.vcardEstado}
-                      onChange={(e) => onChange("vcardEstado", e.target.value)}
-                      placeholder="Estado"
-                      className={inputHeightClass}
-                  />
-                </div>
-              </div>
-              <div className={`grid grid-cols-1 ${isMobile ? "" : "sm:grid-cols-2"} gap-3`}>
-                <div>
-                  <Label htmlFor="vcard-zip" className="text-sm font-medium text-foreground">
-                    CEP
-                  </Label>
-                  <Input
-                      id="vcard-zip"
-                      value={valores.vcardCep}
-                      onChange={(e) => onChange("vcardCep", e.target.value)}
-                      placeholder="00000-000"
-                      className={inputHeightClass}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="vcard-country" className="text-sm font-medium text-foreground">
-                    País
-                  </Label>
-                  <Input
-                      id="vcard-country"
-                      value={valores.vcardPais}
-                      onChange={(e) => onChange("vcardPais", e.target.value)}
-                      placeholder="Brasil"
-                      className={inputHeightClass}
-                  />
-                </div>
-              </div>
+              </Field>
             </div>
-          </ScrollArea>
+            <Field id="vcard-organization" label={t({ pt: "Organização", en: "Organization", es: "Organización" })}>
+              <Input
+                id="vcard-organization"
+                autoComplete="organization"
+                value={valores.vcardOrganizacao}
+                onChange={(event) => onChange("vcardOrganizacao", event.target.value)}
+                placeholder={t({ pt: "Nome da empresa", en: "Company name", es: "Nombre de la empresa" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vcard-title" label={t({ pt: "Cargo", en: "Job title", es: "Cargo" })}>
+              <Input
+                id="vcard-title"
+                autoComplete="organization-title"
+                value={valores.vcardTitulo}
+                onChange={(event) => onChange("vcardTitulo", event.target.value)}
+                placeholder={t({ pt: "Cargo ou função", en: "Role or position", es: "Cargo o función" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vcard-phone" label={t({ pt: "Telefone", en: "Phone", es: "Teléfono" })}>
+              <Input
+                id="vcard-phone"
+                type="tel"
+                autoComplete="tel"
+                value={valores.vcardTelefone}
+                onChange={(event) => onChange("vcardTelefone", event.target.value)}
+                placeholder="+55 11 99999-9999"
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vcard-email" label={t({ pt: "Email", en: "Email", es: "Correo" })}>
+              <Input
+                id="vcard-email"
+                type="email"
+                autoComplete="email"
+                value={valores.vcardEmail}
+                onChange={(event) => onChange("vcardEmail", event.target.value)}
+                placeholder={t({ pt: "email@exemplo.com", en: "email@example.com", es: "correo@ejemplo.com" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vcard-website" label="Website">
+              <Input
+                id="vcard-website"
+                type="url"
+                autoComplete="url"
+                value={valores.vcardWebsite}
+                onChange={(event) => onChange("vcardWebsite", event.target.value)}
+                placeholder={t({ pt: "https://exemplo.com", en: "https://example.com", es: "https://ejemplo.com" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vcard-address" label={t({ pt: "Endereço", en: "Address", es: "Dirección" })}>
+              <Input
+                id="vcard-address"
+                autoComplete="street-address"
+                value={valores.vcardEndereco}
+                onChange={(event) => onChange("vcardEndereco", event.target.value)}
+                placeholder={t({ pt: "Rua, número", en: "Street, number", es: "Calle, número" })}
+                className={inputClass}
+              />
+            </Field>
+            <div className={twoColumns}>
+              <Field id="vcard-city" label={t({ pt: "Cidade", en: "City", es: "Ciudad" })}>
+                <Input
+                  id="vcard-city"
+                  autoComplete="address-level2"
+                  value={valores.vcardCidade}
+                  onChange={(event) => onChange("vcardCidade", event.target.value)}
+                  placeholder={t({ pt: "Cidade", en: "City", es: "Ciudad" })}
+                  className={inputClass}
+                />
+              </Field>
+              <Field id="vcard-state" label={t({ pt: "Estado", en: "State", es: "Estado o provincia" })}>
+                <Input
+                  id="vcard-state"
+                  autoComplete="address-level1"
+                  value={valores.vcardEstado}
+                  onChange={(event) => onChange("vcardEstado", event.target.value)}
+                  placeholder={t({ pt: "Estado", en: "State", es: "Provincia" })}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+            <div className={twoColumns}>
+              <Field id="vcard-zip" label={t({ pt: "CEP", en: "ZIP code", es: "Código postal" })}>
+                <Input
+                  id="vcard-zip"
+                  autoComplete="postal-code"
+                  value={valores.vcardCep}
+                  onChange={(event) => onChange("vcardCep", event.target.value)}
+                  placeholder="00000-000"
+                  className={inputClass}
+                />
+              </Field>
+              <Field id="vcard-country" label={t({ pt: "País", en: "Country", es: "País" })}>
+                <Input
+                  id="vcard-country"
+                  autoComplete="country-name"
+                  value={valores.vcardPais}
+                  onChange={(event) => onChange("vcardPais", event.target.value)}
+                  placeholder={t({ pt: "Brasil", en: "Brazil", es: "Brasil" })}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+          </div>
+        </ScrollArea>
       )
 
     case "vevent":
       return (
-          <ScrollArea className="h-[250px] sm:h-[300px] pr-3">
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="vevent-summary" className="text-sm font-medium text-foreground">
-                  Título do Evento
-                </Label>
+        <ScrollArea className="h-62.5 pr-3 sm:h-75">
+          <div className="space-y-3">
+            <Field id="vevent-summary" label={t({ pt: "Título do evento", en: "Event title", es: "Título del evento" })}>
+              <Input
+                id="vevent-summary"
+                value={valores.veventResumo}
+                onChange={(event) => onChange("veventResumo", event.target.value)}
+                placeholder={t({ pt: "Nome do evento", en: "Event name", es: "Nombre del evento" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vevent-location" label={t({ pt: "Local", en: "Location", es: "Lugar" })}>
+              <Input
+                id="vevent-location"
+                value={valores.veventLocalizacao}
+                onChange={(event) => onChange("veventLocalizacao", event.target.value)}
+                placeholder={t({ pt: "Local do evento", en: "Event location", es: "Lugar del evento" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="vevent-description" label={t({ pt: "Descrição", en: "Description", es: "Descripción" })}>
+              <Textarea
+                id="vevent-description"
+                value={valores.veventDescricao}
+                onChange={(event) => onChange("veventDescricao", event.target.value)}
+                placeholder={t({ pt: "Descrição do evento", en: "Event description", es: "Descripción del evento" })}
+                className={textareaClass}
+              />
+            </Field>
+            <div className={twoColumns}>
+              <Field id="vevent-startDate" label={t({ pt: "Data de início", en: "Start date", es: "Fecha de inicio" })}>
                 <Input
-                    id="vevent-summary"
-                    value={valores.veventResumo}
-                    onChange={(e) => onChange("veventResumo", e.target.value)}
-                    placeholder="Nome do evento"
-                    className={inputHeightClass}
+                  id="vevent-startDate"
+                  type="date"
+                  value={valores.veventDataInicio}
+                  onChange={(event) => onChange("veventDataInicio", event.target.value)}
+                  className={inputClass}
                 />
-              </div>
-              <div>
-                <Label htmlFor="vevent-location" className="text-sm font-medium text-foreground">
-                  Local
-                </Label>
+              </Field>
+              <Field id="vevent-startTime" label={t({ pt: "Hora de início", en: "Start time", es: "Hora de inicio" })}>
                 <Input
-                    id="vevent-location"
-                    value={valores.veventLocalizacao}
-                    onChange={(e) => onChange("veventLocalizacao", e.target.value)}
-                    placeholder="Local do evento"
-                    className={inputHeightClass}
+                  id="vevent-startTime"
+                  type="time"
+                  value={valores.veventHoraInicio}
+                  onChange={(event) => onChange("veventHoraInicio", event.target.value)}
+                  disabled={valores.veventDiaTodo}
+                  className={inputClass}
                 />
-              </div>
-              <div>
-                <Label htmlFor="vevent-description" className="text-sm font-medium text-foreground">
-                  Descrição
-                </Label>
-                <Textarea
-                    id="vevent-description"
-                    value={valores.veventDescricao}
-                    onChange={(e) => onChange("veventDescricao", e.target.value)}
-                    placeholder="Descrição do evento"
-                    className={isMobile ? `min-h-[60px] ${inputPaddingClass}` : `min-h-[80px] py-2`}
-                />
-              </div>
-              <div className={`grid grid-cols-1 ${isMobile ? "" : "sm:grid-cols-2"} gap-3`}>
-                <div>
-                  <Label htmlFor="vevent-startDate" className="text-sm font-medium text-foreground">
-                    Data de Início
-                  </Label>
-                  <Input
-                      id="vevent-startDate"
-                      type="date"
-                      value={valores.veventDataInicio}
-                      onChange={(e) => onChange("veventDataInicio", e.target.value)}
-                      className={inputHeightClass}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="vevent-startTime" className="text-sm font-medium text-foreground">
-                    Hora de Início
-                  </Label>
-                  <Input
-                      id="vevent-startTime"
-                      type="time"
-                      value={valores.veventHoraInicio}
-                      onChange={(e) => onChange("veventHoraInicio", e.target.value)}
-                      disabled={valores.veventDiaTodo}
-                      className={inputHeightClass}
-                  />
-                </div>
-              </div>
-              <div className={`grid grid-cols-1 ${isMobile ? "" : "sm:grid-cols-2"} gap-3`}>
-                <div>
-                  <Label htmlFor="vevent-endDate" className="text-sm font-medium text-foreground">
-                    Data de Fim
-                  </Label>
-                  <Input
-                      id="vevent-endDate"
-                      type="date"
-                      value={valores.veventDataFim}
-                      onChange={(e) => onChange("veventDataFim", e.target.value)}
-                      className={inputHeightClass}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="vevent-endTime" className="text-sm font-medium text-foreground">
-                    Hora de Fim
-                  </Label>
-                  <Input
-                      id="vevent-endTime"
-                      type="time"
-                      value={valores.veventHoraFim}
-                      onChange={(e) => onChange("veventHoraFim", e.target.value)}
-                      disabled={valores.veventDiaTodo}
-                      className={inputHeightClass}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2 pt-1">
-                <Checkbox
-                    id="vevent-isAllDay"
-                    checked={valores.veventDiaTodo}
-                    onCheckedChange={(c) => onChange("veventDiaTodo", c as boolean)}
-                />
-                <Label htmlFor="vevent-isAllDay" className="text-sm font-medium text-foreground">
-                  Evento de dia inteiro
-                </Label>
-              </div>
+              </Field>
             </div>
-          </ScrollArea>
+            <div className={twoColumns}>
+              <Field id="vevent-endDate" label={t({ pt: "Data de fim", en: "End date", es: "Fecha de fin" })}>
+                <Input
+                  id="vevent-endDate"
+                  type="date"
+                  min={valores.veventDataInicio || undefined}
+                  value={valores.veventDataFim}
+                  onChange={(event) => onChange("veventDataFim", event.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field id="vevent-endTime" label={t({ pt: "Hora de fim", en: "End time", es: "Hora de fin" })}>
+                <Input
+                  id="vevent-endTime"
+                  type="time"
+                  value={valores.veventHoraFim}
+                  onChange={(event) => onChange("veventHoraFim", event.target.value)}
+                  disabled={valores.veventDiaTodo}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Checkbox
+                id="vevent-isAllDay"
+                checked={valores.veventDiaTodo}
+                onCheckedChange={(checked) => onChange("veventDiaTodo", checked === true)}
+              />
+              <Label htmlFor="vevent-isAllDay" className="text-sm font-medium text-foreground">
+                {t({ pt: "Evento de dia inteiro", en: "All-day event", es: "Evento de todo el día" })}
+              </Label>
+            </div>
+          </div>
+        </ScrollArea>
       )
 
     case "email":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="email-to" className="text-sm font-medium text-foreground">
-                Para
-              </Label>
-              <Input
-                  id="email-to"
-                  type="email"
-                  value={valores.emailPara}
-                  onChange={(e) => onChange("emailPara", e.target.value)}
-                  placeholder="destinatario@exemplo.com"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="email-subject" className="text-sm font-medium text-foreground">
-                Assunto
-              </Label>
-              <Input
-                  id="email-subject"
-                  value={valores.emailAssunto}
-                  onChange={(e) => onChange("emailAssunto", e.target.value)}
-                  placeholder="Assunto do email"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="email-body" className="text-sm font-medium text-foreground">
-                Mensagem
-              </Label>
-              <Textarea
-                  id="email-body"
-                  value={valores.emailCorpo}
-                  onChange={(e) => onChange("emailCorpo", e.target.value)}
-                  placeholder="Corpo do email"
-                  className={isMobile ? `min-h-[60px] ${inputPaddingClass}` : `min-h-[80px] py-2`}
-              />
-            </div>
-          </div>
+        <div className="space-y-3">
+          <Field id="email-to" label={t({ pt: "Para", en: "To", es: "Para" })}>
+            <Input
+              id="email-to"
+              type="email"
+              autoComplete="email"
+              value={valores.emailPara}
+              onChange={(event) => onChange("emailPara", event.target.value)}
+              placeholder={t({ pt: "destinatario@exemplo.com", en: "recipient@example.com", es: "destinatario@ejemplo.com" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="email-subject" label={t({ pt: "Assunto", en: "Subject", es: "Asunto" })}>
+            <Input
+              id="email-subject"
+              value={valores.emailAssunto}
+              onChange={(event) => onChange("emailAssunto", event.target.value)}
+              placeholder={t({ pt: "Assunto do email", en: "Email subject", es: "Asunto del correo" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="email-body" label={t({ pt: "Mensagem", en: "Message", es: "Mensaje" })}>
+            <Textarea
+              id="email-body"
+              value={valores.emailCorpo}
+              onChange={(event) => onChange("emailCorpo", event.target.value)}
+              placeholder={t({ pt: "Corpo do email", en: "Email body", es: "Cuerpo del correo" })}
+              className={textareaClass}
+            />
+          </Field>
+        </div>
       )
 
     case "sms":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="sms-to" className="text-sm font-medium text-foreground">
-                Para
-              </Label>
-              <Input
-                  id="sms-to"
-                  type="tel"
-                  value={valores.smsPara}
-                  onChange={(e) => onChange("smsPara", e.target.value)}
-                  placeholder="(11) 99999-9999"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="sms-body" className="text-sm font-medium text-foreground">
-                Mensagem
-              </Label>
-              <Textarea
-                  id="sms-body"
-                  value={valores.smsCorpo}
-                  onChange={(e) => onChange("smsCorpo", e.target.value)}
-                  placeholder="Mensagem do SMS"
-                  className={isMobile ? `min-h-[60px] ${inputPaddingClass}` : `min-h-[80px] py-2`}
-              />
-            </div>
-          </div>
+        <div className="space-y-3">
+          <Field id="sms-to" label={t({ pt: "Para", en: "To", es: "Para" })}>
+            <Input
+              id="sms-to"
+              type="tel"
+              autoComplete="tel"
+              value={valores.smsPara}
+              onChange={(event) => onChange("smsPara", event.target.value)}
+              placeholder="+55 11 99999-9999"
+              className={inputClass}
+            />
+          </Field>
+          <Field id="sms-body" label={t({ pt: "Mensagem", en: "Message", es: "Mensaje" })}>
+            <Textarea
+              id="sms-body"
+              value={valores.smsCorpo}
+              onChange={(event) => onChange("smsCorpo", event.target.value)}
+              placeholder={t({ pt: "Mensagem do SMS", en: "SMS message", es: "Mensaje SMS" })}
+              className={textareaClass}
+            />
+          </Field>
+        </div>
       )
 
     case "geo":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="geo-latitude" className="text-sm font-medium text-foreground">
-                Latitude
-              </Label>
-              <Input
-                  id="geo-latitude"
-                  type="number"
-                  step="any"
-                  value={valores.geoLatitude}
-                  onChange={(e) => onChange("geoLatitude", e.target.value)}
-                  placeholder="-23.5505"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="geo-longitude" className="text-sm font-medium text-foreground">
-                Longitude
-              </Label>
-              <Input
-                  id="geo-longitude"
-                  type="number"
-                  step="any"
-                  value={valores.geoLongitude}
-                  onChange={(e) => onChange("geoLongitude", e.target.value)}
-                  placeholder="-46.6333"
-                  className={inputHeightClass}
-              />
-            </div>
-
-            {/* Botão de Localização em Tempo Real */}
-            <div className="pt-2">
-              <Button
-                  type="button"
-                  onClick={handleLocalizarTempoReal}
-                  disabled={localizandoGPS}
-                  variant="outline"
-                  className="w-full h-10 border-2 border-blue-400/40 hover:border-blue-500/70 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-200"
-              >
-                {localizandoGPS ? (
-                    <>
-                      <LocalIcon name="reset" className="w-4 h-4 mr-2 animate-spin" />
-                      Localizando...
-                    </>
-                ) : (
-                    <>
-                      <LocalIcon name="geo" className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
-                      <span className="font-medium">Localizar em Tempo Real</span>
-                    </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground mt-1 text-center">
-                Clique para preencher automaticamente com sua localização atual
-              </p>
-            </div>
+        <div className="space-y-3">
+          <Field id="geo-latitude" label="Latitude">
+            <Input
+              id="geo-latitude"
+              type="number"
+              step="any"
+              min={-90}
+              max={90}
+              value={valores.geoLatitude}
+              onChange={(event) => onChange("geoLatitude", event.target.value)}
+              placeholder="-23.5505"
+              className={inputClass}
+            />
+          </Field>
+          <Field id="geo-longitude" label="Longitude">
+            <Input
+              id="geo-longitude"
+              type="number"
+              step="any"
+              min={-180}
+              max={180}
+              value={valores.geoLongitude}
+              onChange={(event) => onChange("geoLongitude", event.target.value)}
+              placeholder="-46.6333"
+              className={inputClass}
+            />
+          </Field>
+          <div className="pt-2">
+            <Button
+              type="button"
+              onClick={handleLocate}
+              disabled={locating}
+              variant="outline"
+              className="h-10 w-full border-2 border-blue-400/40 transition-all duration-200 hover:border-blue-500/70 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            >
+              {locating ? (
+                <>
+                  <LocalIcon name="reset" className="mr-2 h-4 w-4 animate-spin" />
+                  {t({ pt: "Localizando...", en: "Locating...", es: "Localizando..." })}
+                </>
+              ) : (
+                <>
+                  <LocalIcon name="geo" className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium">{t({ pt: "Usar minha localização", en: "Use my location", es: "Usar mi ubicación" })}</span>
+                </>
+              )}
+            </Button>
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              {t({
+                pt: "Preenche automaticamente com a sua localização atual.",
+                en: "Fills in your current location automatically.",
+                es: "Rellena automáticamente con tu ubicación actual.",
+              })}
+            </p>
           </div>
+        </div>
       )
 
     case "whatsapp":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="whatsapp-to" className="text-sm font-medium text-foreground">
-                Número do WhatsApp
-              </Label>
-              <Input
-                  id="whatsapp-to"
-                  type="tel"
-                  value={valores.whatsappPara}
-                  onChange={(e) => onChange("whatsappPara", e.target.value)}
-                  placeholder="5511999999999"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="whatsapp-message" className="text-sm font-medium text-foreground">
-                Mensagem
-              </Label>
-              <Textarea
-                  id="whatsapp-message"
-                  value={valores.whatsappMensagem}
-                  onChange={(e) => onChange("whatsappMensagem", e.target.value)}
-                  placeholder="Mensagem do WhatsApp"
-                  className={isMobile ? `min-h-[60px] ${inputPaddingClass}` : `min-h-[80px] py-2`}
-              />
-            </div>
-          </div>
+        <div className="space-y-3">
+          <Field
+            id="whatsapp-to"
+            label={t({ pt: "Número do WhatsApp", en: "WhatsApp number", es: "Número de WhatsApp" })}
+            hint={t({ pt: "Com DDI e DDD, ex.: 5511999999999.", en: "With country code, e.g. 15551234567.", es: "Con código de país, p. ej. 34612345678." })}
+          >
+            <Input
+              id="whatsapp-to"
+              type="tel"
+              autoComplete="tel"
+              value={valores.whatsappPara}
+              onChange={(event) => onChange("whatsappPara", event.target.value)}
+              placeholder="5511999999999"
+              className={inputClass}
+            />
+          </Field>
+          <Field id="whatsapp-message" label={t({ pt: "Mensagem", en: "Message", es: "Mensaje" })}>
+            <Textarea
+              id="whatsapp-message"
+              value={valores.whatsappMensagem}
+              onChange={(event) => onChange("whatsappMensagem", event.target.value)}
+              placeholder={t({ pt: "Mensagem do WhatsApp", en: "WhatsApp message", es: "Mensaje de WhatsApp" })}
+              className={textareaClass}
+            />
+          </Field>
+        </div>
       )
 
     case "whatsappGroup":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="whatsapp-group-link" className="text-sm font-medium text-foreground">
-                Link do Grupo WhatsApp
-              </Label>
-              <Input
-                  id="whatsapp-group-link"
-                  type="url"
-                  value={valores.whatsappGroupLink}
-                  onChange={(e) => onChange("whatsappGroupLink", e.target.value)}
-                  placeholder="https://chat.whatsapp.com/..."
-                  className={inputHeightClass}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Cole o link de convite do grupo do WhatsApp
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="whatsapp-group-message" className="text-sm font-medium text-foreground">
-                Mensagem de Boas-Vindas / Validação
-              </Label>
-              <Textarea
-                  id="whatsapp-group-message"
-                  value={valores.whatsappGroupMensagem}
-                  onChange={(e) => onChange("whatsappGroupMensagem", e.target.value)}
-                  placeholder="Por favor preencha:&#10;Primeiro semestre RA:&#10;Meu nome:&#10;Estou começando o 1º semestre/ou sou do 8º?"
-                  className={isMobile ? `min-h-[100px] ${inputPaddingClass}` : `min-h-[120px] py-2`}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Esta mensagem será exibida junto ao QR code como instruções para o usuário
-              </p>
-            </div>
-          </div>
+        <div className="space-y-3">
+          <Field
+            id="whatsapp-group-link"
+            label={t({ pt: "Link do grupo do WhatsApp", en: "WhatsApp group link", es: "Enlace del grupo de WhatsApp" })}
+            hint={t({
+              pt: "Cole o link de convite do grupo do WhatsApp.",
+              en: "Paste the WhatsApp group invite link.",
+              es: "Pega el enlace de invitación del grupo de WhatsApp.",
+            })}
+          >
+            <Input
+              id="whatsapp-group-link"
+              type="url"
+              inputMode="url"
+              value={valores.whatsappGroupLink}
+              onChange={(event) => onChange("whatsappGroupLink", event.target.value)}
+              placeholder="https://chat.whatsapp.com/..."
+              className={inputClass}
+            />
+          </Field>
+          <Field
+            id="whatsapp-group-message"
+            label={t({ pt: "Mensagem de boas-vindas / validação", en: "Welcome / validation message", es: "Mensaje de bienvenida / validación" })}
+            hint={t({
+              pt: "Essa mensagem aparece junto ao QR Code como instrução para quem entrar no grupo.",
+              en: "This message is shown with the QR code as instructions for people joining the group.",
+              es: "Este mensaje aparece junto al código QR como instrucción para quien entre al grupo.",
+            })}
+          >
+            <Textarea
+              id="whatsapp-group-message"
+              value={valores.whatsappGroupMensagem}
+              onChange={(event) => onChange("whatsappGroupMensagem", event.target.value)}
+              placeholder={t({
+                pt: "Por favor, preencha:\nRA:\nNome:\nSemestre:",
+                en: "Please fill in:\nStudent ID:\nName:\nSemester:",
+                es: "Por favor, completa:\nMatrícula:\nNombre:\nSemestre:",
+              })}
+              className={isMobile ? "min-h-25 py-1.5" : "min-h-30 py-2"}
+            />
+          </Field>
+        </div>
       )
 
     case "phone":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="phone-to" className="text-sm font-medium text-foreground">
-                Número de Telefone
-              </Label>
-              <Input
-                  id="phone-to"
-                  type="tel"
-                  value={valores.telefonePara}
-                  onChange={(e) => onChange("telefonePara", e.target.value)}
-                  placeholder="(11) 99999-9999"
-                  className={inputHeightClass}
-              />
-            </div>
-          </div>
+        <Field id="phone-to" label={t({ pt: "Número de telefone", en: "Phone number", es: "Número de teléfono" })}>
+          <Input
+            id="phone-to"
+            type="tel"
+            autoComplete="tel"
+            value={valores.telefonePara}
+            onChange={(event) => onChange("telefonePara", event.target.value)}
+            placeholder="+55 11 99999-9999"
+            className={inputClass}
+          />
+        </Field>
       )
 
-    case "pix":
+    case "pix": {
+      const detectedKey = valores.pixChave.trim() ? detectPixKey(valores.pixChave) : null
+      const keyHint = !valores.pixChave.trim()
+        ? t({
+            pt: "Gera o PIX copia e cola oficial (BR Code), aceito pelos apps de banco.",
+            en: "Creates the official PIX copy-and-paste code (BR Code) accepted by banking apps.",
+            es: "Genera el código PIX oficial (BR Code) aceptado por las apps bancarias.",
+          })
+        : detectedKey
+          ? `${t({ pt: "Chave detectada", en: "Detected key", es: "Clave detectada" })}: ${t(PIX_KEY_LABELS[detectedKey.type])}`
+          : t({ pt: "Chave não reconhecida.", en: "Key not recognized.", es: "Clave no reconocida." })
+
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="pix-chave" className="text-sm font-medium text-foreground">
-                Chave PIX
-              </Label>
-              <Input
-                  id="pix-chave"
-                  value={valores.pixChave}
-                  onChange={(e) => onChange("pixChave", e.target.value)}
-                  placeholder="CPF, email, telefone ou chave aleatória"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="pix-nome" className="text-sm font-medium text-foreground">
-                Nome do Beneficiário
-              </Label>
-              <Input
-                  id="pix-nome"
-                  value={valores.pixNome}
-                  onChange={(e) => onChange("pixNome", e.target.value)}
-                  placeholder="Nome completo"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="pix-cidade" className="text-sm font-medium text-foreground">
-                Cidade
-              </Label>
-              <Input
-                  id="pix-cidade"
-                  value={valores.pixCidade}
-                  onChange={(e) => onChange("pixCidade", e.target.value)}
-                  placeholder="Cidade do beneficiário"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="pix-valor" className="text-sm font-medium text-foreground">
-                Valor (opcional)
-              </Label>
-              <Input
-                  id="pix-valor"
-                  type="number"
-                  step="0.01"
-                  value={valores.pixValor}
-                  onChange={(e) => onChange("pixValor", e.target.value)}
-                  placeholder="0.00"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="pix-descricao" className="text-sm font-medium text-foreground">
-                Descrição (opcional)
-              </Label>
-              <Input
-                  id="pix-descricao"
-                  value={valores.pixDescricao}
-                  onChange={(e) => onChange("pixDescricao", e.target.value)}
-                  placeholder="Descrição do pagamento"
-                  className={inputHeightClass}
-              />
-            </div>
-          </div>
+        <div className="space-y-3">
+          <Field id="pix-chave" label={t({ pt: "Chave PIX", en: "PIX key", es: "Clave PIX" })} hint={keyHint}>
+            <Input
+              id="pix-chave"
+              autoComplete="off"
+              value={valores.pixChave}
+              onChange={(event) => onChange("pixChave", event.target.value)}
+              placeholder={t({
+                pt: "CPF, CNPJ, email, telefone ou chave aleatória",
+                en: "CPF, CNPJ, email, phone or random key",
+                es: "CPF, CNPJ, correo, teléfono o clave aleatoria",
+              })}
+              aria-invalid={valores.pixChave.trim() !== "" && !detectedKey}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="pix-nome" label={t({ pt: "Nome do beneficiário", en: "Recipient name", es: "Nombre del beneficiario" })}>
+            <Input
+              id="pix-nome"
+              autoComplete="name"
+              maxLength={60}
+              value={valores.pixNome}
+              onChange={(event) => onChange("pixNome", event.target.value)}
+              placeholder={t({ pt: "Nome completo", en: "Full name", es: "Nombre completo" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="pix-cidade" label={t({ pt: "Cidade", en: "City", es: "Ciudad" })}>
+            <Input
+              id="pix-cidade"
+              autoComplete="address-level2"
+              maxLength={40}
+              value={valores.pixCidade}
+              onChange={(event) => onChange("pixCidade", event.target.value)}
+              placeholder={t({ pt: "Cidade do beneficiário", en: "Recipient city", es: "Ciudad del beneficiario" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="pix-valor" label={t({ pt: "Valor (opcional)", en: "Amount (optional)", es: "Importe (opcional)" })}>
+            <Input
+              id="pix-valor"
+              inputMode="decimal"
+              value={valores.pixValor}
+              onChange={(event) => onChange("pixValor", event.target.value)}
+              placeholder="0,00"
+              className={inputClass}
+            />
+          </Field>
+          <Field id="pix-descricao" label={t({ pt: "Descrição (opcional)", en: "Description (optional)", es: "Descripción (opcional)" })}>
+            <Input
+              id="pix-descricao"
+              maxLength={72}
+              value={valores.pixDescricao}
+              onChange={(event) => onChange("pixDescricao", event.target.value)}
+              placeholder={t({ pt: "Descrição do pagamento", en: "Payment description", es: "Descripción del pago" })}
+              className={inputClass}
+            />
+          </Field>
+        </div>
       )
+    }
 
     case "appstore":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="appstore-nome" className="text-sm font-medium text-foreground">
-                Nome do App
-              </Label>
+        <div className="space-y-3">
+          <Field id="appstore-nome" label={t({ pt: "Nome do app", en: "App name", es: "Nombre de la app" })}>
+            <Input
+              id="appstore-nome"
+              value={valores.appstoreNome}
+              onChange={(event) => onChange("appstoreNome", event.target.value)}
+              placeholder={t({ pt: "Nome do aplicativo", en: "Application name", es: "Nombre de la aplicación" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="appstore-plataforma" label={t({ pt: "Plataforma", en: "Platform", es: "Plataforma" })}>
+            <Select value={valores.appstorePlataforma} onValueChange={(value) => onChange("appstorePlataforma", value as AppstorePlataforma)}>
+              <SelectTrigger id="appstore-plataforma" className={`${inputClass} text-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APPSTORE_PLATFORMS.map((option) => (
+                  <SelectItem key={option} value={option} className="text-sm">
+                    {t(APPSTORE_LABELS[option])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          {valores.appstorePlataforma !== "android" && (
+            <Field id="appstore-ios" label={t({ pt: "URL da App Store (iOS)", en: "App Store URL (iOS)", es: "URL de App Store (iOS)" })}>
               <Input
-                  id="appstore-nome"
-                  value={valores.appstoreNome}
-                  onChange={(e) => onChange("appstoreNome", e.target.value)}
-                  placeholder="Nome do aplicativo"
-                  className={inputHeightClass}
+                id="appstore-ios"
+                inputMode="url"
+                value={valores.appstoreIosUrl}
+                onChange={(event) => onChange("appstoreIosUrl", event.target.value)}
+                placeholder="https://apps.apple.com/app/..."
+                className={inputClass}
               />
-            </div>
-            <div>
-              <Label htmlFor="appstore-plataforma" className="text-sm font-medium text-foreground">
-                Plataforma
-              </Label>
-              <Select value={valores.appstorePlataforma} onValueChange={(v) => onChange("appstorePlataforma", v)}>
-                <SelectTrigger id="appstore-plataforma" className={`${inputHeightClass} text-sm`}>
-                  <SelectValue placeholder="Selecione a plataforma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ios" className="text-sm">
-                    iOS (App Store)
-                  </SelectItem>
-                  <SelectItem value="android" className="text-sm">
-                    Android (Play Store)
-                  </SelectItem>
-                  <SelectItem value="ambos" className="text-sm">
-                    Ambos
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(valores.appstorePlataforma === "ios" || valores.appstorePlataforma === "ambos") && (
-                <div>
-                  <Label htmlFor="appstore-ios" className="text-sm font-medium text-foreground">
-                    URL da App Store (iOS)
-                  </Label>
-                  <Input
-                      id="appstore-ios"
-                      value={valores.appstoreIosUrl}
-                      onChange={(e) => onChange("appstoreIosUrl", e.target.value)}
-                      placeholder="https://apps.apple.com/app/..."
-                      className={inputHeightClass}
-                  />
-                </div>
-            )}
-            {(valores.appstorePlataforma === "android" || valores.appstorePlataforma === "ambos") && (
-                <div>
-                  <Label htmlFor="appstore-android" className="text-sm font-medium text-foreground">
-                    URL da Play Store (Android)
-                  </Label>
-                  <Input
-                      id="appstore-android"
-                      value={valores.appstoreAndroidUrl}
-                      onChange={(e) => onChange("appstoreAndroidUrl", e.target.value)}
-                      placeholder="https://play.google.com/store/apps/details?id=..."
-                      className={inputHeightClass}
-                  />
-                </div>
-            )}
-          </div>
+            </Field>
+          )}
+          {valores.appstorePlataforma !== "ios" && (
+            <Field id="appstore-android" label={t({ pt: "URL da Play Store (Android)", en: "Play Store URL (Android)", es: "URL de Play Store (Android)" })}>
+              <Input
+                id="appstore-android"
+                inputMode="url"
+                value={valores.appstoreAndroidUrl}
+                onChange={(event) => onChange("appstoreAndroidUrl", event.target.value)}
+                placeholder="https://play.google.com/store/apps/details?id=..."
+                className={inputClass}
+              />
+            </Field>
+          )}
+        </div>
       )
 
     case "spotify":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="spotify-tipo" className="text-sm font-medium text-foreground">
-                Tipo de Conteúdo
-              </Label>
-              <Select value={valores.spotifyTipo} onValueChange={(v) => onChange("spotifyTipo", v)}>
-                <SelectTrigger id="spotify-tipo" className={`${inputHeightClass} text-sm`}>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="track" className="text-sm">
-                    Música (Spotify)
+        <div className="space-y-3">
+          <Field id="spotify-tipo" label={t({ pt: "Tipo de conteúdo", en: "Content type", es: "Tipo de contenido" })}>
+            <Select value={valores.spotifyTipo} onValueChange={(value) => onChange("spotifyTipo", value as SpotifyTipo)}>
+              <SelectTrigger id="spotify-tipo" className={`${inputClass} text-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MEDIA_TYPES.map((option) => (
+                  <SelectItem key={option} value={option} className="text-sm">
+                    {t(MEDIA_LABELS[option])}
                   </SelectItem>
-                  <SelectItem value="album" className="text-sm">
-                    Álbum (Spotify)
-                  </SelectItem>
-                  <SelectItem value="playlist" className="text-sm">
-                    Playlist (Spotify)
-                  </SelectItem>
-                  <SelectItem value="artist" className="text-sm">
-                    Artista (Spotify)
-                  </SelectItem>
-                  <SelectItem value="youtube" className="text-sm">
-                    Vídeo (YouTube)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="spotify-url" className="text-sm font-medium text-foreground">
-                URL do {valores.spotifyTipo === "youtube" ? "YouTube" : "Spotify"}
-              </Label>
-              <Input
-                  id="spotify-url"
-                  value={valores.spotifyUrl}
-                  onChange={(e) => onChange("spotifyUrl", e.target.value)}
-                  placeholder={
-                    valores.spotifyTipo === "youtube" ? "https://youtube.com/watch?v=..." : "https://open.spotify.com/..."
-                  }
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="spotify-titulo" className="text-sm font-medium text-foreground">
-                Título
-              </Label>
-              <Input
-                  id="spotify-titulo"
-                  value={valores.spotifyTitulo}
-                  onChange={(e) => onChange("spotifyTitulo", e.target.value)}
-                  placeholder="Nome da música/álbum/playlist"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="spotify-artista" className="text-sm font-medium text-foreground">
-                Artista/Canal
-              </Label>
-              <Input
-                  id="spotify-artista"
-                  value={valores.spotifyArtista}
-                  onChange={(e) => onChange("spotifyArtista", e.target.value)}
-                  placeholder="Nome do artista ou canal"
-                  className={inputHeightClass}
-              />
-            </div>
-          </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field
+            id="spotify-url"
+            label={t({
+              pt: `URL do ${valores.spotifyTipo === "youtube" ? "YouTube" : "Spotify"}`,
+              en: `${valores.spotifyTipo === "youtube" ? "YouTube" : "Spotify"} URL`,
+              es: `URL de ${valores.spotifyTipo === "youtube" ? "YouTube" : "Spotify"}`,
+            })}
+          >
+            <Input
+              id="spotify-url"
+              inputMode="url"
+              value={valores.spotifyUrl}
+              onChange={(event) => onChange("spotifyUrl", event.target.value)}
+              placeholder={valores.spotifyTipo === "youtube" ? "https://youtube.com/watch?v=..." : "https://open.spotify.com/..."}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="spotify-titulo" label={t({ pt: "Título", en: "Title", es: "Título" })}>
+            <Input
+              id="spotify-titulo"
+              value={valores.spotifyTitulo}
+              onChange={(event) => onChange("spotifyTitulo", event.target.value)}
+              placeholder={t({ pt: "Nome da música, álbum ou playlist", en: "Song, album or playlist name", es: "Nombre de la canción, álbum o playlist" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="spotify-artista" label={t({ pt: "Artista/Canal", en: "Artist/Channel", es: "Artista/Canal" })}>
+            <Input
+              id="spotify-artista"
+              value={valores.spotifyArtista}
+              onChange={(event) => onChange("spotifyArtista", event.target.value)}
+              placeholder={t({ pt: "Nome do artista ou canal", en: "Artist or channel name", es: "Nombre del artista o canal" })}
+              className={inputClass}
+            />
+          </Field>
+        </div>
       )
 
     case "zoom":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="zoom-tipo" className="text-sm font-medium text-foreground">
-                Plataforma
-              </Label>
-              <Select value={valores.zoomTipo} onValueChange={(v) => onChange("zoomTipo", v)}>
-                <SelectTrigger id="zoom-tipo" className={`${inputHeightClass} text-sm`}>
-                  <SelectValue placeholder="Selecione a plataforma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="zoom" className="text-sm">
-                    Zoom
+        <div className="space-y-3">
+          <Field id="zoom-tipo" label={t({ pt: "Plataforma", en: "Platform", es: "Plataforma" })}>
+            <Select value={valores.zoomTipo} onValueChange={(value) => onChange("zoomTipo", value as ZoomTipo)}>
+              <SelectTrigger id="zoom-tipo" className={`${inputClass} text-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MEETING_TYPES.map((option) => (
+                  <SelectItem key={option} value={option} className="text-sm">
+                    {MEETING_LABELS[option]}
                   </SelectItem>
-                  <SelectItem value="meet" className="text-sm">
-                    Google Meet
-                  </SelectItem>
-                  <SelectItem value="teams" className="text-sm">
-                    Microsoft Teams
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="zoom-titulo" className="text-sm font-medium text-foreground">
-                Título da Reunião
-              </Label>
-              <Input
-                  id="zoom-titulo"
-                  value={valores.zoomTitulo}
-                  onChange={(e) => onChange("zoomTitulo", e.target.value)}
-                  placeholder="Nome da reunião"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="zoom-url" className="text-sm font-medium text-foreground">
-                URL da Reunião
-              </Label>
-              <Input
-                  id="zoom-url"
-                  value={valores.zoomUrl}
-                  onChange={(e) => onChange("zoomUrl", e.target.value)}
-                  placeholder="https://zoom.us/j/... ou https://meet.google.com/..."
-                  className={inputHeightClass}
-              />
-            </div>
-            {valores.zoomTipo === "zoom" && (
-                <>
-                  <div>
-                    <Label htmlFor="zoom-id" className="text-sm font-medium text-foreground">
-                      ID da Reunião (opcional)
-                    </Label>
-                    <Input
-                        id="zoom-id"
-                        value={valores.zoomId}
-                        onChange={(e) => onChange("zoomId", e.target.value)}
-                        placeholder="123 456 7890"
-                        className={inputHeightClass}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="zoom-senha" className="text-sm font-medium text-foreground">
-                      Senha (opcional)
-                    </Label>
-                    <Input
-                        id="zoom-senha"
-                        type="password"
-                        value={valores.zoomSenha}
-                        onChange={(e) => onChange("zoomSenha", e.target.value)}
-                        placeholder="Senha da reunião"
-                        className={inputHeightClass}
-                    />
-                  </div>
-                </>
-            )}
-          </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field id="zoom-titulo" label={t({ pt: "Título da reunião", en: "Meeting title", es: "Título de la reunión" })}>
+            <Input
+              id="zoom-titulo"
+              value={valores.zoomTitulo}
+              onChange={(event) => onChange("zoomTitulo", event.target.value)}
+              placeholder={t({ pt: "Nome da reunião", en: "Meeting name", es: "Nombre de la reunión" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="zoom-url" label={t({ pt: "URL da reunião", en: "Meeting URL", es: "URL de la reunión" })}>
+            <Input
+              id="zoom-url"
+              inputMode="url"
+              value={valores.zoomUrl}
+              onChange={(event) => onChange("zoomUrl", event.target.value)}
+              placeholder="https://zoom.us/j/... / https://meet.google.com/..."
+              className={inputClass}
+            />
+          </Field>
+          {valores.zoomTipo === "zoom" && (
+            <>
+              <Field id="zoom-id" label={t({ pt: "ID da reunião (opcional)", en: "Meeting ID (optional)", es: "ID de la reunión (opcional)" })}>
+                <Input
+                  id="zoom-id"
+                  value={valores.zoomId}
+                  onChange={(event) => onChange("zoomId", event.target.value)}
+                  placeholder="123 456 7890"
+                  className={inputClass}
+                />
+              </Field>
+              <Field
+                id="zoom-senha"
+                label={t({ pt: "Senha (opcional)", en: "Passcode (optional)", es: "Contraseña (opcional)" })}
+                hint={t({
+                  pt: "O QR Code abre a URL; ID e senha ficam salvos só como referência.",
+                  en: "The QR code opens the URL; ID and passcode are kept only for reference.",
+                  es: "El código QR abre la URL; el ID y la contraseña se guardan solo como referencia.",
+                })}
+              >
+                <Input
+                  id="zoom-senha"
+                  type="password"
+                  autoComplete="off"
+                  value={valores.zoomSenha}
+                  onChange={(event) => onChange("zoomSenha", event.target.value)}
+                  placeholder={t({ pt: "Senha da reunião", en: "Meeting passcode", es: "Contraseña de la reunión" })}
+                  className={inputClass}
+                />
+              </Field>
+            </>
+          )}
+        </div>
       )
 
     case "menu":
       return (
-          <ScrollArea className="h-[250px] sm:h-[300px] pr-3">
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="menu-nome" className="text-sm font-medium text-foreground">
-                  Nome do Restaurante
-                </Label>
-                <Input
-                    id="menu-nome"
-                    value={valores.menuNome}
-                    onChange={(e) => onChange("menuNome", e.target.value)}
-                    placeholder="Nome do estabelecimento"
-                    className={inputHeightClass}
-                />
-              </div>
-              <div>
-                <Label htmlFor="menu-categoria" className="text-sm font-medium text-foreground">
-                  Categoria
-                </Label>
-                <Input
-                    id="menu-categoria"
-                    value={valores.menuCategoria}
-                    onChange={(e) => onChange("menuCategoria", e.target.value)}
-                    placeholder="Ex: Pratos principais, Bebidas, Sobremesas"
-                    className={inputHeightClass}
-                />
-              </div>
-              <div>
-                <Label htmlFor="menu-descricao" className="text-sm font-medium text-foreground">
-                  Descrição
-                </Label>
-                <Textarea
-                    id="menu-descricao"
-                    value={valores.menuDescricao}
-                    onChange={(e) => onChange("menuDescricao", e.target.value)}
-                    placeholder="Descrição do restaurante ou categoria"
-                    className={isMobile ? `min-h-[60px] ${inputPaddingClass}` : `min-h-[80px] py-2`}
-                />
-              </div>
-              <div>
-                <Label htmlFor="menu-itens" className="text-sm font-medium text-foreground">
-                  Itens do Menu
-                </Label>
-                <Textarea
-                    id="menu-itens"
-                    value={valores.menuItens}
-                    onChange={(e) => onChange("menuItens", e.target.value)}
-                    placeholder="Liste os itens do menu, um por linha"
-                    className={isMobile ? `min-h-[80px] ${inputPaddingClass}` : `min-h-[100px] py-2`}
-                />
-              </div>
-              <div>
-                <Label htmlFor="menu-preco" className="text-sm font-medium text-foreground">
-                  Informações de Preço
-                </Label>
-                <Input
-                    id="menu-preco"
-                    value={valores.menuPreco}
-                    onChange={(e) => onChange("menuPreco", e.target.value)}
-                    placeholder="Ex: A partir de R$ 25,00"
-                    className={inputHeightClass}
-                />
-              </div>
-            </div>
-          </ScrollArea>
+        <ScrollArea className="h-62.5 pr-3 sm:h-75">
+          <div className="space-y-3">
+            <Field id="menu-nome" label={t({ pt: "Nome do restaurante", en: "Restaurant name", es: "Nombre del restaurante" })}>
+              <Input
+                id="menu-nome"
+                value={valores.menuNome}
+                onChange={(event) => onChange("menuNome", event.target.value)}
+                placeholder={t({ pt: "Nome do estabelecimento", en: "Business name", es: "Nombre del establecimiento" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="menu-categoria" label={t({ pt: "Categoria", en: "Category", es: "Categoría" })}>
+              <Input
+                id="menu-categoria"
+                value={valores.menuCategoria}
+                onChange={(event) => onChange("menuCategoria", event.target.value)}
+                placeholder={t({ pt: "Ex.: Pratos principais, Bebidas", en: "E.g. Main dishes, Drinks", es: "P. ej.: Platos principales, Bebidas" })}
+                className={inputClass}
+              />
+            </Field>
+            <Field id="menu-descricao" label={t({ pt: "Descrição", en: "Description", es: "Descripción" })}>
+              <Textarea
+                id="menu-descricao"
+                value={valores.menuDescricao}
+                onChange={(event) => onChange("menuDescricao", event.target.value)}
+                placeholder={t({ pt: "Descrição do restaurante ou categoria", en: "Restaurant or category description", es: "Descripción del restaurante o categoría" })}
+                className={textareaClass}
+              />
+            </Field>
+            <Field id="menu-itens" label={t({ pt: "Itens do menu", en: "Menu items", es: "Platos del menú" })}>
+              <Textarea
+                id="menu-itens"
+                value={valores.menuItens}
+                onChange={(event) => onChange("menuItens", event.target.value)}
+                placeholder={t({ pt: "Um item por linha", en: "One item per line", es: "Un plato por línea" })}
+                className={isMobile ? "min-h-20 py-1.5" : "min-h-25 py-2"}
+              />
+            </Field>
+            <Field id="menu-preco" label={t({ pt: "Informações de preço", en: "Price information", es: "Información de precios" })}>
+              <Input
+                id="menu-preco"
+                value={valores.menuPreco}
+                onChange={(event) => onChange("menuPreco", event.target.value)}
+                placeholder={t({ pt: "Ex.: A partir de R$ 25,00", en: "E.g. From $10", es: "P. ej.: Desde 10 €" })}
+                className={inputClass}
+              />
+            </Field>
+          </div>
+        </ScrollArea>
       )
 
     case "cupom":
       return (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="cupom-codigo" className="text-sm font-medium text-foreground">
-                Código do Cupom
-              </Label>
-              <Input
-                  id="cupom-codigo"
-                  value={valores.cupomCodigo}
-                  onChange={(e) => onChange("cupomCodigo", e.target.value)}
-                  placeholder="DESCONTO20"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cupom-tipo" className="text-sm font-medium text-foreground">
-                Tipo de Desconto
-              </Label>
-              <Select value={valores.cupomTipo} onValueChange={(v) => onChange("cupomTipo", v)}>
-                <SelectTrigger id="cupom-tipo" className={`${inputHeightClass} text-sm`}>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desconto" className="text-sm">
-                    Desconto
+        <div className="space-y-3">
+          <Field id="cupom-codigo" label={t({ pt: "Código do cupom", en: "Coupon code", es: "Código del cupón" })}>
+            <Input
+              id="cupom-codigo"
+              autoComplete="off"
+              value={valores.cupomCodigo}
+              onChange={(event) => onChange("cupomCodigo", event.target.value)}
+              placeholder="DESCONTO20"
+              className={inputClass}
+            />
+          </Field>
+          <Field id="cupom-tipo" label={t({ pt: "Tipo de desconto", en: "Discount type", es: "Tipo de descuento" })}>
+            <Select value={valores.cupomTipo} onValueChange={(value) => onChange("cupomTipo", value as CupomTipo)}>
+              <SelectTrigger id="cupom-tipo" className={`${inputClass} text-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COUPON_TYPES.map((option) => (
+                  <SelectItem key={option} value={option} className="text-sm">
+                    {t(COUPON_LABELS[option])}
                   </SelectItem>
-                  <SelectItem value="frete" className="text-sm">
-                    Frete Grátis
-                  </SelectItem>
-                  <SelectItem value="produto" className="text-sm">
-                    Produto Grátis
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="cupom-valor" className="text-sm font-medium text-foreground">
-                Valor do Desconto
-              </Label>
-              <Input
-                  id="cupom-valor"
-                  value={valores.cupomValor}
-                  onChange={(e) => onChange("cupomValor", e.target.value)}
-                  placeholder="20% ou R$ 50,00"
-                  className={inputHeightClass}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cupom-descricao" className="text-sm font-medium text-foreground">
-                Descrição
-              </Label>
-              <Textarea
-                  id="cupom-descricao"
-                  value={valores.cupomDescricao}
-                  onChange={(e) => onChange("cupomDescricao", e.target.value)}
-                  placeholder="Descrição da promoção"
-                  className={isMobile ? `min-h-[60px] ${inputPaddingClass}` : `min-h-[80px] py-2`}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cupom-validade" className="text-sm font-medium text-foreground">
-                Validade
-              </Label>
-              <Input
-                  id="cupom-validade"
-                  type="date"
-                  value={valores.cupomValidade}
-                  onChange={(e) => onChange("cupomValidade", e.target.value)}
-                  className={inputHeightClass}
-              />
-            </div>
-          </div>
-      )
-
-    default:
-      return (
-          <div className="text-center py-4 text-muted-foreground">
-            <p>Formulário para {tipo} será implementado em breve</p>
-          </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field id="cupom-valor" label={t({ pt: "Valor do desconto", en: "Discount amount", es: "Valor del descuento" })}>
+            <Input
+              id="cupom-valor"
+              value={valores.cupomValor}
+              onChange={(event) => onChange("cupomValor", event.target.value)}
+              placeholder={t({ pt: "20% ou R$ 50,00", en: "20% or $50", es: "20% o 50 €" })}
+              className={inputClass}
+            />
+          </Field>
+          <Field id="cupom-descricao" label={t({ pt: "Descrição", en: "Description", es: "Descripción" })}>
+            <Textarea
+              id="cupom-descricao"
+              value={valores.cupomDescricao}
+              onChange={(event) => onChange("cupomDescricao", event.target.value)}
+              placeholder={t({ pt: "Descrição da promoção", en: "Promotion description", es: "Descripción de la promoción" })}
+              className={textareaClass}
+            />
+          </Field>
+          <Field id="cupom-validade" label={t({ pt: "Validade", en: "Valid until", es: "Válido hasta" })}>
+            <Input
+              id="cupom-validade"
+              type="date"
+              value={valores.cupomValidade}
+              onChange={(event) => onChange("cupomValidade", event.target.value)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
       )
   }
 }
