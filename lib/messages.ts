@@ -1,0 +1,345 @@
+import type { TranslationValue } from "@/lib/i18n"
+import type { PayloadError } from "@/lib/qr/payload"
+
+export const PAYLOAD_ERROR_MESSAGES: Record<PayloadError, TranslationValue> = {
+  urlRequired: {
+    pt: "Digite uma URL ou texto para codificar.",
+    en: "Enter a URL or text to encode.",
+    es: "Escribe una URL o un texto para codificar.",
+  },
+  wifiSsidRequired: {
+    pt: "Informe o nome da rede (SSID).",
+    en: "Enter the network name (SSID).",
+    es: "Indica el nombre de la red (SSID).",
+  },
+  vcardNameRequired: {
+    pt: "Informe pelo menos nome, sobrenome ou organização.",
+    en: "Enter at least a first name, last name or organization.",
+    es: "Indica al menos nombre, apellido u organización.",
+  },
+  eventRequired: {
+    pt: "Título e data de início são obrigatórios.",
+    en: "Title and start date are required.",
+    es: "El título y la fecha de inicio son obligatorios.",
+  },
+  eventDateInvalid: {
+    pt: "Data ou hora do evento inválida.",
+    en: "Invalid event date or time.",
+    es: "Fecha u hora del evento no válida.",
+  },
+  eventEndBeforeStart: {
+    pt: "O fim do evento precisa ser depois do início.",
+    en: "The event must end after it starts.",
+    es: "El evento debe terminar después de empezar.",
+  },
+  emailRequired: {
+    pt: "Informe o email de destino.",
+    en: "Enter the recipient email.",
+    es: "Indica el correo de destino.",
+  },
+  emailInvalid: {
+    pt: "Email de destino inválido.",
+    en: "Invalid recipient email.",
+    es: "Correo de destino no válido.",
+  },
+  smsRequired: {
+    pt: "Informe o número de destino.",
+    en: "Enter the destination number.",
+    es: "Indica el número de destino.",
+  },
+  smsInvalid: {
+    pt: "Número de destino inválido.",
+    en: "Invalid destination number.",
+    es: "Número de destino no válido.",
+  },
+  geoRequired: {
+    pt: "Latitude e longitude são obrigatórias.",
+    en: "Latitude and longitude are required.",
+    es: "La latitud y la longitud son obligatorias.",
+  },
+  geoInvalid: {
+    pt: "Coordenadas inválidas: latitude entre -90 e 90, longitude entre -180 e 180.",
+    en: "Invalid coordinates: latitude between -90 and 90, longitude between -180 and 180.",
+    es: "Coordenadas no válidas: latitud entre -90 y 90, longitud entre -180 y 180.",
+  },
+  whatsappRequired: {
+    pt: "Informe o número do WhatsApp.",
+    en: "Enter the WhatsApp number.",
+    es: "Indica el número de WhatsApp.",
+  },
+  whatsappInvalid: {
+    pt: "Número inválido. Use DDI + DDD + número, ex.: 5511999999999.",
+    en: "Invalid number. Use country code + number, e.g. 15551234567.",
+    es: "Número no válido. Usa el código de país + número, p. ej. 34612345678.",
+  },
+  whatsappGroupRequired: {
+    pt: "Informe o link de convite do grupo.",
+    en: "Enter the group invite link.",
+    es: "Indica el enlace de invitación del grupo.",
+  },
+  whatsappGroupInvalid: {
+    pt: "Link inválido. Use um convite no formato https://chat.whatsapp.com/...",
+    en: "Invalid link. Use an invite like https://chat.whatsapp.com/...",
+    es: "Enlace no válido. Usa una invitación como https://chat.whatsapp.com/...",
+  },
+  phoneRequired: {
+    pt: "Informe o número de telefone.",
+    en: "Enter the phone number.",
+    es: "Indica el número de teléfono.",
+  },
+  phoneInvalid: {
+    pt: "Número de telefone inválido.",
+    en: "Invalid phone number.",
+    es: "Número de teléfono no válido.",
+  },
+  pixKeyRequired: {
+    pt: "Informe a chave PIX.",
+    en: "Enter the PIX key.",
+    es: "Indica la clave PIX.",
+  },
+  pixKeyInvalid: {
+    pt: "Chave PIX inválida. Use CPF, CNPJ, email, telefone (+55...) ou chave aleatória.",
+    en: "Invalid PIX key. Use CPF, CNPJ, email, phone (+55...) or a random key.",
+    es: "Clave PIX no válida. Usa CPF, CNPJ, correo, teléfono (+55...) o una clave aleatoria.",
+  },
+  pixNameRequired: {
+    pt: "Informe o nome do beneficiário.",
+    en: "Enter the recipient name.",
+    es: "Indica el nombre del beneficiario.",
+  },
+  pixCityRequired: {
+    pt: "Informe a cidade do beneficiário.",
+    en: "Enter the recipient city.",
+    es: "Indica la ciudad del beneficiario.",
+  },
+  pixAmountInvalid: {
+    pt: "Valor inválido. Use apenas números, ex.: 10,50.",
+    en: "Invalid amount. Use numbers only, e.g. 10.50.",
+    es: "Importe no válido. Usa solo números, p. ej. 10,50.",
+  },
+  appstoreIosRequired: {
+    pt: "Informe a URL da App Store.",
+    en: "Enter the App Store URL.",
+    es: "Indica la URL de la App Store.",
+  },
+  appstoreAndroidRequired: {
+    pt: "Informe a URL da Play Store.",
+    en: "Enter the Play Store URL.",
+    es: "Indica la URL de Play Store.",
+  },
+  appstoreUrlInvalid: {
+    pt: "URL da loja inválida. Use um link http(s).",
+    en: "Invalid store URL. Use an http(s) link.",
+    es: "URL de la tienda no válida. Usa un enlace http(s).",
+  },
+  mediaUrlRequired: {
+    pt: "Informe a URL da mídia.",
+    en: "Enter the media URL.",
+    es: "Indica la URL del contenido.",
+  },
+  mediaUrlInvalid: {
+    pt: "URL inválida. Use um link http(s).",
+    en: "Invalid URL. Use an http(s) link.",
+    es: "URL no válida. Usa un enlace http(s).",
+  },
+  meetingUrlRequired: {
+    pt: "Informe a URL da reunião.",
+    en: "Enter the meeting URL.",
+    es: "Indica la URL de la reunión.",
+  },
+  meetingUrlInvalid: {
+    pt: "URL da reunião inválida. Use um link http(s).",
+    en: "Invalid meeting URL. Use an http(s) link.",
+    es: "URL de la reunión no válida. Usa un enlace http(s).",
+  },
+  menuNameRequired: {
+    pt: "Informe o nome do restaurante.",
+    en: "Enter the restaurant name.",
+    es: "Indica el nombre del restaurante.",
+  },
+  couponCodeRequired: {
+    pt: "Informe o código do cupom.",
+    en: "Enter the coupon code.",
+    es: "Indica el código del cupón.",
+  },
+}
+
+export const MESSAGES = {
+  error: { pt: "Erro", en: "Error", es: "Error" },
+  checkFields: { pt: "Confira os campos", en: "Check the fields", es: "Revisa los campos" },
+  payloadTooLongTitle: { pt: "Conteúdo muito grande", en: "Content too large", es: "Contenido demasiado grande" },
+  payloadTooLong: (bytes: number, level: string, max: number): TranslationValue => ({
+    pt: `O conteúdo tem ${bytes} bytes e o limite com correção ${level} é ${max}. Reduza o texto ou use uma correção menor.`,
+    en: `The content has ${bytes} bytes and the limit with ${level} correction is ${max}. Shorten it or use a lower correction level.`,
+    es: `El contenido tiene ${bytes} bytes y el límite con corrección ${level} es ${max}. Acórtalo o usa una corrección menor.`,
+  }),
+  generatedTitle: { pt: "QR Code gerado", en: "QR code generated", es: "Código QR generado" },
+  generated: {
+    pt: "Pronto para baixar, copiar ou compartilhar.",
+    en: "Ready to download, copy or share.",
+    es: "Listo para descargar, copiar o compartir.",
+  },
+  storageTitle: { pt: "Armazenamento do navegador", en: "Browser storage", es: "Almacenamiento del navegador" },
+  historyWithoutImages: {
+    pt: "O armazenamento está cheio: imagens de itens antigos do histórico não foram salvas.",
+    en: "Storage is full: images from older history items were not saved.",
+    es: "El almacenamiento está lleno: no se guardaron las imágenes de elementos antiguos del historial.",
+  },
+  storageFailed: {
+    pt: "Não foi possível salvar (armazenamento cheio ou bloqueado). Os dados ficam só nesta sessão.",
+    en: "Could not save (storage full or blocked). Data will only last for this session.",
+    es: "No se pudo guardar (almacenamiento lleno o bloqueado). Los datos solo duran esta sesión.",
+  },
+  contentClearedTitle: { pt: "Dados limpos", en: "Data cleared", es: "Datos borrados" },
+  contentCleared: {
+    pt: "Os campos do conteúdo atual foram limpos.",
+    en: "The current content fields were cleared.",
+    es: "Se borraron los campos del contenido actual.",
+  },
+  appearanceResetTitle: { pt: "Aparência restaurada", en: "Appearance reset", es: "Apariencia restablecida" },
+  appearanceReset: {
+    pt: "Cores e configurações básicas voltaram ao padrão.",
+    en: "Colors and basic settings are back to default.",
+    es: "Los colores y ajustes básicos volvieron a los valores predeterminados.",
+  },
+  logoRemovedTitle: { pt: "Logo removido", en: "Logo removed", es: "Logo eliminado" },
+  logoRemoved: { pt: "O logo personalizado foi removido.", en: "The custom logo was removed.", es: "Se eliminó el logo personalizado." },
+  backgroundRemovedTitle: { pt: "Fundo removido", en: "Background removed", es: "Fondo eliminado" },
+  backgroundRemoved: {
+    pt: "A imagem de fundo foi removida.",
+    en: "The background image was removed.",
+    es: "Se eliminó la imagen de fondo.",
+  },
+  frameRemovedTitle: { pt: "Moldura removida", en: "Frame removed", es: "Marco eliminado" },
+  frameRemoved: { pt: "A moldura personalizada foi removida.", en: "The custom frame was removed.", es: "Se eliminó el marco personalizado." },
+  allResetTitle: { pt: "Tudo resetado", en: "Everything reset", es: "Todo restablecido" },
+  allReset: {
+    pt: "QR Code, campos e configurações foram limpos.",
+    en: "QR code, fields and settings were cleared.",
+    es: "Se borraron el código QR, los campos y los ajustes.",
+  },
+  historyLoadedTitle: { pt: "Configurações carregadas", en: "Settings loaded", es: "Ajustes cargados" },
+  historyLoaded: {
+    pt: "As configurações do histórico foram aplicadas.",
+    en: "The history settings were applied.",
+    es: "Se aplicaron los ajustes del historial.",
+  },
+  historyClearedTitle: { pt: "Histórico limpo", en: "History cleared", es: "Historial borrado" },
+  historyCleared: { pt: "Todo o histórico foi removido.", en: "The whole history was removed.", es: "Se eliminó todo el historial." },
+  favoriteAddedTitle: { pt: "Favorito salvo", en: "Favorite saved", es: "Favorito guardado" },
+  favoriteAdded: { pt: "O item foi marcado como favorito.", en: "The item was added to favorites.", es: "El elemento se marcó como favorito." },
+  favoriteRemovedTitle: { pt: "Favorito removido", en: "Favorite removed", es: "Favorito eliminado" },
+  favoriteRemoved: {
+    pt: "O item saiu da lista de favoritos.",
+    en: "The item was removed from favorites.",
+    es: "El elemento salió de la lista de favoritos.",
+  },
+  historyItemRemovedTitle: { pt: "Item removido", en: "Item removed", es: "Elemento eliminado" },
+  historyItemRemoved: {
+    pt: "O registro foi removido do histórico.",
+    en: "The record was removed from history.",
+    es: "El registro se eliminó del historial.",
+  },
+  templateSavedTitle: { pt: "Template salvo", en: "Template saved", es: "Plantilla guardada" },
+  templateUpdatedTitle: { pt: "Template atualizado", en: "Template updated", es: "Plantilla actualizada" },
+  templateReady: (name: string): TranslationValue => ({
+    pt: `"${name}" está pronto para reutilizar.`,
+    en: `"${name}" is ready to reuse.`,
+    es: `"${name}" está lista para reutilizar.`,
+  }),
+  templateAppliedTitle: { pt: "Template aplicado", en: "Template applied", es: "Plantilla aplicada" },
+  templateApplied: (name: string): TranslationValue => ({
+    pt: `"${name}" foi aplicado ao visual atual.`,
+    en: `"${name}" was applied to the current design.`,
+    es: `"${name}" se aplicó al diseño actual.`,
+  }),
+  templateRemovedTitle: { pt: "Template removido", en: "Template removed", es: "Plantilla eliminada" },
+  templateRemoved: { pt: "O template visual foi excluído.", en: "The visual template was deleted.", es: "Se eliminó la plantilla visual." },
+  templateName: (index: number): TranslationValue => ({ pt: `Tema ${index}`, en: `Theme ${index}`, es: `Tema ${index}` }),
+  nothingGenerated: {
+    pt: "Gere um QR Code primeiro.",
+    en: "Generate a QR code first.",
+    es: "Genera un código QR primero.",
+  },
+  downloadDoneTitle: { pt: "Download concluído", en: "Download complete", es: "Descarga completada" },
+  downloadDone: (filename: string): TranslationValue => ({
+    pt: `QR Code salvo como ${filename}`,
+    en: `QR code saved as ${filename}`,
+    es: `Código QR guardado como ${filename}`,
+  }),
+  downloadFailed: {
+    pt: "Não foi possível baixar o QR Code.",
+    en: "Could not download the QR code.",
+    es: "No se pudo descargar el código QR.",
+  },
+  imageCopiedTitle: { pt: "Imagem copiada", en: "Image copied", es: "Imagen copiada" },
+  imageCopied: {
+    pt: "QR Code copiado para a área de transferência.",
+    en: "QR code copied to the clipboard.",
+    es: "Código QR copiado al portapapeles.",
+  },
+  textCopiedTitle: { pt: "Texto copiado", en: "Text copied", es: "Texto copiado" },
+  textCopiedFallback: {
+    pt: "O navegador não permite imagem na área de transferência; o conteúdo foi copiado como texto.",
+    en: "The browser does not allow images in the clipboard; the content was copied as text.",
+    es: "El navegador no permite imágenes en el portapapeles; el contenido se copió como texto.",
+  },
+  copyFailed: {
+    pt: "Não foi possível copiar o QR Code.",
+    en: "Could not copy the QR code.",
+    es: "No se pudo copiar el código QR.",
+  },
+  sharedTitle: { pt: "Compartilhado", en: "Shared", es: "Compartido" },
+  shared: { pt: "QR Code compartilhado.", en: "QR code shared.", es: "Código QR compartido." },
+  shareFallbackImage: {
+    pt: "Compartilhamento indisponível: o QR Code foi copiado como imagem.",
+    en: "Sharing unavailable: the QR code was copied as an image.",
+    es: "No se puede compartir: el código QR se copió como imagen.",
+  },
+  shareFallbackText: {
+    pt: "Compartilhamento indisponível: o conteúdo foi copiado como texto.",
+    en: "Sharing unavailable: the content was copied as text.",
+    es: "No se puede compartir: el contenido se copió como texto.",
+  },
+  shareFailed: {
+    pt: "Não foi possível compartilhar o QR Code.",
+    en: "Could not share the QR code.",
+    es: "No se pudo compartir el código QR.",
+  },
+  shareTitle: { pt: "QR Code", en: "QR code", es: "Código QR" },
+  shareText: { pt: "Confira este QR Code.", en: "Check out this QR code.", es: "Mira este código QR." },
+  uploadErrorTitle: { pt: "Imagem inválida", en: "Invalid image", es: "Imagen no válida" },
+  uploadUnsupported: {
+    pt: "Use PNG, JPG, WebP, GIF, SVG, AVIF ou BMP.",
+    en: "Use PNG, JPG, WebP, GIF, SVG, AVIF or BMP.",
+    es: "Usa PNG, JPG, WebP, GIF, SVG, AVIF o BMP.",
+  },
+  uploadTooLarge: (maxMb: number): TranslationValue => ({
+    pt: `Selecione uma imagem menor que ${maxMb} MB.`,
+    en: `Choose an image smaller than ${maxMb} MB.`,
+    es: `Elige una imagen de menos de ${maxMb} MB.`,
+  }),
+  uploadDecode: {
+    pt: "Não foi possível ler essa imagem.",
+    en: "Could not read this image.",
+    es: "No se pudo leer esta imagen.",
+  },
+  logoLoadedTitle: { pt: "Logo carregado", en: "Logo loaded", es: "Logo cargado" },
+  logoLoaded: {
+    pt: "Ajuste o tamanho do logo se precisar.",
+    en: "Adjust the logo size if needed.",
+    es: "Ajusta el tamaño del logo si hace falta.",
+  },
+  backgroundLoadedTitle: { pt: "Fundo carregado", en: "Background loaded", es: "Fondo cargado" },
+  backgroundLoaded: {
+    pt: "A imagem de fundo foi aplicada.",
+    en: "The background image was applied.",
+    es: "Se aplicó la imagen de fondo.",
+  },
+  urlCorrectedTitle: { pt: "URL corrigida", en: "URL corrected", es: "URL corregida" },
+  urlCorrected: (url: string): TranslationValue => ({
+    pt: `Protocolo adicionado: ${url}`,
+    en: `Protocol added: ${url}`,
+    es: `Protocolo añadido: ${url}`,
+  }),
+} as const
