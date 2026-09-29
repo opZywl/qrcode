@@ -22,8 +22,8 @@ interface PersonalizacaoAparenciaProps {
   onLogoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   onBackgroundImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveBackgroundImage: () => void
-  fileInputRef: React.RefObject<HTMLInputElement>
-  backgroundImageInputRef: React.RefObject<HTMLInputElement>
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+  backgroundImageInputRef: React.RefObject<HTMLInputElement | null>
   visualTemplates: VisualTemplateQRCode[]
   onSaveVisualTemplate: (name: string, templateId?: string) => void
   onApplyVisualTemplate: (template: VisualTemplateQRCode) => void
