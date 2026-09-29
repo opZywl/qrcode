@@ -6,6 +6,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 .pnpm-debug.log*
+.pnp.*
 
 # Python
 __pycache__/
@@ -20,7 +21,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -43,6 +43,7 @@ MANIFEST
 *.env
 *.env.*
 .envrc
+!.env.example
 
 # Ambientes virtuais Python
 env/
@@ -117,10 +118,6 @@ coverage.xml
 cover/
 
 # Testes
-*.spec.js
-*.test.js
-*.spec.ts
-*.test.ts
 test-results/
 playwright-report/
 test-results.xml
@@ -415,3 +412,10 @@ security.txt
 
 vulnerability-report.json
 audit-report.json
+# Local/temp e uploads
+temp/
+.local/
+.capybara/
+uploads/
+storage/
+public/uploads/
