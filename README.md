@@ -81,4 +81,4 @@ Contribuições são bem-vindas: faça um fork, crie uma branch e abra um pull r
 
 ## Licença
 
-Distribuído sob os termos do arquivo [LICENSE](LICENSE).
+Código sob a licença [MIT](LICENSE): pode usar, copiar, modificar e distribuir, inclusive para fins comerciais, desde que mantenha o aviso de copyright. As fontes incluídas no repositório têm licenças próprias, listadas em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
