@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "border border-dark-4 bg-dark-4 text-white shadow-sm hover:-translate-y-0.5 hover:bg-black hover:shadow-lg dark:border-dark-5/30 dark:bg-white dark:text-dark-4 dark:hover:bg-zinc-100",
+          "border border-dark-4 bg-dark-4 text-white shadow-xs hover:-translate-y-0.5 hover:bg-black hover:shadow-lg dark:border-dark-5/30 dark:bg-white dark:text-dark-4 dark:hover:bg-zinc-100",
         destructive:
           "border border-red-500/40 bg-destructive text-destructive-foreground hover:-translate-y-0.5 hover:bg-destructive/90",
         outline:
-          "border border-border/80 bg-background/70 text-foreground shadow-sm backdrop-blur-xl hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/70 dark:border-dark-5/35 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]",
+          "border border-border/80 bg-background/70 text-foreground shadow-xs backdrop-blur-xl hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/70 dark:border-dark-5/35 dark:bg-white/4 dark:hover:bg-white/8",
         secondary:
           "border border-transparent bg-secondary text-secondary-foreground hover:-translate-y-0.5 hover:bg-secondary/90",
-        ghost: "text-foreground/80 hover:bg-accent/70 hover:text-foreground dark:hover:bg-white/[0.06]",
+        ghost: "text-foreground/80 hover:bg-accent/70 hover:text-foreground dark:hover:bg-white/6",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

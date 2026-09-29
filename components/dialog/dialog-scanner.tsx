@@ -806,7 +806,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-auto p-4">
+        <div className="grow overflow-auto p-4">
           <Tabs
             defaultValue="camera"
             value={abaInicial}
@@ -825,7 +825,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="camera" className="flex-grow flex flex-col pt-4 min-h-0 space-y-4">
+            <TabsContent value="camera" className="grow flex flex-col pt-4 min-h-0 space-y-4">
               {/* Controles da Câmera */}
               {temPermissaoCamera && (
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -1028,7 +1028,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
               )}
             </TabsContent>
 
-            <TabsContent value="image" className="flex-grow flex flex-col space-y-4 pt-4 pb-2 min-h-0">
+            <TabsContent value="image" className="grow flex flex-col space-y-4 pt-4 pb-2 min-h-0">
               <canvas ref={imageScanCanvasRef} style={{ display: "none" }} />
 
               {/* Área de Drag & Drop Melhorada */}
@@ -1111,7 +1111,7 @@ export function DialogScanner({ aberto, onAbertoChange, abaInicial, onAbaChange 
                         <img
                           src={previewImagemEscaneada || "/placeholder.svg"}
                           alt="Preview da imagem para escaneamento"
-                          className="max-w-full max-h-48 object-contain border rounded-md shadow-sm bg-white"
+                          className="max-w-full max-h-48 object-contain border rounded-md shadow-xs bg-white"
                         />
                         {escaneandoImagem && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md">

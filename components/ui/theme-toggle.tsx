@@ -21,7 +21,7 @@ export function ThemeToggle() {
       type="button"
       aria-label="Alternar tema"
       onClick={toggleTheme}
-      className="relative inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full bg-transparent text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+      className="relative inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full bg-transparent text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
     >
       <span
         className={cn(

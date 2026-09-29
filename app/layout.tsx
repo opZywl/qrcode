@@ -8,19 +8,19 @@ import "./globals.css"
 
 const glancyr = localFont({
   src: "../public/fonts/glancyr.ttf",
-  variable: "--font-glancyr",
+  variable: "--font-face-glancyr",
   display: "swap",
 })
 
 const glancyr700 = localFont({
   src: "../public/fonts/glancyr700.ttf",
-  variable: "--font-glancyr700",
+  variable: "--font-face-glancyr700",
   display: "swap",
 })
 
 const spaceGrotesk = localFont({
   src: "../public/fonts/spaceGroteskVariable.woff2",
-  variable: "--font-spaceGrotesk",
+  variable: "--font-face-space-grotesk",
   display: "swap",
 })
 

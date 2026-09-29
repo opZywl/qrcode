@@ -221,7 +221,7 @@ export function QrPreview({
           </>
         )
       case "modernFrame":
-        return <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-br from-primary/12 to-transparent" />
+        return <div className="pointer-events-none absolute inset-0 rounded-[28px] bg-linear-to-br from-primary/12 to-transparent" />
       case "classicFrame":
         return <div className="pointer-events-none absolute inset-[10px] rounded-[22px] border-2 border-double border-primary/30" />
       case "textBottom":
@@ -276,7 +276,7 @@ export function QrPreview({
               Conteudo codificado
             </Label>
             <p
-              className="relative z-[1] rounded-[1rem] border border-border/70 bg-background/80 px-3.5 py-2.5 font-mono text-[13px] text-foreground shadow-inner dark:border-dark-5/30 dark:bg-dark-1/70 sm:text-sm"
+              className="relative z-1 rounded-2xl border border-border/70 bg-background/80 px-3.5 py-2.5 font-mono text-[13px] text-foreground shadow-inner dark:border-dark-5/30 dark:bg-dark-1/70 sm:text-sm"
               title={qrValue}
             >
               {qrValue}
@@ -337,7 +337,7 @@ export function QrPreview({
 
                 <motion.div
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-[14%] top-6 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent"
+                  className="pointer-events-none absolute inset-x-[14%] top-6 h-px bg-linear-to-r from-transparent via-primary/55 to-transparent"
                   animate={{ y: [0, qrConfig.displaySize * 0.72, 0], opacity: [0.12, 0.52, 0.12] }}
                   transition={{ duration: 3.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
                 />
@@ -352,9 +352,9 @@ export function QrPreview({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, delay: 0.04 + index * 0.03 }}
-                className="studio-tile !px-3 !py-2.5"
+                className="studio-tile px-3! py-2.5!"
               >
-                <div className="relative z-[1] flex items-center gap-2">
+                <div className="relative z-1 flex items-center gap-2">
                   <span className="studio-icon-shell h-7 w-7 rounded-full">
                     <LocalIcon name={item.icon} className="h-3.5 w-3.5 text-primary" />
                   </span>
@@ -369,14 +369,14 @@ export function QrPreview({
 
           {tipoConteudo === "whatsappGroup" && whatsappGroupMensagem && whatsappGroupMensagem.trim() && (
             <div className="studio-tile border-emerald-400/30 bg-emerald-50/60 dark:border-emerald-500/25 dark:bg-emerald-950/10">
-              <div className="relative z-[1]">
+              <div className="relative z-1">
                 <div className="mb-3 flex items-center gap-2">
                   <LocalIcon name="whatsapp" className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
                   <Label className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                     Mensagem de boas-vindas
                   </Label>
                 </div>
-                <div className="rounded-[1rem] border border-emerald-300/30 bg-white/80 p-3 dark:border-emerald-500/20 dark:bg-dark-1/70">
+                <div className="rounded-2xl border border-emerald-300/30 bg-white/80 p-3 dark:border-emerald-500/20 dark:bg-dark-1/70">
                   <p className="whitespace-pre-wrap font-mono text-sm text-foreground">{whatsappGroupMensagem}</p>
                 </div>
               </div>

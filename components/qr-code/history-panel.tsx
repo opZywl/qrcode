@@ -283,7 +283,7 @@ export function HistoryPanel({
         <SheetHeader className="shrink-0 border-b border-border/60 bg-background/90 px-4 pb-4 pt-4 pr-12 backdrop-blur-xl">
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <span className="studio-icon-shell h-10 w-10 rounded-[1rem]">
+              <span className="studio-icon-shell h-10 w-10 rounded-2xl">
                 <LocalIcon name="history" className="h-4 w-4 text-primary" />
               </span>
               <div className="min-w-0">
@@ -416,7 +416,7 @@ export function HistoryPanel({
 
                   return (
                     <div key={entrada.id} className="studio-tile transition-all duration-200 hover:border-primary/30">
-                      <div className="relative z-[1] space-y-3">
+                      <div className="relative z-1 space-y-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 items-start gap-3">
                             <span className="studio-icon-shell h-9 w-9 rounded-[0.9rem]">
@@ -562,7 +562,7 @@ export function HistoryPanel({
                         </div>
 
                         {viewMode === "detailed" && (
-                          <div className="grid gap-3 rounded-[1rem] border border-border/60 bg-background/60 p-3 dark:border-dark-5/25 dark:bg-dark-1/50">
+                          <div className="grid gap-3 rounded-2xl border border-border/60 bg-background/60 p-3 dark:border-dark-5/25 dark:bg-dark-1/50">
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div className="space-y-1.5">
                                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">

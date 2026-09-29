@@ -15,7 +15,7 @@ interface PopupPortfolioMobileProps {
 export function DevPopup({ aberto, onAbertoChange }: PopupPortfolioMobileProps) {
     return (
         <Dialog open={aberto} onOpenChange={onAbertoChange}>
-            <DialogContent className="sm:max-w-sm w-[90vw] p-0 bg-background/95 backdrop-blur-sm border border-border/50">
+            <DialogContent className="sm:max-w-sm w-[90vw] p-0 bg-background/95 backdrop-blur-xs border border-border/50">
                 <DialogTitle className="sr-only">Portfólio do Desenvolvedor</DialogTitle>
                 {/* Conteúdo */}
                 <div className="flex flex-col items-center text-center p-8 space-y-4">

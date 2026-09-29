@@ -26,7 +26,7 @@ export function ThemeSwitchAnimation({ isAnimating, theme }: ThemeSwitchAnimatio
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[9999] overflow-hidden pointer-events-none"
+          className="fixed inset-0 z-9999 overflow-hidden pointer-events-none"
           style={{ background: theme === "dark" ? "#110f10" : "#fdfdfd" }}
         >
           <span

@@ -74,7 +74,7 @@ function QuickAction({ icon, label, onClick, variant = "outline" }: QuickActionP
       className="h-9 justify-start gap-2 px-3 text-[13px] transition-all duration-200 hover:-translate-y-0.5"
       onClick={onClick}
     >
-      <span className="studio-icon-shell h-6 w-6 rounded-full flex-shrink-0">
+      <span className="studio-icon-shell h-6 w-6 rounded-full shrink-0">
         <LocalIcon name={icon} className="h-3 w-3 text-current" />
       </span>
       {label}
@@ -190,7 +190,7 @@ export function QrGenerator({
                       <span className="portfolio-chip w-fit">QR CODE STUDIO</span>
 
                       <div className="flex items-start gap-2.5">
-                        <div className="studio-icon-shell h-12 w-12 rounded-[1.1rem] animate-float-soft flex-shrink-0">
+                        <div className="studio-icon-shell h-12 w-12 rounded-[1.1rem] animate-float-soft shrink-0">
                           <LocalIcon name="qr" className="h-6 w-6 text-primary" />
                         </div>
                         <div>

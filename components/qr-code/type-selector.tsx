@@ -96,10 +96,10 @@ export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis, language 
               active ? "studio-tile-strong shadow-[0_18px_48px_-28px_rgba(15,23,42,0.45)]" : "studio-tile hover:border-primary/30",
             ].join(" ")}
           >
-            <div className="relative z-[1] flex items-start justify-between gap-1.5">
+            <div className="relative z-1 flex items-start justify-between gap-1.5">
               <div
                 className={[
-                  "studio-icon-shell h-7 w-7 flex-shrink-0 rounded-[0.72rem] transition-all duration-200",
+                  "studio-icon-shell h-7 w-7 shrink-0 rounded-[0.72rem] transition-all duration-200",
                   active
                     ? "border-slate-200/90 bg-white/90 text-foreground dark:border-white/10 dark:bg-white/10 dark:text-white"
                     : "text-foreground group-hover:border-primary/30 group-hover:text-primary",
@@ -110,15 +110,15 @@ export function TypeSelector({ tipoAtivo, onTipoChange, tiposVisiveis, language 
 
               <span
                 className={[
-                  "portfolio-chip !px-1.5 !py-0.5 !text-[9px] !tracking-[0.10em]",
-                  active ? "bg-black/[0.04] text-foreground dark:bg-white/10 dark:text-white" : "",
+                  "portfolio-chip px-1.5! py-0.5! text-[9px]! tracking-widest!",
+                  active ? "bg-black/4 text-foreground dark:bg-white/10 dark:text-white" : "",
                 ].join(" ")}
               >
                 {label}
               </span>
             </div>
 
-            <div className="relative z-[1] mt-1">
+            <div className="relative z-1 mt-1">
               <p className="font-glancyr700 text-[0.78rem] uppercase leading-none tracking-tight">{label}</p>
               <p className={["mt-0.5 text-[10px] leading-tight", active ? "text-foreground/65 dark:text-white/65" : "text-muted-foreground"].join(" ")}>
                 {descricao}

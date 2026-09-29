@@ -165,7 +165,7 @@ export function SheetControlesMobile({
               </div>
             </SheetHeader>
 
-            <ScrollArea className="flex-grow custom-scrollbar">
+            <ScrollArea className="grow custom-scrollbar">
               <div className="p-4 space-y-6 pb-6">
                 {/* Seletor de tipo de conteúdo */}
                 <div className="space-y-3">
@@ -311,7 +311,7 @@ export function SheetControlesMobile({
                 <Button
                     onClick={onGenerate}
                     disabled={isLoading || !hasContentData()}
-                    className="w-full py-3 text-base font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                    className="w-full py-3 text-base font-semibold transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 border-2 border-green-400/50 hover:border-green-400 hover:shadow-green-glow focus:shadow-green-glow focus:outline-hidden focus:ring-2 focus:ring-green-500/50"
                 >
                   {isLoading ? (
                       <>

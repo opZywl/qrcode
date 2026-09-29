@@ -143,7 +143,7 @@ export function MobileStylePanel({
                     onChange={(e) => onChange("corFrente", e.target.value)}
                     className="w-full h-10 rounded border-2 cursor-pointer hover:border-primary/50 transition-all duration-200"
                   />
-                  <div className="absolute inset-0 rounded-md bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 rounded-md bg-linear-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -156,7 +156,7 @@ export function MobileStylePanel({
                     className="w-full h-10 rounded border-2 cursor-pointer hover:border-primary/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={valores.imagemFundo || hasFrameCustomizations()}
                   />
-                  <div className="absolute inset-0 rounded-md bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 rounded-md bg-linear-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
                 </div>
                 {(valores.imagemFundo || hasFrameCustomizations()) && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">

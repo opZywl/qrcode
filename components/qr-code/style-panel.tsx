@@ -66,7 +66,7 @@ function StudioSection({
         active ? accentClassName ?? "border-primary/30 bg-primary/5 dark:border-primary/25 dark:bg-primary/10" : "",
       ].join(" ")}
     >
-      <div className="relative z-[1] space-y-3">
+      <div className="relative z-1 space-y-3">
         <div className="flex items-center gap-2.5">
           <span className="studio-icon-shell h-9 w-9 rounded-[0.9rem]">
             <LocalIcon name={icon} className="h-4 w-4 text-primary" />
@@ -352,7 +352,7 @@ export function StylePanel({
                     </Button>
 
                     {valores.logoDataUri && (
-                      <div className="rounded-[1rem] border border-border/70 bg-background/70 p-2.5 dark:border-dark-5/30 dark:bg-dark-1/60">
+                      <div className="rounded-2xl border border-border/70 bg-background/70 p-2.5 dark:border-dark-5/30 dark:bg-dark-1/60">
                         <div className="flex items-center gap-2.5">
                           <img
                             src={valores.logoDataUri || "/placeholder.svg"}
@@ -457,7 +457,7 @@ export function StylePanel({
                     </Button>
 
                     {valores.imagemFundo && (
-                      <div className="rounded-[1rem] border border-border/70 bg-background/70 p-2.5 dark:border-dark-5/30 dark:bg-dark-1/60">
+                      <div className="rounded-2xl border border-border/70 bg-background/70 p-2.5 dark:border-dark-5/30 dark:bg-dark-1/60">
                         <div className="flex items-center gap-2.5">
                           <img
                             src={valores.imagemFundo || "/placeholder.svg"}
@@ -658,7 +658,7 @@ export function StylePanel({
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[1rem] border border-dashed border-border/70 bg-background/50 px-4 py-4 text-center dark:border-dark-5/30 dark:bg-dark-1/40">
+                  <div className="rounded-2xl border border-dashed border-border/70 bg-background/50 px-4 py-4 text-center dark:border-dark-5/30 dark:bg-dark-1/40">
                     <p className="text-[12px] font-medium text-foreground">{copy.emptyTemplate}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {copy.emptyTemplateDescription}

@@ -32,7 +32,7 @@ export function Background() {
             draggable={false}
           />
           <motion.div
-            className="absolute -left-[4vw] top-[14vh] w-[58vw] max-w-[687px]"
+            className="absolute left-[-4vw] top-[14vh] w-[58vw] max-w-[687px]"
             animate={{ x: [0, 14, 0], y: [0, -7, 0] }}
             transition={{ duration: 16, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
           >
@@ -97,7 +97,7 @@ export function Background() {
           duration={5}
           repeatDelay={0}
           className={cn(
-            "[mask-image:radial-gradient(800px_circle_at_center,white,transparent)] w-full",
+            "mask-[radial-gradient(800px_circle_at_center,white,transparent)] w-full",
             "inset-x-0 inset-y-[-0%] h-[105%] max-sm:h-[90%] skew-y-12",
             "dark:fill-transparent dark:stroke-black/10 dark:sm:fill-zinc-600/30 dark:sm:stroke-dark-1/40",
           )}
